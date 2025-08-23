@@ -34,5 +34,12 @@ YouTube の複数ライブ配信を最小限の操作で一括操作（再生/�
 - `chrome.storage.local` に URL リスト（動画ID）と音量を保存/復元。
 - 将来拡張: レイアウトプリセット、音声解析による自動同期など。
 
+## ドキュメント（GitLab Pages）
+- Doxygen で自動生成した HTML ドキュメントを GitLab Pages で公開します。
+- メインブランチへ push すると CI が走り、`docs/html` を `public/` に配置して公開します。
+- 公開URL（デフォルト）: `https://yushimoji.gitlab.io/holosync/`
+  - 初回は CI 完了後にアクセス可能になります。
+  - 404 の場合は数分待ってから再試行してください。
+
 ## ライセンス
 - TBD

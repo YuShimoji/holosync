@@ -1,3 +1,8 @@
+/**
+ * @file background.js
+ * @brief HoloSync background service worker for MV3.
+ *        Opens the app page tab when the extension icon is clicked.
+ */
 // Open HoloSync app page when the extension icon is clicked
 chrome.action.onClicked.addListener(() => {
   const url = chrome.runtime.getURL('app.html');

@@ -1,0 +1,33 @@
+# Doxyfile for HoloSync
+# Minimal config targeting JavaScript with Javadoc-style comments
+
+PROJECT_NAME           = "HoloSync"
+PROJECT_NUMBER         = "v0.1.0"
+PROJECT_BRIEF          = "YouTube multi-live viewer & controller (Chrome Extension)"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+OPTIMIZE_OUTPUT_JAVA   = YES
+JAVADOC_AUTOBRIEF      = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+WARN_IF_UNDOCUMENTED   = NO
+QUIET                  = YES
+WARNINGS               = YES
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+RECURSIVE              = NO
+FULL_PATH_NAMES        = NO
+INPUT                  = app.js \
+                         background.js \
+                         README.md
+FILE_PATTERNS          = *.js \
+                         *.md
+EXTENSION_MAPPING      = js=JavaScript
+USE_MDFILE_AS_MAINPAGE = README.md
+ALIASES                = "@func=\par Function:"
+GENERATE_TREEVIEW      = YES

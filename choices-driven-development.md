@@ -1,6 +1,6 @@
 # Choices-Driven Development: HoloSync
 
-最終更新: 2025-08-23 19:56 (JST)
+最終更新: 2025-08-23 21:15 (JST)
 
 ## ゴール（MVP）
 - 手動URL追加で複数YouTubeをタイル表示
@@ -15,6 +15,12 @@
 ## 次のマイルストーン
 - フェーズ2: レイアウトプリセット追加、基礎的な手動同期UI（オフセット設定）
 - フェーズ3: YouTube Data API によるチャンネル検索、`chrome.storage.local` によるレイアウト保存
+
+## Docs & CI
+- Doxygen を導入し、`app.js`/`background.js` に JSDoc コメントを追加
+- `Doxyfile` を追加し、`docs/html` に HTML 出力
+- GitLab CI（`.gitlab-ci.yml`）で `alpine` + `doxygen` + `graphviz` を使用し、`public/` にコピーして Pages 公開
+- 予想公開URL: `https://yushimoji.gitlab.io/holosync/`（main ブランチ push で更新）
 
 ## 主要な意思決定と代替案
 - SoC: UI（`app.html/css/js`）と背景（`background.js`）を分離
