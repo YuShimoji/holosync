@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "HoloSync (MVP)",
+  "description": "YouTubeライブの複数動画を最小操作で同期・一括操作。",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Open HoloSync"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://www.youtube.com/*", "https://www.youtube-nocookie.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://www.youtube.com; img-src 'self' data: https:; media-src https:; style-src 'self' 'unsafe-inline';"
+  }
+}
