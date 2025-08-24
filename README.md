@@ -34,12 +34,14 @@ YouTube の複数ライブ配信を最小限の操作で一括操作（再生/�
 - `chrome.storage.local` に URL リスト（動画ID）と音量を保存/復元。
 - 将来拡張: レイアウトプリセット、音声解析による自動同期など。
 
-## ドキュメント（GitLab Pages）
-- Doxygen で自動生成した HTML ドキュメントを GitLab Pages で公開します。
-- メインブランチへ push すると CI が走り、`docs/html` を `public/` に配置して公開します。
-- 公開URL（デフォルト）: `https://yushimoji.gitlab.io/holosync/`
-  - 初回は CI 完了後にアクセス可能になります。
-  - 404 の場合は数分待ってから再試行してください。
+## ドキュメント（手動生成）
+- 環境制約により CI/Pipelines を使わず、ローカルで Doxygen を実行して `docs/` に HTML を生成します。
+- 生成手順（Windows PowerShell）:
+  1. Docker もしくはローカルの Doxygen を用意
+  2. 次を実行: `pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\gen-docs.ps1`
+  3. 生成結果: `docs/index.html` をブラウザで開く
+- 生成物はコミット可能です。main へ push すれば、GitLab 上のリポジトリから直接 `docs/index.html` を閲覧できます（Pages は未使用）。
+- 将来的に CI が利用可能になったら、GitLab Pages での自動公開に切り替えます。
 
 ## ライセンス
 - TBD

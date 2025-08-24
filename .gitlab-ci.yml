@@ -1,17 +1,20 @@
-image: alpine:3.19
-
-stages:
-  - deploy
-
-pages:
-  stage: deploy
-  script:
-    - apk add --no-cache doxygen graphviz
-    - doxygen Doxyfile
-    - mkdir -p public
-    - cp -r docs/html/* public/
-  artifacts:
-    paths:
-      - public
+workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - when: never  # CI 一時停止（アカウント認証問題のため）
+
+# --- 保留中の Pages 設定（再開時に有効化） ---
+# image: alpine:3.19
+# stages:
+#   - deploy
+# pages:
+#   stage: deploy
+#   script:
+#     - apk add --no-cache doxygen graphviz
+#     - doxygen Doxyfile
+#     - mkdir -p public
+#     - cp -r docs/* public/
+#   artifacts:
+#     paths:
+#       - public
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "main"

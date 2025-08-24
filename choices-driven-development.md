@@ -18,9 +18,9 @@
 
 ## Docs & CI
 - Doxygen を導入し、`app.js`/`background.js` に JSDoc コメントを追加
-- `Doxyfile` を追加し、`docs/html` に HTML 出力
-- GitLab CI（`.gitlab-ci.yml`）で `alpine` + `doxygen` + `graphviz` を使用し、`public/` にコピーして Pages 公開
-- 予想公開URL: `https://yushimoji.gitlab.io/holosync/`（main ブランチ push で更新）
+- `Doxyfile` を追加し、`docs/` 直下に HTML 出力（`docs/index.html`）
+- CI 認証の問題により一時的に GitLab Pages を停止。ローカル生成→`docs/` をコミット
+- CI 復旧後は `.gitlab-ci.yml` で Pages 自動公開に戻す計画
 
 ## 主要な意思決定と代替案
 - SoC: UI（`app.html/css/js`）と背景（`background.js`）を分離
