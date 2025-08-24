@@ -31,5 +31,6 @@ FILE_PATTERNS          = *.js \
                          *.md
 EXTENSION_MAPPING      = js=JavaScript
 USE_MDFILE_AS_MAINPAGE = README.md
-ALIASES                = "@func=\par Function:"
+ALIASES               += func="\\par Function:"
+ALIASES               += type="\\par Type:"
 GENERATE_TREEVIEW      = YES
