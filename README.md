@@ -43,5 +43,17 @@ YouTube の複数ライブ配信を最小限の操作で一括操作（再生/�
 - 生成物はコミット可能です。main へ push すれば、GitLab 上のリポジトリから直接 `docs/index.html` を閲覧できます（Pages は未使用）。
 - 将来的に CI が利用可能になったら、GitLab Pages での自動公開に切り替えます。
 
+### トラブルシュート（Doxygen 生成）
+- __doxygen イメージが見つからない__
+  - 事前に手動で pull: `docker pull doxygen/doxygen:1.9.8`
+  - 代替: `docker pull doxygen/doxygen:latest` または `docker pull alpine:3.19`
+- __Windows のパスをマウントできない__
+  - 例1（Windowsパス）: `-v "C:\\Users\\<you>\\path\\HoloSync:/work"`
+  - 例2（WSL形式）: `-v "/c/Users/<you>/path/HoloSync:/work"`
+  - 例3（PowerShell 変数）: `$p=$PWD.Path; docker run --rm -v "$p:/work" -w /work doxygen/doxygen:1.9.8 doxygen Doxyfile`
+- __ログの場所__
+  - スクリプトは詳細ログを標準出力に表示。
+  - 警告ログ（設定時）: `docs/doxygen_warnings.log`
+
 ## ライセンス
 - TBD

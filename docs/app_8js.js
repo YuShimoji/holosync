@@ -1,0 +1,27 @@
+var app_8js =
+[
+    [ "catch", "app_8js.html#ad1b585ae06c04047e3e43f4c73525a26", null ],
+    [ "createTile", "app_8js.html#a1528fbaafbaef44e0763e398c0bb6567", null ],
+    [ "hasVideo", "app_8js.html#acf2f9d9a6d5ceef4aa8f5abc00eb37b3", null ],
+    [ "muteAll", "app_8js.html#a9fd8d83f5fc3f089360cb864441bdef2", null ],
+    [ "parseYouTubeId", "app_8js.html#a87e0313d067d18c342ef6d1c8db45a28", null ],
+    [ "pauseAll", "app_8js.html#a8cc87acefa07d1dfc03b775160fca1f7", null ],
+    [ "persistVideos", "app_8js.html#a07d6a6b1ee42af4b4c9748ea92f97e7f", null ],
+    [ "persistVolume", "app_8js.html#a4fa1f6e065713b6a82414ebea27a6474", null ],
+    [ "playAll", "app_8js.html#a96d2ab6f322f22c343e9973553225a2b", null ],
+    [ "sendCommand", "app_8js.html#a0363b8b1669276118b9bad88d4765fae", null ],
+    [ "setVolumeAll", "app_8js.html#a0e47787fdd752b4aca00139fc1d5839b", null ],
+    [ "unmuteAll", "app_8js.html#a2d0d6a1da57328b26aad057d0b4df30c", null ],
+    [ "addError", "app_8js.html#a0ffad7e3736a29bf8476d806f632e29d", null ],
+    [ "addForm", "app_8js.html#ad9d45684c5c23c3c3458445094e5c313", null ],
+    [ "isRestoring", "app_8js.html#a1ad93d80025ad5fd654a32333a3fe878", null ],
+    [ "muteAllBtn", "app_8js.html#a3cf65a78796195488b3b86472f417218", null ],
+    [ "pauseAllBtn", "app_8js.html#a4d1bc457467c733254b95efc10dc26bb", null ],
+    [ "playAllBtn", "app_8js.html#a6b80fb3e84de4583a67dd2ebd4d36188", null ],
+    [ "try", "app_8js.html#abe4cc9788f52e49485473dc699537388", null ],
+    [ "unmuteAllBtn", "app_8js.html#adee4b2553899f06bef10aaac7b24e1fb", null ],
+    [ "urlInput", "app_8js.html#a98441aaf40da95f143e98e1f085beaf1", null ],
+    [ "videos", "app_8js.html#a6383a9f9c4f6e0d9d3d3fa00bce633d5", null ],
+    [ "volumeAll", "app_8js.html#a808fa7678a88168f224a291c8b859e10", null ],
+    [ "volumeVal", "app_8js.html#a74aacabc9d4a8d255b23ec442906217f", null ]
+];

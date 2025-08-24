@@ -7,8 +7,34 @@ Set-Location -Path (Split-Path -Parent $PSScriptRoot)
 
 Write-Host "[HoloSync] Generating Doxygen docs..." -ForegroundColor Cyan
 
-function Has-Cmd($name) {
+function Test-CommandExists($name) {
   try { Get-Command $name -ErrorAction Stop | Out-Null; return $true } catch { return $false }
+}
+
+# Fallback: run inside an isolated container without volume mounts and copy results back
+function Invoke-DoxygenContainerizedCopy {
+  param(
+    [string]$Image = 'alpine:3.19'
+  )
+  if (-not (Test-CommandExists 'docker')) { throw 'Docker is required for containerized fallback.' }
+  Write-Host '[Fallback] Running Doxygen in isolated container (docker cp strategy)...' -ForegroundColor Cyan
+  # Create container
+  $cname = "holosync-docs-" + ([System.Guid]::NewGuid().ToString('N').Substring(0,8))
+  docker pull $Image *> $null
+  docker create --name $cname $Image sh -lc 'tail -f /dev/null' | Out-Null
+  try {
+    # Copy repo into container under /work
+    docker cp . "${cname}:/work" | Out-Null
+    # Install and run doxygen
+    docker start $cname | Out-Null
+    docker exec $cname sh -lc "apk add --no-cache doxygen graphviz && cd /work && doxygen Doxyfile" | Out-Null
+    # Copy docs back to host
+    if (-not (Test-Path -Path 'docs')) { New-Item -ItemType Directory -Path 'docs' | Out-Null }
+    docker cp "${cname}:/work/docs/." './docs' | Out-Null
+  }
+  finally {
+    docker rm -f $cname | Out-Null
+  }
 }
 
 # Ensure docs directory exists for outputs and warning log
@@ -17,26 +43,40 @@ if (-not (Test-Path -Path "docs")) {
 }
 
 # Prefer local doxygen if available
-if (Has-Cmd 'doxygen') {
+if (Test-CommandExists 'doxygen') {
   Write-Host "Using local doxygen" -ForegroundColor Green
   doxygen Doxyfile
 }
 else {
-  if (-not (Has-Cmd 'docker')) { throw "Neither doxygen nor docker is available." }
-  $pwd = (Get-Location).Path
+  if (-not (Test-CommandExists 'docker')) { throw "Neither doxygen nor docker is available." }
+  $cwd = (Get-Location).Path
   # Strategy: try Windows path mount first (Docker Desktop on Windows usually accepts this),
   # then try Linux-style "/c/..." mount if the first attempt fails.
-  $winMount = $pwd
-  $nixMount = $pwd
-  if ($pwd -match '^[A-Za-z]:\\') {
-    $drive = $pwd.Substring(0,1).ToLower()
-    $rest  = $pwd.Substring(2).Replace('\\','/')
+  $winMount = $cwd
+  $nixMount = $cwd
+  if ($cwd -match '^[A-Za-z]:\\') {
+    $drive = $cwd.Substring(0,1).ToLower()
+    $rest  = $cwd.Substring(2).Replace('\\','/')
     $nixMount = "/$drive/$rest"
   }
 
+  # Ensure images exist (pull if missing)
+  $imagesToPull = @('doxygen/doxygen:1.9.8','doxygen/doxygen:latest','alpine:3.19')
+  foreach ($img in $imagesToPull) {
+    $exists = $false
+    docker image inspect $img *> $null
+    if ($LASTEXITCODE -eq 0) { $exists = $true }
+    if (-not $exists) {
+      Write-Host ("Missing image: {0}. Pulling..." -f $img) -ForegroundColor DarkCyan
+      docker pull $img
+    }
+  }
+
   $attempts = @(
-    @{ Name = 'doxygen/doxygen (win path)'; Img = 'doxygen/doxygen:1.9.8'; Mount = $winMount; Cmd = 'doxygen Doxyfile' },
-    @{ Name = 'doxygen/doxygen (linux path)'; Img = 'doxygen/doxygen:1.9.8'; Mount = $nixMount; Cmd = 'doxygen Doxyfile' },
+    @{ Name = 'doxygen/doxygen:1.9.8 (win path)'; Img = 'doxygen/doxygen:1.9.8'; Mount = $winMount; Cmd = 'doxygen Doxyfile' },
+    @{ Name = 'doxygen/doxygen:1.9.8 (linux path)'; Img = 'doxygen/doxygen:1.9.8'; Mount = $nixMount; Cmd = 'doxygen Doxyfile' },
+    @{ Name = 'doxygen/doxygen:latest (win path)'; Img = 'doxygen/doxygen:latest'; Mount = $winMount; Cmd = 'doxygen Doxyfile' },
+    @{ Name = 'doxygen/doxygen:latest (linux path)'; Img = 'doxygen/doxygen:latest'; Mount = $nixMount; Cmd = 'doxygen Doxyfile' },
     @{ Name = 'alpine+apk (win path)'; Img = 'alpine:3.19'; Mount = $winMount; Cmd = 'sh -lc "apk add --no-cache doxygen graphviz && doxygen Doxyfile"' },
     @{ Name = 'alpine+apk (linux path)'; Img = 'alpine:3.19'; Mount = $nixMount; Cmd = 'sh -lc "apk add --no-cache doxygen graphviz && doxygen Doxyfile"' }
   )
@@ -48,10 +88,31 @@ else {
     if ($LASTEXITCODE -eq 0) { $success = $true; break }
     Write-Warning ("Docker attempt failed: {0}" -f $a.Name)
   }
-  if (-not $success) { throw "All Docker attempts failed. Please ensure Docker Desktop is running and images can be pulled." }
+  if (-not $success) {
+    Write-Warning "All Docker attempts failed. Proceeding to containerized fallback if needed."
+  }
 }
 
 $index = Join-Path -Path (Join-Path -Path (Get-Location).Path -ChildPath 'docs') -ChildPath 'index.html'
+if (-not (Test-Path $index)) {
+  Write-Warning "Primary attempts did not create docs. Invoking containerized fallback..."
+  Invoke-DoxygenContainerizedCopy
+}
+
 if (-not (Test-Path $index)) { throw "Docs generation failed. Not found: $index" }
+
+# Verify content looks like Doxygen output; if not, try fallback once
+$needsFallback = $false
+try {
+  $content = Get-Content -Path $index -Raw -ErrorAction Stop
+  if ($content -notmatch 'Generated by Doxygen') { $needsFallback = $true }
+} catch { $needsFallback = $true }
+
+if ($needsFallback) {
+  Write-Warning "docs/index.html は Doxygen 生成物ではない可能性があります。Fallback を実行します。"
+  Invoke-DoxygenContainerizedCopy
+}
+
+if (-not (Test-Path $index)) { throw "Docs generation failed even after fallback. Not found: $index" }
 
 Write-Host "Docs generated at: $index" -ForegroundColor Green
