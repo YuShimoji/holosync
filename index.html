@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HoloSync - Web App</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <header class="brand">
+        <h1>HoloSync</h1>
+        <p class="subtitle">YouTube 複数動画の一括操作と同期</p>
+      </header>
+
+      <section class="section">
+        <h2>動画を追加</h2>
+        <form id="addForm" class="add-form">
+          <input id="urlInput" type="url" placeholder="YouTubeのURLを貼り付け" required />
+          <button type="submit" class="primary">追加</button>
+        </form>
+        <p class="hint">対応例: https://www.youtube.com/watch?v=..., https://youtu.be/...</p>
+        <div id="addError" class="error" hidden></div>
+      </section>
+
+      <section class="section">
+        <h2>一括操作</h2>
+        <div class="controls">
+          <button id="playAll" class="primary">全て再生</button>
+          <button id="pauseAll">全て一時停止</button>
+          <button id="muteAll">全てミュート</button>
+          <button id="unmuteAll">全てミュート解除</button>
+          <label class="volume">
+            音量
+            <input id="volumeAll" type="range" min="0" max="100" step="1" value="50" />
+            <span id="volumeVal">50</span>
+          </label>
+        </div>
+        <p class="note">Autoplay制限のため、最初の「全て再生」はミュート状態で開始されます。</p>
+      </section>
+
+      <footer class="footer">
+        <small>HoloSync Web</small>
+      </footer>
+    </aside>
+
+    <main class="content">
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </main>
+
+    <script src="scripts/main.js"></script>
+  </body>
+</html>
