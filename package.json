@@ -4,7 +4,7 @@
   "private": true,
   "description": "YouTube multi-video synchronization web app",
   "scripts": {
-    "lint": "eslint . --ext .js",
+    "lint": "eslint scripts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky install"
