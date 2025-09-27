@@ -1,5 +1,13 @@
 node_modules/
-docs/html/
+docs/
 public/
 artifacts/
 .husky/
+.gitlab/
+
+# Legacy extension files
+app.html
+app.js
+background.js
+manifest.json
+styles.css

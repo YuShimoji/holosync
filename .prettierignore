@@ -1,4 +1,17 @@
 node_modules/
-docs/html/
 public/
 artifacts/
+docs/
+docs/**
+
+# Legacy extension files (kept for reference)
+app.html
+app.js
+background.js
+manifest.json
+styles.css
+
+# Large docs (temporarily excluded from Prettier check)
+README.md
+CONTRIBUTING.md
+ISSUES.md
