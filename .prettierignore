@@ -3,15 +3,13 @@ public/
 artifacts/
 docs/
 docs/**
+.gitlab/
+.gitlab-ci.yml
+.eslintrc.json
 
-# Legacy extension files (kept for reference)
-app.html
-app.js
-background.js
-manifest.json
-styles.css
+legacy/
 
 # Large docs (temporarily excluded from Prettier check)
 README.md
 CONTRIBUTING.md
-ISSUES.md
+choices-driven-development.md
