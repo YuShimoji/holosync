@@ -43,21 +43,29 @@
   }
 
   function parseYouTubeId(input) {
-    if (!input) {return null;}
+    if (!input) {
+      return null;
+    }
     try {
       // Accept raw ID
-      if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {return input;}
+      if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
+        return input;
+      }
 
       const url = new URL(input);
       // youtu.be/<id>
       if (url.hostname === 'youtu.be') {
         const id = url.pathname.replace('/', '');
-        if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {return id;}
+        if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+          return id;
+        }
       }
       // www.youtube.com/watch?v=<id>
       if (url.hostname.endsWith('youtube.com')) {
         const v = url.searchParams.get('v');
-        if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {return v;}
+        if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
+          return v;
+        }
         const parts = url.pathname.split('/').filter(Boolean);
         const liveIdx = parts.indexOf('live');
         if (
@@ -109,7 +117,9 @@
 
   function sendCommand(iframe, func, args = []) {
     const win = iframe.contentWindow;
-    if (!win) {return;}
+    if (!win) {
+      return;
+    }
     const message = JSON.stringify({ event: 'command', func, args });
     win.postMessage(message, 'https://www.youtube.com');
   }
