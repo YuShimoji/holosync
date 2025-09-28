@@ -1,0 +1,27 @@
+# Logs
+*.log
+.git-*.log
+.push.log
+
+# OS
+.DS_Store
+Thumbs.db
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Build outputs
+/dist/
+/build/
+/out/
+.next/
+node_modules/
+public/
+docs/html/
+artifacts/
+
+# Misc
+*.zip
+*.tar.gz

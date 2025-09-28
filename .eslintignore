@@ -1,0 +1,7 @@
+node_modules/
+docs/
+public/
+artifacts/
+.husky/
+.gitlab/
+legacy/

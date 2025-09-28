@@ -1,0 +1,15 @@
+node_modules/
+public/
+artifacts/
+docs/
+docs/**
+.gitlab/
+.gitlab-ci.yml
+.eslintrc.json
+
+legacy/
+
+# Large docs (temporarily excluded from Prettier check)
+README.md
+CONTRIBUTING.md
+choices-driven-development.md

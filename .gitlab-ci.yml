@@ -1,3 +1,49 @@
+# Doxygen ドキュメント生成と GitLab Pages 公開のための CI/CD パイプライン
+
+stages:
+  - lint
+  - docs
+  - deploy
+
+# Lint/Format チェック（全ブランチ）
+lint:
+  stage: lint
+  image: node:20-alpine
+  cache:
+    paths:
+      - node_modules/
+  before_script:
+    - npm ci || npm i
+  script:
+    - npm run format:check
+    - npm run lint
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+# DoxygenとGraphvizをインストールし、ドキュメントを生成するジョブ
+# 全てのブランチで実行され、生成物をアーティファクトとして保存する
+doxygen-docs:
+  stage: docs
+  image: debian:stable-slim
+  before_script:
+    - apt-get update -y && apt-get install -y doxygen graphviz
+  script:
+    - doxygen Doxyfile 2> docs/doxygen_warnings.log
+  artifacts:
+    paths:
+      - docs/
+    when: always
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+# GitLab Pagesにドキュメントを公開するジョブ
+# デフォルトブランチ（通常はmain）でのみ実行される
+pages:
+  stage: deploy
+  image: alpine:latest
+  script:
+
+
 stages:
   - docs
   - deploy
@@ -32,13 +78,3 @@ pages:
     - mkdir -p docs public
   script:
     - doxygen Doxyfile || echo "Doxygen failed but continuing..."
-    - if [ -d "docs/html" ] && [ "$(ls -A docs/html)" ]; then 
-        cp -r docs/html/* public/; 
-      else 
-        echo "<h1>HoloSync Documentation</h1><p>Documentation generation in progress.</p>" > public/index.html;
-      fi
-  artifacts:
-    paths:
-      - public
-  rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

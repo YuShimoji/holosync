@@ -1,0 +1,7 @@
+# CODEOWNERS
+# 所有ファイルのデフォルトレビュー責任者
+* @YuShimoji
+
+# パス別の所有者設定（必要に応じて調整）
+/scripts/ @YuShimoji
+/styles/ @YuShimoji

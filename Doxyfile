@@ -1,12 +1,36 @@
-PROJECT_NAME = "HoloSync"
-OUTPUT_DIRECTORY = docs
-INPUT = README.md
-RECURSIVE = NO
-FILE_PATTERNS = *.md
-GENERATE_HTML = YES
-HTML_OUTPUT = html
-GENERATE_LATEX = NO
+# Doxyfile for HoloSync
+# Minimal config targeting JavaScript with Javadoc-style comments
+
+PROJECT_NAME           = "HoloSync"
+PROJECT_NUMBER         = "v0.1.0"
+PROJECT_BRIEF          = "YouTube multi-live viewer & controller (Chrome Extension)"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+OPTIMIZE_OUTPUT_JAVA   = YES
+JAVADOC_AUTOBRIEF      = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+WARN_IF_UNDOCUMENTED   = NO
+QUIET                  = NO
+WARN_LOGFILE           = docs/doxygen_warnings.log
+WARN_FORMAT            = "$file:$line: $text"
+WARNINGS               = YES
+GENERATE_HTML          = YES
+HTML_OUTPUT            = .
+GENERATE_LATEX         = NO
+RECURSIVE              = NO
+FULL_PATH_NAMES        = NO
+INPUT                  = app.js \
+                         background.js \
+                         README.md
+FILE_PATTERNS          = *.js \
+                         *.md
+EXTENSION_MAPPING      = js=JavaScript
 USE_MDFILE_AS_MAINPAGE = README.md
-WARNINGS = YES
-WARN_IF_UNDOCUMENTED = NO
-WARN_IF_DOC_ERROR = YES
+ALIASES               += func="\\par Function:"
+ALIASES               += type="\\par Type:"
+GENERATE_TREEVIEW      = YES
