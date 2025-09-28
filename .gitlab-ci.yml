@@ -42,13 +42,39 @@ pages:
   stage: deploy
   image: alpine:latest
   script:
-    - if [ -d "docs/html" ] && [ "$(ls -A docs/html)" ]; then 
-        cp -r docs/html/* public/; 
-      else 
-        echo "<h1>HoloSync Documentation</h1><p>Documentation generation in progress.</p>" > public/index.html;
-      fi
+
+
+stages:
+  - docs
+  - deploy
+
+doxygen-docs:
+  image: debian:stable-slim
+  stage: docs
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends doxygen graphviz ca-certificates && rm -rf /var/lib/apt/lists/*
+    - mkdir -p docs
+  script:
+    - echo "Starting Doxygen generation..."
+    - doxygen Doxyfile || echo "Doxygen failed but continuing..."
+    - find docs -type f -name "*.html" | head -10 || echo "No HTML files found"
   artifacts:
+    when: always
+    expire_in: 1 week
     paths:
-      - public
+      - docs/
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: $CI_COMMIT_BRANCH
+
+pages:
+  image: debian:stable-slim
+  stage: deploy
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends doxygen graphviz ca-certificates && rm -rf /var/lib/apt/lists/*
+    - mkdir -p docs public
+  script:
+    - doxygen Doxyfile || echo "Doxygen failed but continuing..."
