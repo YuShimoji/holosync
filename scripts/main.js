@@ -20,6 +20,25 @@
   const videos = [];
   let isRestoring = false;
 
+  // Security hardening for postMessage sender to YouTube IFrame API
+  const ALLOWED_ORIGIN = 'https://www.youtube.com';
+  const ALLOWED_COMMANDS = new Set(['playVideo', 'pauseVideo', 'mute', 'unMute', 'setVolume']);
+
+  function sanitizeArgs(func, args) {
+    if (!Array.isArray(args)) {
+      return [];
+    }
+    if (func === 'setVolume') {
+      const v = parseInt(args[0], 10);
+      if (Number.isFinite(v)) {
+        const clamped = Math.max(0, Math.min(100, v));
+        return [clamped];
+      }
+      return [50];
+    }
+    return [];
+  }
+
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
@@ -100,6 +119,8 @@
     const iframe = document.createElement('iframe');
     iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&playsinline=1&mute=1`;
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+    iframe.loading = 'lazy';
+    iframe.setAttribute('referrerpolicy', 'origin');
     iframe.setAttribute('allowfullscreen', '');
     iframe.title = `YouTube video ${videoId}`;
 
@@ -120,8 +141,12 @@
     if (!win) {
       return;
     }
-    const message = JSON.stringify({ event: 'command', func, args });
-    win.postMessage(message, 'https://www.youtube.com');
+    if (!ALLOWED_COMMANDS.has(func)) {
+      return;
+    }
+    const safeArgs = sanitizeArgs(func, args);
+    const message = JSON.stringify({ event: 'command', func, args: safeArgs });
+    win.postMessage(message, ALLOWED_ORIGIN);
   }
 
   function playAll() {
