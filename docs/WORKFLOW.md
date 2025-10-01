@@ -39,19 +39,19 @@
 ## CI/CD（GitHub Actions）
 
 - ワークフロー:
+  - `.github/workflows/lint.yml`: Node 20 で Prettier/ESLint を実行（push/PR）
   - `.github/workflows/doxygen-pages.yml`: Doxygen 生成と GitHub Pages へ公開（main）
 - 注意: GitLab CI（`.gitlab-ci.yml`）は併存するが、運用は GitHub Actions を基本とする
 
 ## 品質ゲート（Lint/Format）
 
 - ESLint/Prettierを導入。ローカルでは `npm run lint` / `npm run format:check`
-- 可能であれば `husky + lint-staged` を有効化（`npm run prepare` を実行）
 
 ## テスト運用
 
 - 手動E2Eテスト手順を `docs/TESTING.md` に定義
 - PRでは必ず主要ケースを自己確認（追加/再生/停止/同期/削除/音量/速度/レスポンシブ/エラー）
-{{ ... }}
+
 ## 参考
 
 - 運用思想: `docs/choices-driven-development.md`
