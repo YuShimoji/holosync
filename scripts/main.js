@@ -22,7 +22,14 @@
 
   // Security hardening for postMessage sender to YouTube IFrame API
   const ALLOWED_ORIGIN = 'https://www.youtube.com';
-  const ALLOWED_COMMANDS = new Set(['playVideo', 'pauseVideo', 'mute', 'unMute', 'setVolume']);
+  const ALLOWED_COMMANDS = new Set([
+    'playVideo',
+    'pauseVideo',
+    'mute',
+    'unMute',
+    'setVolume',
+    'seekTo',
+  ]);
 
   function sanitizeArgs(func, args) {
     if (!Array.isArray(args)) {
@@ -35,6 +42,12 @@
         return [clamped];
       }
       return [50];
+    }
+    if (func === 'seekTo') {
+      const t = Number(args?.[0]);
+      const seconds = Number.isFinite(t) ? Math.max(0, t) : 0;
+      // allowSeekAhead=true for quicker convergence
+      return [seconds, true];
     }
     return [];
   }
@@ -102,7 +115,7 @@
     }
   }
 
-  // --- Phase1: Receive-side state collection for future sync logic ---
+  // --- Sync Phase1: receive-side state collection ---
   /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
   const playerStates = new Map();
 
@@ -113,9 +126,8 @@
         if (!win) {
           return;
         }
-        // Enable infoDelivery messages
+        // Enable infoDelivery messages and request initial snapshot
         win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
-        // Request initial snapshot
         const cmds = [
           { event: 'command', func: 'getPlayerState', args: [] },
           { event: 'command', func: 'getCurrentTime', args: [] },
@@ -125,7 +137,7 @@
         // ignore
       }
     }
-    // Try after load, and also a delayed fallback in case load already fired
+    // Try after load, and also fallback shortly after in case load already fired
     iframe.addEventListener('load', () => setTimeout(ping, 200), { once: true });
     setTimeout(ping, 600);
   }
@@ -150,15 +162,16 @@
         return;
       }
       const info = payload.info;
-      const rec = playerStates.get(ev.source) || {};
+      const src = /** @type {Window} */ (ev.source);
+      const rec = playerStates.get(src) || {};
       if (typeof info.currentTime === 'number') {
         rec.time = info.currentTime;
       }
       if (typeof info.playerState !== 'undefined') {
-        rec.state = info.playerState; // numeric code
+        rec.state = info.playerState;
       }
       rec.lastUpdate = Date.now();
-      playerStates.set(ev.source, rec);
+      playerStates.set(src, rec);
     } catch (_) {
       // ignore
     }
@@ -166,6 +179,78 @@
 
   window.addEventListener('message', onMessage, false);
 
+  // --- Sync Phase2: basic drift reconcile (seekTo + play/pause) ---
+  const SYNC_SETTINGS = {
+    toleranceMs: 300,
+    probeIntervalMs: 500,
+    leaderMode: 'first', // 'first' | 'manual'
+    leaderId: null,
+  };
+
+  function pickLeader() {
+    if (SYNC_SETTINGS.leaderMode === 'manual' && SYNC_SETTINGS.leaderId) {
+      const v = videos.find((x) => x.id === SYNC_SETTINGS.leaderId);
+      if (v && v.iframe && v.iframe.contentWindow) {
+        const rec = playerStates.get(v.iframe.contentWindow);
+        if (rec && typeof rec.time === 'number') {
+          return { v, rec };
+        }
+      }
+    }
+    for (const v of videos) {
+      const win = v.iframe?.contentWindow;
+      if (!win) {
+        continue;
+      }
+      const rec = playerStates.get(win);
+      if (rec && typeof rec.time === 'number') {
+        return { v, rec };
+      }
+    }
+    return null;
+  }
+
+  function reconcile() {
+    try {
+      if (!videos.length) {
+        return;
+      }
+      const leader = pickLeader();
+      if (!leader) {
+        return;
+      }
+      const leaderRec = playerStates.get(leader.v.iframe.contentWindow);
+      if (!leaderRec || typeof leaderRec.time !== 'number') {
+        return;
+      }
+      const tolSec = SYNC_SETTINGS.toleranceMs / 1000;
+      const leaderPlaying = leaderRec.state === 1; // YT: 1=playing
+
+      for (const v of videos) {
+        if (v === leader.v) {
+          continue;
+        }
+        const rec = playerStates.get(v.iframe.contentWindow);
+        if (!rec || typeof rec.time !== 'number') {
+          continue;
+        }
+        const drift = rec.time - leaderRec.time;
+        if (Math.abs(drift) > tolSec) {
+          sendCommand(v.iframe, 'seekTo', [leaderRec.time, true]);
+        }
+        const isPlaying = rec.state === 1;
+        if (leaderPlaying && !isPlaying) {
+          sendCommand(v.iframe, 'playVideo');
+        } else if (!leaderPlaying && isPlaying) {
+          sendCommand(v.iframe, 'pauseVideo');
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  setInterval(reconcile, SYNC_SETTINGS.probeIntervalMs);
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
