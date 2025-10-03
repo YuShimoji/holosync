@@ -39,26 +39,80 @@
     return [];
   }
 
+  // Storage abstraction: prefer chrome.storage, fallback to localStorage
+  function hasChromeStorage() {
+    try {
+      const ls = window.chrome?.storage?.local;
+      return !!(ls && typeof ls.get === 'function' && typeof ls.set === 'function');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function storageGet(defaults, cb) {
+    try {
+      if (hasChromeStorage()) {
+        window.chrome.storage.local.get(defaults, (data) => {
+          try {
+            cb(data || defaults);
+          } catch (_) {
+            cb(defaults);
+          }
+        });
+        return;
+      }
+      if (typeof localStorage !== 'undefined') {
+        const result = { ...defaults };
+        for (const key of Object.keys(defaults)) {
+          const raw = localStorage.getItem(`hs_${key}`);
+          if (raw !== null) {
+            try {
+              result[key] = JSON.parse(raw);
+            } catch (_) {
+              result[key] = raw;
+            }
+          }
+        }
+        cb(result);
+        return;
+      }
+      cb(defaults);
+    } catch (_) {
+      cb(defaults);
+    }
+  }
+
+  function storageSet(obj) {
+    try {
+      if (hasChromeStorage()) {
+        window.chrome.storage.local.set(obj);
+        return;
+      }
+      if (typeof localStorage !== 'undefined') {
+        for (const [k, v] of Object.entries(obj)) {
+          try {
+            localStorage.setItem(`hs_${k}`, JSON.stringify(v));
+          } catch (_) {
+            // ignore serialization errors
+          }
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
 
   function persistVideos() {
     const ids = videos.map((v) => v.id);
-    try {
-      // Persist only if available (e.g., some browsers/extensions)
-      window.chrome?.storage?.local?.set({ videos: ids });
-    } catch (_) {
-      // ignore if storage is unavailable
-    }
+    storageSet({ videos: ids });
   }
 
   function persistVolume(val) {
-    try {
-      window.chrome?.storage?.local?.set({ volume: val });
-    } catch (_) {
-      // ignore
-    }
+    storageSet({ volume: val });
   }
 
   function parseYouTubeId(input) {
@@ -203,7 +257,7 @@
   });
 
   try {
-    window.chrome?.storage?.local?.get({ videos: [], volume: 50 }, (data) => {
+    storageGet({ videos: [], volume: 50 }, (data) => {
       const vol = parseInt(data.volume, 10);
       if (!Number.isNaN(vol)) {
         volumeAll.value = String(vol);
