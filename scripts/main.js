@@ -102,6 +102,70 @@
     }
   }
 
+  // --- Phase1: Receive-side state collection for future sync logic ---
+  /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
+  const playerStates = new Map();
+
+  function initIframe(iframe) {
+    function ping() {
+      try {
+        const win = iframe.contentWindow;
+        if (!win) {
+          return;
+        }
+        // Enable infoDelivery messages
+        win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
+        // Request initial snapshot
+        const cmds = [
+          { event: 'command', func: 'getPlayerState', args: [] },
+          { event: 'command', func: 'getCurrentTime', args: [] },
+        ];
+        cmds.forEach((m) => win.postMessage(JSON.stringify(m), ALLOWED_ORIGIN));
+      } catch (_) {
+        // ignore
+      }
+    }
+    // Try after load, and also a delayed fallback in case load already fired
+    iframe.addEventListener('load', () => setTimeout(ping, 200), { once: true });
+    setTimeout(ping, 600);
+  }
+
+  function onMessage(ev) {
+    try {
+      if (ev.origin !== ALLOWED_ORIGIN) {
+        return;
+      }
+      let payload = ev.data;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch (_) {
+          return;
+        }
+      }
+      if (!payload || typeof payload !== 'object') {
+        return;
+      }
+      if (payload.event !== 'infoDelivery' || !payload.info || typeof payload.info !== 'object') {
+        return;
+      }
+      const info = payload.info;
+      const rec = playerStates.get(ev.source) || {};
+      if (typeof info.currentTime === 'number') {
+        rec.time = info.currentTime;
+      }
+      if (typeof info.playerState !== 'undefined') {
+        rec.state = info.playerState; // numeric code
+      }
+      rec.lastUpdate = Date.now();
+      playerStates.set(ev.source, rec);
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  window.addEventListener('message', onMessage, false);
+
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
@@ -184,6 +248,9 @@
     gridEl.appendChild(tile);
 
     videos.push({ iframe, id: videoId });
+
+    // Initialize receive-side flow for this iframe
+    initIframe(iframe);
 
     if (!isRestoring) {
       persistVideos();
