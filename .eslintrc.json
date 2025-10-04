@@ -1,11 +1,12 @@
 {
+  "root": true,
   "env": {
     "browser": true,
+    "node": true,
     "es2022": true
   },
   "extends": [
     "eslint:recommended",
-    "plugin:eslint-comments/recommended",
     "plugin:promise/recommended",
     "prettier"
   ],
@@ -18,7 +19,7 @@
     "sourceType": "script"
   },
   "globals": {
-    "YT": "readonly"
+    "chrome": "readonly"
   },
   "rules": {
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
