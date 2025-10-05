@@ -27,7 +27,9 @@ function send(res, status, content, type) {
 const server = http.createServer((req, res) => {
   try {
     let urlPath = decodeURIComponent(req.url.split('?')[0]);
-    if (urlPath === '/' || urlPath === '') {urlPath = '/index.html';}
+    if (urlPath === '/' || urlPath === '') {
+      urlPath = '/index.html';
+    }
     const filePath = path.join(root, urlPath);
     if (!filePath.startsWith(root)) {
       return send(res, 403, 'Forbidden');
@@ -39,7 +41,9 @@ const server = http.createServer((req, res) => {
       const ext = path.extname(filePath).toLowerCase();
       const type = mime[ext] || 'application/octet-stream';
       fs.readFile(filePath, (err2, data) => {
-        if (err2) {return send(res, 500, 'Internal Server Error');}
+        if (err2) {
+          return send(res, 500, 'Internal Server Error');
+        }
         send(res, 200, data, type);
       });
     });
