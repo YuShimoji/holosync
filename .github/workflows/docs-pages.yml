@@ -1,0 +1,16 @@
+name: Docs & Pages
+
+on:
+  pull_request:
+  push:
+    branches: ["**"]
+
+jobs:
+  pass:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Placeholder docs job
+        run: |
+          echo "Docs & Pages placeholder passing job"
