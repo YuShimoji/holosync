@@ -7,4 +7,4 @@ on:
 
 jobs:
   ci-shared:
-    uses: YuShimoji/shared-workflows/.github/workflows/ci-smoke.yml@main
+    uses: YuShimoji/shared-workflows/.github/workflows/ci-smoke.yml@c659f8f7057410c3684c39ac3796110aea6cfe3f
