@@ -13,7 +13,8 @@
   - [x] `.github/workflows/lint.yml` を作成し中央ワークフロー `@main` を参照
   - [x] CIのスモークに必要な `scripts/dev-server.js` と `scripts/dev-check.js` を追加
   - [x] `DEVELOPMENT_PROTOCOL.md` と `AI_CONTEXT.md` を追加
-  - [ ] PR作成（Auto-merge on green）
+  - [x] PR作成（Auto-merge on green）
+    - PR: https://github.com/YuShimoji/holosync/pull/15
 - 備考:
   - 中央リポジトリ: https://github.com/YuShimoji/shared-workflows
   - 参照ブランチ: `main`（安定版）
