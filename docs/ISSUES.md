@@ -8,19 +8,21 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
 - [x] chore: レガシーファイル（`app.html`, `app.js`, `background.js`, `manifest.json`, `styles.css`）を `legacy/` へ移動
 - [x] build(ci): `lint` ステージ（Prettier/ESLint）導入、Windows 互換の `npm run lint` を設定
 - [x] chore: Prettier/ESLint の ignore を整理（`legacy/`, `docs/` を除外）
+- [x] feat(P3): 同期アルゴリズムの改善（バッファリング・広告耐性） （GitHub: #16）
+  - 受け入れ基準:
+    - バッファリングや広告が発生した動画があっても、他動画の再生が乱れない
+    - バッファリング/広告終了後は自動で再同期し、グループに復帰する
 
 ## 進行中（In Progress）
 - [ ] MR: `chore/workflow-ci-lint` のレビュー/マージ（手動で作成）
 - [ ] QA: `docs/TESTING.md` に沿った手動テストの実行とフィードバック反映
 
 ## バックログ（To Do）
-
 - [ ] feat(P1): 同期アルゴリズムの改善（基準選択/ドリフト補正/遅延対策）
   - 受け入れ基準:
     - 指定した基準プレイヤーに対し、他プレイヤーの時刻差が許容範囲（例: ±0.3s）に収まる
     - バッファリング/広告発生時のフォールバック動作を定義し、同期崩れを自動復帰
     - 閾値・同期頻度を設定化（UI もしくは定数）
-
 - [ ] feat(P1): 永続化の改善（localStorage フォールバック）
   - 受け入れ基準:
     - `chrome.storage` が無い環境でも、追加済み動画と音量設定がブラウザ再読込で復元される

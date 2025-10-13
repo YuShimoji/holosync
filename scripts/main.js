@@ -18,7 +18,29 @@
 
   /** @type {{iframe: HTMLIFrameElement, id: string}[]} */
   const videos = [];
+  /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
+  const playerStates = new Map();
+  /** @type {Map<Window, {since: number, reason: string}>} */
+  const suspendedPlayers = new Map();
   let isRestoring = false;
+
+  const YT_ORIGIN = 'https://www.youtube.com';
+  const ALLOWED_COMMANDS = new Set([
+    'playVideo',
+    'pauseVideo',
+    'mute',
+    'unMute',
+    'setVolume',
+    'seekTo',
+  ]);
+  const SYNC_SETTINGS = {
+    toleranceMs: 300,
+    probeIntervalMs: 500,
+    stallThresholdMs: 2500,
+    rejoinSyncBufferMs: 500,
+    leaderMode: 'first', // 'first' | 'manual'
+    leaderId: null,
+  };
 
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
@@ -109,19 +131,209 @@
     gridEl.appendChild(tile);
 
     videos.push({ iframe, id: videoId });
+    initializeSyncForIframe(iframe);
 
     if (!isRestoring) {
       persistVideos();
     }
   }
 
+  function initializeSyncForIframe(iframe) {
+    const triggerSnapshot = () => {
+      const win = iframe.contentWindow;
+      if (win) {
+        requestPlayerSnapshot(win);
+      }
+    };
+    iframe.addEventListener('load', () => setTimeout(triggerSnapshot, 200), { once: true });
+    setTimeout(triggerSnapshot, 600);
+  }
+
+  function trackPlayerState(win, info) {
+    const record = playerStates.get(win) || {};
+    if (typeof info.currentTime === 'number') {
+      record.time = info.currentTime;
+    }
+    if (typeof info.playerState === 'number') {
+      record.state = info.playerState;
+    }
+    record.lastUpdate = Date.now();
+    playerStates.set(win, record);
+  }
+
+  function getSuspensionReason(record, now) {
+    if (!record) {
+      return 'no-state';
+    }
+    if (typeof record.state === 'number') {
+      if (record.state === 3) {
+        return 'buffering';
+      }
+      if (record.state === 2) {
+        return 'paused';
+      }
+      if (record.state >= 100) {
+        return 'ad';
+      }
+    }
+    if (!record.lastUpdate || now - record.lastUpdate > SYNC_SETTINGS.stallThresholdMs) {
+      return 'stalled';
+    }
+    if (typeof record.time !== 'number') {
+      return 'no-time';
+    }
+    return null;
+  }
+
+  function pickLeader(activeEntries) {
+    if (SYNC_SETTINGS.leaderMode === 'manual' && SYNC_SETTINGS.leaderId) {
+      const manual = activeEntries.find((entry) => entry.v.id === SYNC_SETTINGS.leaderId);
+      if (manual && typeof manual.rec?.time === 'number' && manual.rec.state === 1) {
+        return manual;
+      }
+    }
+    for (const entry of activeEntries) {
+      if (typeof entry.rec?.time === 'number' && entry.rec.state === 1) {
+        return entry;
+      }
+    }
+    for (const entry of activeEntries) {
+      if (typeof entry.rec?.time === 'number') {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  function reconcile() {
+    try {
+      if (!videos.length) {
+        return;
+      }
+      const now = Date.now();
+      const activeEntries = [];
+      const rejoinQueue = [];
+
+      for (const v of videos) {
+        const win = v.iframe?.contentWindow;
+        if (!win) {
+          continue;
+        }
+        const record = playerStates.get(win);
+        const suspension = getSuspensionReason(record, now);
+        if (suspension) {
+          const previous = suspendedPlayers.get(win);
+          if (!previous || previous.reason !== suspension) {
+            suspendedPlayers.set(win, { since: now, reason: suspension });
+          }
+          continue;
+        }
+        if (suspendedPlayers.has(win)) {
+          suspendedPlayers.delete(win);
+          rejoinQueue.push({ v, rec: record, win });
+        }
+        activeEntries.push({ v, rec: record, win });
+      }
+
+      const leaderEntry = pickLeader(activeEntries);
+      if (!leaderEntry) {
+        return;
+      }
+      const leaderRecord = leaderEntry.rec;
+      if (!leaderRecord || typeof leaderRecord.time !== 'number') {
+        return;
+      }
+      const toleranceSeconds = SYNC_SETTINGS.toleranceMs / 1000;
+      const leaderPlaying = leaderRecord.state === 1;
+
+      for (const entry of activeEntries) {
+        if (entry.v === leaderEntry.v) {
+          continue;
+        }
+        const record = entry.rec;
+        if (!record || typeof record.time !== 'number') {
+          continue;
+        }
+        const drift = record.time - leaderRecord.time;
+        if (Math.abs(drift) > toleranceSeconds) {
+          sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
+        }
+        const isPlaying = record.state === 1;
+        if (leaderPlaying && !isPlaying) {
+          sendCommand(entry.v.iframe, 'playVideo');
+        } else if (!leaderPlaying && isPlaying) {
+          sendCommand(entry.v.iframe, 'pauseVideo');
+        }
+      }
+
+      const rejoinToleranceSeconds =
+        (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
+      for (const entry of rejoinQueue) {
+        const record = entry.rec;
+        if (!record || typeof record.time !== 'number') {
+          continue;
+        }
+        const drift = record.time - leaderRecord.time;
+        if (Math.abs(drift) > rejoinToleranceSeconds) {
+          sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
+        }
+        if (leaderPlaying) {
+          sendCommand(entry.v.iframe, 'playVideo');
+        } else if (record.state === 1) {
+          sendCommand(entry.v.iframe, 'pauseVideo');
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  setInterval(reconcile, SYNC_SETTINGS.probeIntervalMs);
+
+  function sanitizeArgs(func, args) {
+    if (!Array.isArray(args)) {
+      return [];
+    }
+    if (func === 'setVolume') {
+      const v = parseInt(args[0], 10);
+      if (Number.isFinite(v)) {
+        const clamped = Math.max(0, Math.min(100, v));
+        return [clamped];
+      }
+      return [50];
+    }
+    if (func === 'seekTo') {
+      const t = Number(args?.[0]);
+      const seconds = Number.isFinite(t) ? Math.max(0, t) : 0;
+      return [seconds, true];
+    }
+    return [];
+  }
+
   function sendCommand(iframe, func, args = []) {
+    if (!ALLOWED_COMMANDS.has(func)) {
+      return;
+    }
     const win = iframe.contentWindow;
     if (!win) {
       return;
     }
-    const message = JSON.stringify({ event: 'command', func, args });
-    win.postMessage(message, 'https://www.youtube.com');
+    const safeArgs = sanitizeArgs(func, args);
+    const message = JSON.stringify({ event: 'command', func, args: safeArgs });
+    win.postMessage(message, YT_ORIGIN);
+  }
+
+  function requestPlayerSnapshot(win) {
+    try {
+      win.postMessage(JSON.stringify({ event: 'listening' }), YT_ORIGIN);
+      const commands = [
+        { event: 'command', func: 'getPlayerState', args: [] },
+        { event: 'command', func: 'getCurrentTime', args: [] },
+      ];
+      commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), YT_ORIGIN));
+    } catch (_) {
+      // ignore
+    }
   }
 
   function playAll() {
@@ -198,4 +410,30 @@
   } catch (_) {
     // ignore
   }
+
+  window.addEventListener('message', (event) => {
+    try {
+      if (event.origin !== YT_ORIGIN) {
+        return;
+      }
+      let payload = event.data;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch (_) {
+          return;
+        }
+      }
+      if (!payload || typeof payload !== 'object') {
+        return;
+      }
+      if (payload.event !== 'infoDelivery' || typeof payload.info !== 'object') {
+        return;
+      }
+      const sourceWin = /** @type {Window} */ (event.source);
+      trackPlayerState(sourceWin, payload.info);
+    } catch (_) {
+      // ignore
+    }
+  });
 })();
