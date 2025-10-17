@@ -182,9 +182,13 @@
   // --- Sync Phase2: basic drift reconcile (seekTo + play/pause) ---
   const SYNC_SETTINGS = {
     toleranceMs: 300,
+    recoveryToleranceMs: 500,
     probeIntervalMs: 500,
     leaderMode: 'first', // 'first' | 'manual'
     leaderId: null,
+    bufferGraceMs: 1500,
+    seekCooldownMs: 800,
+    staleThresholdMs: 2000,
   };
 
   function pickLeader() {
@@ -223,20 +227,55 @@
       if (!leaderRec || typeof leaderRec.time !== 'number') {
         return;
       }
-      const tolSec = SYNC_SETTINGS.toleranceMs / 1000;
+      const baseTolSec = SYNC_SETTINGS.toleranceMs / 1000;
+      const recoveryTolSec = SYNC_SETTINGS.recoveryToleranceMs / 1000;
+      const now = Date.now();
       const leaderPlaying = leaderRec.state === 1; // YT: 1=playing
 
       for (const v of videos) {
-        if (v === leader.v) {
+        const win = v.iframe.contentWindow;
+        if (!win) {
           continue;
         }
-        const rec = playerStates.get(v.iframe.contentWindow);
+        const rec = playerStates.get(win);
         if (!rec || typeof rec.time !== 'number') {
           continue;
         }
+
+        if (rec.state === 2) {
+          if (!rec.bufferingSince) {
+            rec.bufferingSince = now;
+          }
+        } else {
+          rec.bufferingSince = undefined;
+        }
+
+        const lastUpdate = rec.lastUpdate || 0;
+        const stale = !lastUpdate || now - lastUpdate > SYNC_SETTINGS.staleThresholdMs;
+        const buffering = !!(
+          rec.bufferingSince && now - rec.bufferingSince < SYNC_SETTINGS.bufferGraceMs
+        );
+        const inCooldown = !!(
+          rec.lastSeekAt && now - rec.lastSeekAt < SYNC_SETTINGS.seekCooldownMs
+        );
+
+        if (v === leader.v) {
+          rec.pendingSeek = undefined;
+          playerStates.set(win, rec);
+          continue;
+        }
         const drift = rec.time - leaderRec.time;
-        if (Math.abs(drift) > tolSec) {
-          sendCommand(v.iframe, 'seekTo', [leaderRec.time, true]);
+        const toleranceSec = rec.pendingSeek || buffering ? recoveryTolSec : baseTolSec;
+        if (Math.abs(drift) > toleranceSec) {
+          if (buffering || stale || inCooldown) {
+            rec.pendingSeek = true;
+          } else {
+            sendCommand(v.iframe, 'seekTo', [leaderRec.time, true]);
+            rec.lastSeekAt = now;
+            rec.pendingSeek = undefined;
+          }
+        } else {
+          rec.pendingSeek = undefined;
         }
         const isPlaying = rec.state === 1;
         if (leaderPlaying && !isPlaying) {
@@ -244,6 +283,8 @@
         } else if (!leaderPlaying && isPlaying) {
           sendCommand(v.iframe, 'pauseVideo');
         }
+
+        playerStates.set(win, rec);
       }
     } catch (_) {
       // ignore
