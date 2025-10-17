@@ -2,6 +2,7 @@
 *.log
 .git-*.log
 .push.log
+server.log
 
 # OS
 .DS_Store
