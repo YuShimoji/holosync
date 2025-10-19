@@ -23,6 +23,27 @@
         <div id="addError" class="error" hidden></div>
       </section>
 
+      <section class="section search-panel">
+        <h2>動画検索</h2>
+        <div class="api-key-section">
+          <label for="apiKeyInput">YouTube API Key:</label>
+          <input id="apiKeyInput" type="password" placeholder="APIキーを入力" />
+        </div>
+        <form id="searchForm" class="search-form">
+          <input id="searchInput" type="text" placeholder="キーワードで検索" required />
+          <button type="submit" class="primary">検索</button>
+        </form>
+        <ul id="searchResults" class="search-results" hidden></ul>
+        <div id="searchError" class="error" hidden></div>
+      </section>
+
+      <section class="section preset-panel">
+        <h2>プリセット</h2>
+        <button id="savePresetBtn">現在のセットを保存</button>
+        <input id="presetNameInput" type="text" placeholder="プリセット名" />
+        <ul id="presetList" class="preset-list"></ul>
+      </section>
+
       <section class="section">
         <h2>一括操作</h2>
         <div class="controls">
@@ -48,6 +69,7 @@
       <div id="grid" class="grid" aria-live="polite"></div>
     </main>
 
+    <script src="scripts/storage.js"></script>
     <script src="scripts/main.js"></script>
   </body>
 </html>

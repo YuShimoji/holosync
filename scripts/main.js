@@ -9,6 +9,17 @@
   const urlInput = document.getElementById('urlInput');
   const addError = document.getElementById('addError');
 
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+  const searchError = document.getElementById('searchError');
+
+  const apiKeyInput = document.getElementById('apiKeyInput');
+
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const presetNameInput = document.getElementById('presetNameInput');
+  const presetList = document.getElementById('presetList');
+
   const playAllBtn = document.getElementById('playAll');
   const pauseAllBtn = document.getElementById('pauseAll');
   const muteAllBtn = document.getElementById('muteAll');
@@ -48,20 +59,11 @@
 
   function persistVideos() {
     const ids = videos.map((v) => v.id);
-    try {
-      // Persist only if available (e.g., some browsers/extensions)
-      window.chrome?.storage?.local?.set({ videos: ids });
-    } catch (_) {
-      // ignore if storage is unavailable
-    }
+    window.storageAdapter.setItem('videos', ids);
   }
 
   function persistVolume(val) {
-    try {
-      window.chrome?.storage?.local?.set({ volume: val });
-    } catch (_) {
-      // ignore
-    }
+    window.storageAdapter.setItem('volume', val);
   }
 
   function parseYouTubeId(input) {
@@ -389,15 +391,17 @@
     persistVolume(val);
   });
 
-  try {
-    window.chrome?.storage?.local?.get({ videos: [], volume: 50 }, (data) => {
-      const vol = parseInt(data.volume, 10);
+  async function initializeApp() {
+    try {
+      const videosData = (await window.storageAdapter.getItem('videos')) || [];
+      const volumeData = (await window.storageAdapter.getItem('volume')) || 50;
+      const vol = parseInt(volumeData, 10);
       if (!Number.isNaN(vol)) {
         volumeAll.value = String(vol);
         volumeVal.textContent = String(vol);
       }
       isRestoring = true;
-      (data.videos || []).forEach((vid) => {
+      (videosData || []).forEach((vid) => {
         if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
           createTile(vid);
         }
@@ -406,9 +410,161 @@
       if (!Number.isNaN(vol)) {
         setVolumeAll(vol);
       }
+    } catch (error) {
+      console.warn('Failed to restore from storage:', error);
+    }
+  }
+
+  // Search functions
+  async function searchYouTube(query) {
+    if (!window.YOUTUBE_API_KEY) {
+      throw new Error('YouTube API key not set. Please enter it in the search section.');
+    }
+
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${window.YOUTUBE_API_KEY}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.items.map((item) => ({
+        id: item.id.videoId,
+        title: item.snippet.title,
+        channel: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails.default.url,
+        duration: 'Unknown', // Would need another API call for duration
+      }));
+    } catch (error) {
+      console.error('Search failed:', error);
+      throw error;
+    }
+  }
+
+  function displaySearchResults(results) {
+    searchResults.innerHTML = '';
+    results.forEach((result) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <img src="${result.thumbnailUrl}" alt="Thumbnail">
+        <div>
+          <div class="title">${result.title}</div>
+          <div class="channel">${result.channel}</div>
+        </div>
+      `;
+      li.addEventListener('click', () => {
+        if (!hasVideo(result.id)) {
+          createTile(result.id);
+          searchResults.hidden = true;
+          searchInput.value = '';
+        }
+      });
+      searchResults.appendChild(li);
     });
-  } catch (_) {
-    // ignore
+    searchResults.hidden = false;
+  }
+
+  // Preset functions
+  async function saveCurrentPreset(name) {
+    if (!name.trim()) {
+      alert('プリセット名を入力してください。');
+      return;
+    }
+    const videoIds = videos.map((v) => v.id);
+    if (videoIds.length === 0) {
+      alert('保存する動画がありません。');
+      return;
+    }
+
+    try {
+      await window.storageAdapter.savePreset(name, videoIds);
+      presetNameInput.value = '';
+      loadPresets();
+      alert('プリセットを保存しました。');
+    } catch (error) {
+      console.error('Save preset failed:', error);
+      alert('プリセット保存に失敗しました。');
+    }
+  }
+
+  async function loadPresets() {
+    try {
+      const presets = await window.storageAdapter.loadPresets();
+      presetList.innerHTML = '';
+      presets.forEach((preset) => {
+        const li = document.createElement('li');
+        li.textContent = preset.name;
+        li.addEventListener('click', () => loadPreset(preset.name));
+        presetList.appendChild(li);
+      });
+    } catch (error) {
+      console.error('Load presets failed:', error);
+    }
+  }
+
+  async function loadPreset(name) {
+    try {
+      const preset = await window.storageAdapter.loadPreset(name);
+      if (!preset) {
+        return;
+      }
+
+      // Clear current videos
+      videos.forEach((v) => v.iframe.remove());
+      videos.length = 0;
+
+      // Load preset videos
+      preset.videoIds.forEach((id) => {
+        if (!hasVideo(id)) {
+          createTile(id);
+        }
+      });
+
+      alert(`プリセット "${name}" を読み込みました。`);
+    } catch (error) {
+      console.error('Load preset failed:', error);
+      alert('プリセット読み込みに失敗しました。');
+    }
+  }
+
+  // Event listeners for search and presets
+  apiKeyInput.addEventListener('input', () => {
+    window.YOUTUBE_API_KEY = apiKeyInput.value.trim() || null;
+    window.storageAdapter.setItem('youtubeApiKey', window.YOUTUBE_API_KEY);
+  });
+
+  searchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    searchError.hidden = true;
+    const query = searchInput.value.trim();
+    if (!query) {
+      return;
+    }
+
+    try {
+      const results = await searchYouTube(query);
+      displaySearchResults(results);
+      await window.storageAdapter.saveSearchHistory(query);
+    } catch (error) {
+      searchError.textContent = error.message;
+      searchError.hidden = false;
+    }
+  });
+
+  savePresetBtn.addEventListener('click', () => {
+    const name = presetNameInput.value.trim();
+    saveCurrentPreset(name);
+  });
+
+  // Initialize presets on load
+  async function initializeFeatures() {
+    const savedApiKey = await window.storageAdapter.getItem('youtubeApiKey');
+    if (savedApiKey) {
+      window.YOUTUBE_API_KEY = savedApiKey;
+      apiKeyInput.value = savedApiKey;
+    }
+    await loadPresets();
   }
 
   window.addEventListener('message', (event) => {
@@ -436,4 +592,8 @@
       // ignore
     }
   });
+
+  // Initialize app
+  initializeApp();
+  initializeFeatures();
 })();
