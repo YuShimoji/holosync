@@ -55,9 +55,5 @@
 - Doxygen 設定: `Doxyfile`（`README.md` ベース、`docs/html` 出力）
 
 ## ライセンス
-<<<<<<< HEAD
 
-TBD
-=======
-- TBD
->>>>>>> main
+TBD（選定中）
