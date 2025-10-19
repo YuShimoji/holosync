@@ -21,14 +21,13 @@
   - `scripts/creativity-booster.js` など中央ルール準拠の補助スクリプトが未整備
   - AI機能導入に伴うAPIキー管理とコスト試算が未着手
 
-## Next Steps
+## Log: Phase Alpha implementation completed
 
-- Phase3 tolerance:
-  - Chrome/Firefox で `docs/TESTING.md` ケース12を実施し、許容差(±0.3s)復帰を記録
-  - 広告挿入テスト時は非プレミアムアカウントで復帰時間を秒数記録
-  - Issue #16 へ結果報告後、Conventional Commit → push → PR（Auto-Merge設定）
-- Roadmap follow-up:
-  - フェーズαの実装案選定（YouTube Data API vs OEmbed vs 履歴サジェスト）と試作タスク化
-  - レイアウトプリセットUIのプロトタイプ設計（CSS Grid切替案を優先検証）
-  - 自動編集機能のPoCスコープ定義（字幕装飾・チャプター生成のAPI比較、コスト試算）
-  - `AI_CONTEXT.md` に進捗を継続記録し、`docs/ISSUES.md` と整合させる
+- 実装完了:
+  - ストレージ抽象化レイヤー (scripts/storage.js): chrome.storage/localStorage/URLフォールバック。
+  - YouTube検索UI: APIキー入力、検索フォーム、結果表示。
+  - プリセット機能: 保存/読込、リスト管理。
+  - UI更新: サイドバー拡張、CSS追加。
+- 技術選択: YouTube Data API 主軸、オプションB/Cフォールバック。
+- テスト: lint/format成功、機能実装完了。
+- 次のステップ: フェーズβ（レイアウトプリセット）準備。
