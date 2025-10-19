@@ -32,6 +32,10 @@
     {
       "files": ["**/*.test.js"],
       "env": { "jest": true }
+    },
+    {
+      "files": ["scripts/detect-project-type.js"],
+      "env": { "node": true }
     }
   ]
 }
