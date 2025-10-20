@@ -18,7 +18,8 @@
     "sourceType": "script"
   },
   "globals": {
-    "YT": "readonly"
+    "YT": "readonly",
+    "chrome": "readonly"
   },
   "rules": {
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
@@ -32,6 +33,10 @@
     {
       "files": ["**/*.test.js"],
       "env": { "jest": true }
+    },
+    {
+      "files": ["scripts/detect-project-type.js"],
+      "env": { "node": true }
     }
   ]
 }

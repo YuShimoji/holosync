@@ -140,3 +140,73 @@ button:hover {
 button:active {
   filter: brightness(0.94);
 }
+
+/* Search styles */
+.search-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.search-form input {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.search-form button {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.search-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.search-results li {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.search-results li:hover {
+  background: #f9f9f9;
+}
+.search-results img {
+  width: 80px;
+  height: 45px;
+  object-fit: cover;
+  margin-right: 8px;
+}
+.search-results .title {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.search-results .channel {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Preset styles */
+.preset-panel input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.preset-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.preset-list li {
+  padding: 6px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  font-size: 12px;
+}
+.preset-list li:hover {
+  background: #f9f9f9;
+}

@@ -9,6 +9,17 @@
   const urlInput = document.getElementById('urlInput');
   const addError = document.getElementById('addError');
 
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+  const searchError = document.getElementById('searchError');
+
+  const apiKeyInput = document.getElementById('apiKeyInput');
+
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const presetNameInput = document.getElementById('presetNameInput');
+  const presetList = document.getElementById('presetList');
+
   const playAllBtn = document.getElementById('playAll');
   const pauseAllBtn = document.getElementById('pauseAll');
   const muteAllBtn = document.getElementById('muteAll');
@@ -18,6 +29,10 @@
 
   /** @type {{iframe: HTMLIFrameElement, id: string}[]} */
   const videos = [];
+  /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
+  const playerStates = new Map();
+  /** @type {Map<Window, {since: number, reason: string}>} */
+  const suspendedPlayers = new Map();
   let isRestoring = false;
 
   // Security hardening for postMessage sender to YouTube IFrame API
@@ -30,238 +45,25 @@
     'setVolume',
     'seekTo',
   ]);
-
-  function sanitizeArgs(func, args) {
-    if (!Array.isArray(args)) {
-      return [];
-    }
-    if (func === 'setVolume') {
-      const v = parseInt(args[0], 10);
-      if (Number.isFinite(v)) {
-        const clamped = Math.max(0, Math.min(100, v));
-        return [clamped];
-      }
-      return [50];
-    }
-    if (func === 'seekTo') {
-      const t = Number(args?.[0]);
-      const seconds = Number.isFinite(t) ? Math.max(0, t) : 0;
-      // allowSeekAhead=true for quicker convergence
-      return [seconds, true];
-    }
-    return [];
-  }
-
-  // Storage abstraction: prefer chrome.storage, fallback to localStorage
-  function hasChromeStorage() {
-    try {
-      const ls = window.chrome?.storage?.local;
-      return !!(ls && typeof ls.get === 'function' && typeof ls.set === 'function');
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function storageGet(defaults, cb) {
-    try {
-      if (hasChromeStorage()) {
-        window.chrome.storage.local.get(defaults, (data) => {
-          try {
-            cb(data || defaults);
-          } catch (_) {
-            cb(defaults);
-          }
-        });
-        return;
-      }
-      if (typeof localStorage !== 'undefined') {
-        const result = { ...defaults };
-        for (const key of Object.keys(defaults)) {
-          const raw = localStorage.getItem(`hs_${key}`);
-          if (raw !== null) {
-            try {
-              result[key] = JSON.parse(raw);
-            } catch (_) {
-              result[key] = raw;
-            }
-          }
-        }
-        cb(result);
-        return;
-      }
-      cb(defaults);
-    } catch (_) {
-      cb(defaults);
-    }
-  }
-
-  function storageSet(obj) {
-    try {
-      if (hasChromeStorage()) {
-        window.chrome.storage.local.set(obj);
-        return;
-      }
-      if (typeof localStorage !== 'undefined') {
-        for (const [k, v] of Object.entries(obj)) {
-          try {
-            localStorage.setItem(`hs_${k}`, JSON.stringify(v));
-          } catch (_) {
-            // ignore serialization errors
-          }
-        }
-      }
-    } catch (_) {
-      // ignore
-    }
-  }
-
-  // --- Sync Phase1: receive-side state collection ---
-  /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
-  const playerStates = new Map();
-
-  function initIframe(iframe) {
-    function ping() {
-      try {
-        const win = iframe.contentWindow;
-        if (!win) {
-          return;
-        }
-        // Enable infoDelivery messages and request initial snapshot
-        win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
-        const cmds = [
-          { event: 'command', func: 'getPlayerState', args: [] },
-          { event: 'command', func: 'getCurrentTime', args: [] },
-        ];
-        cmds.forEach((m) => win.postMessage(JSON.stringify(m), ALLOWED_ORIGIN));
-      } catch (_) {
-        // ignore
-      }
-    }
-    // Try after load, and also fallback shortly after in case load already fired
-    iframe.addEventListener('load', () => setTimeout(ping, 200), { once: true });
-    setTimeout(ping, 600);
-  }
-
-  function onMessage(ev) {
-    try {
-      if (ev.origin !== ALLOWED_ORIGIN) {
-        return;
-      }
-      let payload = ev.data;
-      if (typeof payload === 'string') {
-        try {
-          payload = JSON.parse(payload);
-        } catch (_) {
-          return;
-        }
-      }
-      if (!payload || typeof payload !== 'object') {
-        return;
-      }
-      if (payload.event !== 'infoDelivery' || !payload.info || typeof payload.info !== 'object') {
-        return;
-      }
-      const info = payload.info;
-      const src = /** @type {Window} */ (ev.source);
-      const rec = playerStates.get(src) || {};
-      if (typeof info.currentTime === 'number') {
-        rec.time = info.currentTime;
-      }
-      if (typeof info.playerState !== 'undefined') {
-        rec.state = info.playerState;
-      }
-      rec.lastUpdate = Date.now();
-      playerStates.set(src, rec);
-    } catch (_) {
-      // ignore
-    }
-  }
-
-  window.addEventListener('message', onMessage, false);
-
-  // --- Sync Phase2: basic drift reconcile (seekTo + play/pause) ---
   const SYNC_SETTINGS = {
     toleranceMs: 300,
     probeIntervalMs: 500,
+    stallThresholdMs: 2500,
+    rejoinSyncBufferMs: 500,
     leaderMode: 'first', // 'first' | 'manual'
     leaderId: null,
   };
-
-  function pickLeader() {
-    if (SYNC_SETTINGS.leaderMode === 'manual' && SYNC_SETTINGS.leaderId) {
-      const v = videos.find((x) => x.id === SYNC_SETTINGS.leaderId);
-      if (v && v.iframe && v.iframe.contentWindow) {
-        const rec = playerStates.get(v.iframe.contentWindow);
-        if (rec && typeof rec.time === 'number') {
-          return { v, rec };
-        }
-      }
-    }
-    for (const v of videos) {
-      const win = v.iframe?.contentWindow;
-      if (!win) {
-        continue;
-      }
-      const rec = playerStates.get(win);
-      if (rec && typeof rec.time === 'number') {
-        return { v, rec };
-      }
-    }
-    return null;
-  }
-
-  function reconcile() {
-    try {
-      if (!videos.length) {
-        return;
-      }
-      const leader = pickLeader();
-      if (!leader) {
-        return;
-      }
-      const leaderRec = playerStates.get(leader.v.iframe.contentWindow);
-      if (!leaderRec || typeof leaderRec.time !== 'number') {
-        return;
-      }
-      const tolSec = SYNC_SETTINGS.toleranceMs / 1000;
-      const leaderPlaying = leaderRec.state === 1; // YT: 1=playing
-
-      for (const v of videos) {
-        if (v === leader.v) {
-          continue;
-        }
-        const rec = playerStates.get(v.iframe.contentWindow);
-        if (!rec || typeof rec.time !== 'number') {
-          continue;
-        }
-        const drift = rec.time - leaderRec.time;
-        if (Math.abs(drift) > tolSec) {
-          sendCommand(v.iframe, 'seekTo', [leaderRec.time, true]);
-        }
-        const isPlaying = rec.state === 1;
-        if (leaderPlaying && !isPlaying) {
-          sendCommand(v.iframe, 'playVideo');
-        } else if (!leaderPlaying && isPlaying) {
-          sendCommand(v.iframe, 'pauseVideo');
-        }
-      }
-    } catch (_) {
-      // ignore
-    }
-  }
-
-  setInterval(reconcile, SYNC_SETTINGS.probeIntervalMs);
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
 
   function persistVideos() {
     const ids = videos.map((v) => v.id);
-    storageSet({ videos: ids });
+    window.storageAdapter.setItem('videos', ids);
   }
 
   function persistVolume(val) {
-    storageSet({ volume: val });
+    window.storageAdapter.setItem('volume', val);
   }
 
   function parseYouTubeId(input) {
@@ -333,26 +135,208 @@
     gridEl.appendChild(tile);
 
     videos.push({ iframe, id: videoId });
-
-    // Initialize receive-side flow for this iframe
-    initIframe(iframe);
-
+    initializeSyncForIframe(iframe);
     if (!isRestoring) {
       persistVideos();
     }
   }
 
+  function initializeSyncForIframe(iframe) {
+    const triggerSnapshot = () => {
+      const win = iframe.contentWindow;
+      if (win) {
+        requestPlayerSnapshot(win);
+      }
+    };
+    iframe.addEventListener('load', () => setTimeout(triggerSnapshot, 200), { once: true });
+    setTimeout(triggerSnapshot, 600);
+  }
+
+  function trackPlayerState(win, info) {
+    const record = playerStates.get(win) || {};
+    if (typeof info.currentTime === 'number') {
+      record.time = info.currentTime;
+    }
+    if (typeof info.playerState === 'number') {
+      record.state = info.playerState;
+    }
+    record.lastUpdate = Date.now();
+    playerStates.set(win, record);
+  }
+
+  function getSuspensionReason(record, now) {
+    if (!record) {
+      return 'no-state';
+    }
+    if (typeof record.state === 'number') {
+      if (record.state === 3) {
+        return 'buffering';
+      }
+      if (record.state === 2) {
+        return 'paused';
+      }
+      if (record.state >= 100) {
+        return 'ad';
+      }
+    }
+    if (!record.lastUpdate || now - record.lastUpdate > SYNC_SETTINGS.stallThresholdMs) {
+      return 'stalled';
+    }
+    if (typeof record.time !== 'number') {
+      return 'no-time';
+    }
+    return null;
+  }
+
+  function pickLeader(activeEntries) {
+    if (SYNC_SETTINGS.leaderMode === 'manual' && SYNC_SETTINGS.leaderId) {
+      const manual = activeEntries.find((entry) => entry.v.id === SYNC_SETTINGS.leaderId);
+      if (manual && typeof manual.rec?.time === 'number' && manual.rec.state === 1) {
+        return manual;
+      }
+    }
+    for (const entry of activeEntries) {
+      if (typeof entry.rec?.time === 'number' && entry.rec.state === 1) {
+        return entry;
+      }
+    }
+    for (const entry of activeEntries) {
+      if (typeof entry.rec?.time === 'number') {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  function reconcile() {
+    try {
+      if (!videos.length) {
+        return;
+      }
+      const now = Date.now();
+      const activeEntries = [];
+      const rejoinQueue = [];
+
+      for (const v of videos) {
+        const win = v.iframe?.contentWindow;
+        if (!win) {
+          continue;
+        }
+        const record = playerStates.get(win);
+        const suspension = getSuspensionReason(record, now);
+        if (suspension) {
+          const previous = suspendedPlayers.get(win);
+          if (!previous || previous.reason !== suspension) {
+            suspendedPlayers.set(win, { since: now, reason: suspension });
+          }
+          continue;
+        }
+        if (suspendedPlayers.has(win)) {
+          suspendedPlayers.delete(win);
+          rejoinQueue.push({ v, rec: record, win });
+        }
+        activeEntries.push({ v, rec: record, win });
+      }
+
+      const leaderEntry = pickLeader(activeEntries);
+      if (!leaderEntry) {
+        return;
+      }
+      const leaderRecord = leaderEntry.rec;
+      if (!leaderRecord || typeof leaderRecord.time !== 'number') {
+        return;
+      }
+      const toleranceSeconds = SYNC_SETTINGS.toleranceMs / 1000;
+      const leaderPlaying = leaderRecord.state === 1;
+
+      for (const entry of activeEntries) {
+        if (entry.v === leaderEntry.v) {
+          continue;
+        }
+        const record = entry.rec;
+        if (!record || typeof record.time !== 'number') {
+          continue;
+        }
+        const drift = record.time - leaderRecord.time;
+        if (Math.abs(drift) > toleranceSeconds) {
+          sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
+        }
+        const isPlaying = record.state === 1;
+        if (leaderPlaying && !isPlaying) {
+          sendCommand(entry.v.iframe, 'playVideo');
+        } else if (!leaderPlaying && isPlaying) {
+          sendCommand(entry.v.iframe, 'pauseVideo');
+        }
+      }
+
+      const rejoinToleranceSeconds =
+        (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
+      for (const entry of rejoinQueue) {
+        const record = entry.rec;
+        if (!record || typeof record.time !== 'number') {
+          continue;
+        }
+        const drift = record.time - leaderRecord.time;
+        if (Math.abs(drift) > rejoinToleranceSeconds) {
+          sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
+        }
+        if (leaderPlaying) {
+          sendCommand(entry.v.iframe, 'playVideo');
+        } else if (record.state === 1) {
+          sendCommand(entry.v.iframe, 'pauseVideo');
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  setInterval(reconcile, SYNC_SETTINGS.probeIntervalMs);
+
+  function sanitizeArgs(func, args) {
+    if (!Array.isArray(args)) {
+      return [];
+    }
+    if (func === 'setVolume') {
+      const v = parseInt(args[0], 10);
+      if (Number.isFinite(v)) {
+        const clamped = Math.max(0, Math.min(100, v));
+        return [clamped];
+      }
+      return [50];
+    }
+    if (func === 'seekTo') {
+      const t = Number(args?.[0]);
+      const seconds = Number.isFinite(t) ? Math.max(0, t) : 0;
+      return [seconds, true];
+    }
+    return [];
+  }
+
   function sendCommand(iframe, func, args = []) {
-    const win = iframe.contentWindow;
-    if (!win) {
+    if (!ALLOWED_COMMANDS.has(func)) {
       return;
     }
-    if (!ALLOWED_COMMANDS.has(func)) {
+    const win = iframe.contentWindow;
+    if (!win) {
       return;
     }
     const safeArgs = sanitizeArgs(func, args);
     const message = JSON.stringify({ event: 'command', func, args: safeArgs });
     win.postMessage(message, ALLOWED_ORIGIN);
+  }
+
+  function requestPlayerSnapshot(win) {
+    try {
+      win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
+      const commands = [
+        { event: 'command', func: 'getPlayerState', args: [] },
+        { event: 'command', func: 'getCurrentTime', args: [] },
+      ];
+      commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), ALLOWED_ORIGIN));
+    } catch (_) {
+      // ignore
+    }
   }
 
   function playAll() {
@@ -408,15 +392,17 @@
     persistVolume(val);
   });
 
-  try {
-    storageGet({ videos: [], volume: 50 }, (data) => {
-      const vol = parseInt(data.volume, 10);
+  async function initializeApp() {
+    try {
+      const videosData = (await window.storageAdapter.getItem('videos')) || [];
+      const volumeData = (await window.storageAdapter.getItem('volume')) || 50;
+      const vol = parseInt(volumeData, 10);
       if (!Number.isNaN(vol)) {
         volumeAll.value = String(vol);
         volumeVal.textContent = String(vol);
       }
       isRestoring = true;
-      (data.videos || []).forEach((vid) => {
+      (videosData || []).forEach((vid) => {
         if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
           createTile(vid);
         }
@@ -425,8 +411,190 @@
       if (!Number.isNaN(vol)) {
         setVolumeAll(vol);
       }
-    });
-  } catch (_) {
-    // ignore
+    } catch (error) {
+      console.warn('Failed to restore from storage:', error);
+    }
   }
+
+  // Search functions
+  async function searchYouTube(query) {
+    if (!window.YOUTUBE_API_KEY) {
+      throw new Error('YouTube API key not set. Please enter it in the search section.');
+    }
+
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${window.YOUTUBE_API_KEY}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.items.map((item) => ({
+        id: item.id.videoId,
+        title: item.snippet.title,
+        channel: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails.default.url,
+        duration: 'Unknown', // Would need another API call for duration
+      }));
+    } catch (error) {
+      console.error('Search failed:', error);
+      throw error;
+    }
+  }
+
+  function displaySearchResults(results) {
+    searchResults.innerHTML = '';
+    results.forEach((result) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <img src="${result.thumbnailUrl}" alt="Thumbnail">
+        <div>
+          <div class="title">${result.title}</div>
+          <div class="channel">${result.channel}</div>
+        </div>
+      `;
+      li.addEventListener('click', () => {
+        if (!hasVideo(result.id)) {
+          createTile(result.id);
+          searchResults.hidden = true;
+          searchInput.value = '';
+        }
+      });
+      searchResults.appendChild(li);
+    });
+    searchResults.hidden = false;
+  }
+
+  // Preset functions
+  async function saveCurrentPreset(name) {
+    if (!name.trim()) {
+      alert('プリセット名を入力してください。');
+      return;
+    }
+    const videoIds = videos.map((v) => v.id);
+    if (videoIds.length === 0) {
+      alert('保存する動画がありません。');
+      return;
+    }
+
+    try {
+      await window.storageAdapter.savePreset(name, videoIds);
+      presetNameInput.value = '';
+      loadPresets();
+      alert('プリセットを保存しました。');
+    } catch (error) {
+      console.error('Save preset failed:', error);
+      alert('プリセット保存に失敗しました。');
+    }
+  }
+
+  async function loadPresets() {
+    try {
+      const presets = await window.storageAdapter.loadPresets();
+      presetList.innerHTML = '';
+      presets.forEach((preset) => {
+        const li = document.createElement('li');
+        li.textContent = preset.name;
+        li.addEventListener('click', () => loadPreset(preset.name));
+        presetList.appendChild(li);
+      });
+    } catch (error) {
+      console.error('Load presets failed:', error);
+    }
+  }
+
+  async function loadPreset(name) {
+    try {
+      const preset = await window.storageAdapter.loadPreset(name);
+      if (!preset) {
+        return;
+      }
+
+      // Clear current videos
+      videos.forEach((v) => v.iframe.remove());
+      videos.length = 0;
+
+      // Load preset videos
+      preset.videoIds.forEach((id) => {
+        if (!hasVideo(id)) {
+          createTile(id);
+        }
+      });
+
+      alert(`プリセット "${name}" を読み込みました。`);
+    } catch (error) {
+      console.error('Load preset failed:', error);
+      alert('プリセット読み込みに失敗しました。');
+    }
+  }
+
+  // Event listeners for search and presets
+  apiKeyInput.addEventListener('input', () => {
+    window.YOUTUBE_API_KEY = apiKeyInput.value.trim() || null;
+    window.storageAdapter.setItem('youtubeApiKey', window.YOUTUBE_API_KEY);
+  });
+
+  searchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    searchError.hidden = true;
+    const query = searchInput.value.trim();
+    if (!query) {
+      return;
+    }
+
+    try {
+      const results = await searchYouTube(query);
+      displaySearchResults(results);
+      await window.storageAdapter.saveSearchHistory(query);
+    } catch (error) {
+      searchError.textContent = error.message;
+      searchError.hidden = false;
+    }
+  });
+
+  savePresetBtn.addEventListener('click', () => {
+    const name = presetNameInput.value.trim();
+    saveCurrentPreset(name);
+  });
+
+  // Initialize presets on load
+  async function initializeFeatures() {
+    const savedApiKey = await window.storageAdapter.getItem('youtubeApiKey');
+    if (savedApiKey) {
+      window.YOUTUBE_API_KEY = savedApiKey;
+      apiKeyInput.value = savedApiKey;
+    }
+    await loadPresets();
+  }
+
+  window.addEventListener('message', (event) => {
+    try {
+      if (event.origin !== ALLOWED_ORIGIN) {
+        return;
+      }
+      let payload = event.data;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch (_) {
+          return;
+        }
+      }
+      if (!payload || typeof payload !== 'object') {
+        return;
+      }
+      if (payload.event !== 'infoDelivery' || typeof payload.info !== 'object') {
+        return;
+      }
+      const sourceWin = /** @type {Window} */ (event.source);
+      trackPlayerState(sourceWin, payload.info);
+    } catch (_) {
+      // ignore
+    }
+  });
+
+  // Initialize app
+  initializeApp();
+  initializeFeatures();
 })();
