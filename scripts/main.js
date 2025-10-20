@@ -35,7 +35,8 @@
   const suspendedPlayers = new Map();
   let isRestoring = false;
 
-  const YT_ORIGIN = 'https://www.youtube.com';
+  // Security hardening for postMessage sender to YouTube IFrame API
+  const ALLOWED_ORIGIN = 'https://www.youtube.com';
   const ALLOWED_COMMANDS = new Set([
     'playVideo',
     'pauseVideo',
@@ -52,7 +53,6 @@
     leaderMode: 'first', // 'first' | 'manual'
     leaderId: null,
   };
-
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
@@ -124,6 +124,8 @@
     const iframe = document.createElement('iframe');
     iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&playsinline=1&mute=1`;
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+    iframe.loading = 'lazy';
+    iframe.setAttribute('referrerpolicy', 'origin');
     iframe.setAttribute('allowfullscreen', '');
     iframe.title = `YouTube video ${videoId}`;
 
@@ -134,7 +136,6 @@
 
     videos.push({ iframe, id: videoId });
     initializeSyncForIframe(iframe);
-
     if (!isRestoring) {
       persistVideos();
     }
@@ -322,17 +323,17 @@
     }
     const safeArgs = sanitizeArgs(func, args);
     const message = JSON.stringify({ event: 'command', func, args: safeArgs });
-    win.postMessage(message, YT_ORIGIN);
+    win.postMessage(message, ALLOWED_ORIGIN);
   }
 
   function requestPlayerSnapshot(win) {
     try {
-      win.postMessage(JSON.stringify({ event: 'listening' }), YT_ORIGIN);
+      win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
       const commands = [
         { event: 'command', func: 'getPlayerState', args: [] },
         { event: 'command', func: 'getCurrentTime', args: [] },
       ];
-      commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), YT_ORIGIN));
+      commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), ALLOWED_ORIGIN));
     } catch (_) {
       // ignore
     }
@@ -569,7 +570,7 @@
 
   window.addEventListener('message', (event) => {
     try {
-      if (event.origin !== YT_ORIGIN) {
+      if (event.origin !== ALLOWED_ORIGIN) {
         return;
       }
       let payload = event.data;
