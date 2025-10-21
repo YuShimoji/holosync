@@ -5,15 +5,28 @@
 
 class StorageAdapter {
   constructor() {
-    this.storageTypes = ['chrome', 'local', 'url'];
+    this.storageTypes = ['chrome', 'indexeddb', 'local', 'url'];
     this.currentStorage = this.detectStorage();
+    this.dbName = 'HoloSyncDB';
+    this.dbVersion = 1;
   }
 
   detectStorage() {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       return 'chrome';
     }
+    if (this.isIndexedDBSupported()) {
+      return 'indexeddb';
+    }
     return 'local';
+  }
+
+  isIndexedDBSupported() {
+    try {
+      return !!(window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB);
+    } catch (e) {
+      return false;
+    }
   }
 
   async setItem(key, value) {
@@ -22,6 +35,9 @@ class StorageAdapter {
       switch (this.currentStorage) {
         case 'chrome':
           await this.setChromeStorage(key, data);
+          break;
+        case 'indexeddb':
+          await this.setIndexedDB(key, data);
           break;
         case 'local':
           this.setLocalStorage(key, data);
@@ -42,6 +58,8 @@ class StorageAdapter {
       switch (this.currentStorage) {
         case 'chrome':
           return await this.getChromeStorage(key);
+        case 'indexeddb':
+          return await this.getIndexedDB(key);
         case 'local':
           return this.getLocalStorage(key);
         case 'url':
@@ -65,16 +83,45 @@ class StorageAdapter {
     });
   }
 
-  async getChromeStorage(key) {
+  async openDB() {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get([key], (result) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          const data = result[key];
-          resolve(data ? data.value : null);
+      const request = indexedDB.open(this.dbName, this.dbVersion);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('keyValueStore')) {
+          db.createObjectStore('keyValueStore');
         }
-      });
+      };
+    });
+  }
+
+  async setIndexedDB(key, data) {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['keyValueStore'], 'readwrite');
+      const store = transaction.objectStore('keyValueStore');
+      const request = store.put(data, key);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  async getIndexedDB(key) {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['keyValueStore'], 'readonly');
+      const store = transaction.objectStore('keyValueStore');
+      const request = store.get(key);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const data = request.result;
+        resolve(data ? data.value : null);
+      };
     });
   }
 
@@ -100,21 +147,33 @@ class StorageAdapter {
   }
 
   setUrlParameter(key, value) {
-    // For presets, encode video IDs in URL
+    // Encode various data types in URL parameters
     const url = new URL(window.location);
-    if (key === 'preset') {
+    if (key === 'videos') {
+      // Array of video IDs
       url.searchParams.set('videos', value.join(','));
+    } else if (key === 'volume') {
+      // Volume number
+      url.searchParams.set('volume', value.toString());
+    } else if (key === 'preset') {
+      // For preset sharing, encode video IDs
+      url.searchParams.set('preset', value.join(','));
     }
     window.history.replaceState(null, '', url.toString());
   }
 
   getUrlParameter(key) {
     const url = new URL(window.location);
-    if (key === 'preset') {
-      const videos = url.searchParams.get('videos');
-      return videos ? videos.split(',') : null;
+    const param = url.searchParams.get(key);
+    if (!param) return null;
+
+    if (key === 'videos' || key === 'preset') {
+      return param.split(',').filter(id => id.length === 11); // Filter valid YouTube IDs
+    } else if (key === 'volume') {
+      const vol = parseInt(param, 10);
+      return Number.isFinite(vol) ? vol : null;
     }
-    return null;
+    return param;
   }
 
   async fallbackSet(key, value) {

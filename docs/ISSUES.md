@@ -28,24 +28,28 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
 
 ## バックログ（To Do）
 
-- [ ] feat(P1): 同期アルゴリズムの改善（基準選択/ドリフト補正/遅延対策）
+- [x] feat(P1): 同期アルゴリズムの改善（基準選択/ドリフト補正/遅延対策）
   - 受け入れ基準:
     - 指定した基準プレイヤーに対し、他プレイヤーの時刻差が許容範囲（例: ±0.3s）に収まる
     - バッファリング/広告発生時のフォールバック動作を定義し、同期崩れを自動復帰
     - 閾値・同期頻度を設定化（UI もしくは定数）
+  - 実装: pickLeaderにlongest-playing/least-bufferedモード追加。SYNC_SETTINGSにtolerance/syncFrequency設定追加。UIに同期設定セクション追加。
 
-- [ ] feat(P1): 自動回復/リトライ強化（ロード失敗/広告/バッファリング）
+- [x] feat(P1): 自動回復/リトライ強化（ロード失敗/広告/バッファリング）
   - 受け入れ基準:
     - プレイヤーのエラー/停止を検知し自動で再読み込み/再同期
     - フォールバック手順（ミュート継続/一時停止/追いかけ再生）を設定可能
+  - 実装: getSuspensionReason拡張、attemptRecovery関数追加、reconcileに自動回復統合。UIに回復設定セクション追加。
 
-- [ ] chore(P1): 同期デバッグパネル（内部状態可視化）
+- [x] chore(P1): 同期デバッグパネル（内部状態可視化）
   - 受け入れ基準:
     - `playerStates` の `time/state/lastUpdate/lastSeekAt` を一覧表示する開発者向けパネルをトグル表示
     - 表示/非表示切替と自動更新に対応
+  - 実装: index.htmlにUI追加、scripts/main.jsにロジック追加、styles/main.cssにスタイル追加。1秒間隔で自動更新。
 
-- [ ] feat(P1): 永続化の改善（localStorage/IndexedDB/URL共有）
+- [x] feat(P1): 永続化の改善（localStorage/IndexedDB/URL共有）
   - 受け入れ基準: `chrome.storage` 非対応環境でも動画セット/音量を復元。
+  - 実装: storage.jsにIndexedDBサポート追加（優先順位: chrome > IndexedDB > localStorage > URL）。initializeAppでURLパラメータ復元に対応。
 
 - [ ] feat(P2): レイアウトカスタマイズ（プリセット/編集/ドラッグ並べ替え）
   - 受け入れ基準:
@@ -102,11 +106,13 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
 
 ### 追加（本提案からの採用）
 
-- [ ] chore(P1): YouTube API キー/クオータ管理UI（格納/削除/残量表示）
+- [x] chore(P1): YouTube API キー/クオータ管理UI（格納/削除/残量表示）
   - 受け入れ基準: APIキーの安全な入力/保存/削除、クオータ超過時の通知/フォールバック
+  - 実装: index.htmlにクオータ表示/削除ボタン追加。scripts/main.jsにcheckQuota関数とdelete機能追加。styles/main.cssにAPIキー管理UIスタイル追加。
 
-- [ ] feat(P1): Syncヘルス指標（ドリフト/復帰時間の可視化）
+- [x] feat(P1): Syncヘルス指標（ドリフト/復帰時間の可視化）
   - 受け入れ基準: 各プレイヤーの時刻差/同期状態をカラー指標と数値で表示
+  - 実装: updateDebugPanelを拡張して同期状態/平均ドリフト/最大ドリフト/アクティブ動画数を表示。各動画のヘルスを🟢🟡🔴で表示。
 
 - [ ] feat(P2): プレイリスト/チャンネルからの一括追加
   - 受け入れ基準: playlistId/channelId 指定で複数動画を一括追加、並び替え対応
@@ -125,6 +131,127 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
 
 - [ ] feat(P3): クラウドプリセット同期（GitHub Gist/匿名）
   - 受け入れ基準: ローカル/クラウド間のプリセット保存/読込、アクセストークン管理
+
+- [ ] feat(P3): セッション記録/再生（操作マクロ）
+  - 受け入れ基準: 再生/停止/シーク等の操作を記録し再生、デバッグやデモに活用
+
+### 次のステップ（P2優先度）
+
+- [ ] feat(P2): プレイリスト/チャンネルからの一括追加
+  - 受け入れ基準: playlistId/channelId 指定で複数動画を一括追加、並び替え対応
+  - 技術要件:
+    - YouTube Data API v3のplaylistItems.listとsearch.listを使用
+    - プレイリストIDまたはチャンネルIDからの動画一覧取得
+    - ページネーション対応（最大50件/リクエスト）
+    - 取得した動画を順次追加する機能
+  - 実装ファイル: scripts/main.js, index.html
+
+- [ ] feat(P2): 共有URLの強化（時刻/速度/レイアウトを含むディープリンク）
+  - 受け入れ基準: 現在状態（時刻/速度/ミュート/レイアウト）をURLにエンコードして共有/復元
+  - 技術要件:
+    - URLSearchParamsで状態をエンコード/デコード
+    - 共有ボタンUIの追加
+    - クリップボードへのコピー機能
+    - 復元時の状態適用ロジック
+  - 実装ファイル: scripts/main.js, scripts/storage.js, index.html
+
+- [ ] feat(P2): レイアウトカスタマイズ（プリセット/編集/ドラッグ並べ替え）
+  - 受け入れ基準:
+    - 2x2, 3x3, シアター等のプリセット切替
+    - タイルサイズ調整やドラッグ並び替え
+    - レイアウト設定の保存・共有
+  - 技術要件:
+    - CSS Grid動的変更
+    - Drag and Drop API使用
+    - レイアウトプリセットの定義と保存
+  - 実装ファイル: scripts/main.js, styles/main.css, index.html
+
+- [ ] feat(P2): 埋め込みパラメータUI（controls/modestbranding/rel/playsinline）
+  - 受け入れ基準: 主要パラメータのオン/オフ切替と保存、既存挙動を破壊しない
+  - 技術要件:
+    - YouTube IFrame Player APIパラメータの動的設定
+    - 設定UIの追加
+    - パラメータの永続化
+  - 実装ファイル: scripts/main.js, index.html
+
+### 推奨タスク（品質・保守性向上）
+
+- [ ] test(P2): E2Eテスト自動化（Playwright）
+  - 受け入れ基準:
+    - 主要機能（動画追加、再生、同期）の自動テスト
+    - CI/CDパイプラインへの統合
+    - テストレポート生成
+  - 技術要件:
+    - Playwrightセットアップ
+    - テストシナリオ作成（動画追加、一括操作、同期確認）
+    - GitHub Actions/GitLab CI統合
+  - 実装ファイル: tests/e2e/, .github/workflows/test.yml
+
+- [ ] docs(P2): JSDoc整備とDoxygen連携
+  - 受け入れ基準:
+    - 全関数にJSDocコメント追加
+    - Doxygen生成の品質向上
+    - API仕様書の自動生成
+  - 技術要件:
+    - JSDoc形式でのコメント追加
+    - Doxyfile設定の最適化
+    - CI/CDでのドキュメント自動生成
+  - 実装ファイル: scripts/main.js, scripts/storage.js, Doxyfile
+
+- [ ] perf(P2): パフォーマンス最適化
+  - 受け入れ基準:
+    - 同期処理の最適化（不要な再計算削減）
+    - メモリリーク対策
+    - 大量動画（10+）での安定動作
+  - 技術要件:
+    - reconcile関数の最適化
+    - WeakMapの適切な使用
+    - パフォーマンスプロファイリング
+  - 実装ファイル: scripts/main.js
+
+- [ ] a11y(P2): アクセシビリティ改善
+  - 受け入れ基準:
+    - ARIA属性の適切な設定
+    - キーボードナビゲーション対応
+    - スクリーンリーダー対応
+  - 技術要件:
+    - WAI-ARIA準拠
+    - タブインデックスの設定
+    - フォーカス管理
+  - 実装ファイル: index.html, scripts/main.js, styles/main.css
+
+- [ ] security(P2): セキュリティ強化
+  - 受け入れ基準:
+    - APIキーの暗号化保存
+    - XSS対策の強化
+    - CSP（Content Security Policy）設定
+  - 技術要件:
+    - Web Crypto APIでの暗号化
+    - DOMPurifyなどのサニタイゼーション
+    - CSPヘッダーの設定
+  - 実装ファイル: scripts/storage.js, index.html
+
+- [ ] feat(P3): 音声処理（分離/正規化/ノイズ抑制）
+  - 受け入れ基準:
+    - 各動画の音声を個別に処理
+    - ノイズ抑制フィルタ
+    - 音量正規化
+  - 技術要件:
+    - Web Audio API使用
+    - AudioContextとGainNodeの設定
+    - フィルタチェーンの構築
+  - 実装ファイル: scripts/audio.js, scripts/main.js
+
+- [ ] feat(P3): セッションエクスポート（制約調査含む）
+  - 受け入れ基準:
+    - 現在のセッション状態をJSON/CSVでエクスポート
+    - インポート機能
+    - 動画メタデータの保存
+  - 技術要件:
+    - JSON/CSV形式でのエクスポート
+    - File API使用
+    - インポート時のバリデーション
+  - 実装ファイル: scripts/main.js, scripts/export.js
 
 - [ ] feat(P3): セッション記録/再生（操作マクロ）
   - 受け入れ基準: 再生/停止/シーク等の操作を記録し再生、デバッグやデモに活用

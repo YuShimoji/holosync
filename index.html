@@ -27,7 +27,14 @@
         <h2>動画検索</h2>
         <div class="api-key-section">
           <label for="apiKeyInput">YouTube API Key:</label>
-          <input id="apiKeyInput" type="password" placeholder="APIキーを入力" />
+          <div class="api-key-controls">
+            <input id="apiKeyInput" type="password" placeholder="APIキーを入力" />
+            <button id="deleteApiKeyBtn" class="delete-btn" title="APIキーを削除">🗑️</button>
+          </div>
+          <div id="apiKeyStatus" class="api-key-status">
+            <span id="quotaInfo">クオータ: 未確認</span>
+            <button id="checkQuotaBtn" class="small-btn">確認</button>
+          </div>
         </div>
         <form id="searchForm" class="search-form">
           <input id="searchInput" type="text" placeholder="キーワードで検索" required />
@@ -60,14 +67,54 @@
         <p class="note">Autoplay制限のため、最初の「全て再生」はミュート状態で開始されます。</p>
       </section>
 
+      <section class="section sync-settings">
+        <h2>同期設定</h2>
+        <label>
+          <select id="leaderMode">
+            <option value="first" selected>最初の動画</option>
+            <option value="longest-playing">最も長く再生している動画</option>
+            <option value="least-buffered">最も安定している動画</option>
+            <option value="manual">手動選択</option>
+          </select>
+          基準プレイヤー選択
+        </label>
+        <div id="manualLeaderSection" hidden>
+          <label>
+            <select id="leaderId">
+              <!-- Options will be populated dynamically -->
+            </select>
+            基準動画ID
+          </label>
+        </div>
+        <label>
+          <input type="range" id="toleranceMs" min="100" max="2000" step="100" value="300" />
+          <span>同期許容値: <span id="toleranceValue">300</span>ms</span>
+        </label>
+        <label>
+          <input type="range" id="syncFrequency" min="1" max="10" step="1" value="2" />
+          <span>同期頻度: <span id="syncFrequencyValue">2</span>Hz</span>
+        </label>
+      </section>
+
       <footer class="footer">
         <small>HoloSync Web</small>
+        <button id="debugToggle" class="debug-toggle" title="デバッグパネル切り替え">🐛 Debug</button>
       </footer>
     </aside>
 
     <main class="content">
       <div id="grid" class="grid" aria-live="polite"></div>
     </main>
+
+    <div id="debugPanel" class="debug-panel" hidden>
+      <header class="debug-header">
+        <h3>同期デバッグパネル</h3>
+        <button id="debugClose" class="debug-close" title="パネルを閉じる">×</button>
+      </header>
+      <div id="debugContent" class="debug-content">
+        <p>動画を追加して再生を開始すると、状態が表示されます。</p>
+      </div>
+    </div>
 
     <script src="scripts/storage.js"></script>
     <script src="scripts/main.js"></script>
