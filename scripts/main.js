@@ -29,7 +29,8 @@
 
   /** @type {{iframe: HTMLIFrameElement, id: string}[]} */
   const videos = [];
-  /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
+
+  /** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number, bufferingSince?: number, lastSeekAt?: number, pendingSeek?: boolean}>} */
   const playerStates = new Map();
   /** @type {Map<Window, {since: number, reason: string}>} */
   const suspendedPlayers = new Map();
@@ -47,11 +48,13 @@
   ]);
   const SYNC_SETTINGS = {
     toleranceMs: 300,
+    recoveryToleranceMs: 500,
     probeIntervalMs: 500,
-    stallThresholdMs: 2500,
-    rejoinSyncBufferMs: 500,
     leaderMode: 'first', // 'first' | 'manual'
     leaderId: null,
+    bufferGraceMs: 1500,
+    seekCooldownMs: 800,
+    staleThresholdMs: 2000,
   };
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
@@ -228,63 +231,48 @@
           const previous = suspendedPlayers.get(win);
           if (!previous || previous.reason !== suspension) {
             suspendedPlayers.set(win, { since: now, reason: suspension });
+          continue;
+        }
+
+        if (rec.state === 2) {
+          if (!rec.bufferingSince) {
+            rec.bufferingSince = now;
           }
-          continue;
+        } else {
+          rec.bufferingSince = undefined;
         }
-        if (suspendedPlayers.has(win)) {
-          suspendedPlayers.delete(win);
-          rejoinQueue.push({ v, rec: record, win });
-        }
-        activeEntries.push({ v, rec: record, win });
-      }
 
-      const leaderEntry = pickLeader(activeEntries);
-      if (!leaderEntry) {
-        return;
-      }
-      const leaderRecord = leaderEntry.rec;
-      if (!leaderRecord || typeof leaderRecord.time !== 'number') {
-        return;
-      }
-      const toleranceSeconds = SYNC_SETTINGS.toleranceMs / 1000;
-      const leaderPlaying = leaderRecord.state === 1;
+        const lastUpdate = rec.lastUpdate || 0;
+        const stale = !lastUpdate || now - lastUpdate > SYNC_SETTINGS.staleThresholdMs;
+        const buffering = !!(rec.bufferingSince && now - rec.bufferingSince < SYNC_SETTINGS.bufferGraceMs);
+        const inCooldown = !!(rec.lastSeekAt && now - rec.lastSeekAt < SYNC_SETTINGS.seekCooldownMs);
 
-      for (const entry of activeEntries) {
-        if (entry.v === leaderEntry.v) {
+        if (v === leader.v) {
+          rec.pendingSeek = undefined;
+          playerStates.set(win, rec);
           continue;
         }
-        const record = entry.rec;
-        if (!record || typeof record.time !== 'number') {
-          continue;
+        const drift = rec.time - leaderRec.time;
+        const toleranceSec = rec.pendingSeek || buffering ? recoveryTolSec : baseTolSec;
+        if (Math.abs(drift) > toleranceSec) {
+          if (buffering || stale || inCooldown) {
+            rec.pendingSeek = true;
+          } else {
+            sendCommand(v.iframe, 'seekTo', [leaderRec.time, true]);
+            rec.lastSeekAt = now;
+            rec.pendingSeek = undefined;
+          }
+        } else {
+          rec.pendingSeek = undefined;
         }
-        const drift = record.time - leaderRecord.time;
-        if (Math.abs(drift) > toleranceSeconds) {
-          sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
-        }
-        const isPlaying = record.state === 1;
+        const isPlaying = rec.state === 1;
         if (leaderPlaying && !isPlaying) {
-          sendCommand(entry.v.iframe, 'playVideo');
+          sendCommand(v.iframe, 'playVideo');
         } else if (!leaderPlaying && isPlaying) {
-          sendCommand(entry.v.iframe, 'pauseVideo');
+          sendCommand(v.iframe, 'pauseVideo');
         }
-      }
 
-      const rejoinToleranceSeconds =
-        (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
-      for (const entry of rejoinQueue) {
-        const record = entry.rec;
-        if (!record || typeof record.time !== 'number') {
-          continue;
-        }
-        const drift = record.time - leaderRecord.time;
-        if (Math.abs(drift) > rejoinToleranceSeconds) {
-          sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
-        }
-        if (leaderPlaying) {
-          sendCommand(entry.v.iframe, 'playVideo');
-        } else if (record.state === 1) {
-          sendCommand(entry.v.iframe, 'pauseVideo');
-        }
+        playerStates.set(win, rec);
       }
     } catch (_) {
       // ignore
