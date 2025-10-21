@@ -24,9 +24,9 @@ HTML_OUTPUT            = .
 GENERATE_LATEX         = NO
 RECURSIVE              = NO
 FULL_PATH_NAMES        = NO
-INPUT                  = app.js \
-                         background.js \
-                         README.md
+INPUT                  = scripts/main.js \
+                         README.md \
+                         docs/
 FILE_PATTERNS          = *.js \
                          *.md
 EXTENSION_MAPPING      = js=JavaScript
