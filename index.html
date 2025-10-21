@@ -44,6 +44,34 @@
         <ul id="presetList" class="preset-list"></ul>
       </section>
 
+      <section class="section sync-settings-panel">
+        <h2>同期設定</h2>
+        <div class="setting-item">
+          <label for="toleranceMs">許容差 (ms)</label>
+          <input id="toleranceMs" type="number" min="0" step="50" />
+        </div>
+        <div class="setting-item">
+          <label for="recoveryToleranceMs">回復許容差 (ms)</label>
+          <input id="recoveryToleranceMs" type="number" min="0" step="50" />
+        </div>
+        <div class="setting-item">
+          <label for="probeIntervalMs">プローブ間隔 (ms)</label>
+          <input id="probeIntervalMs" type="number" min="100" step="50" />
+        </div>
+        <div class="setting-item">
+          <label for="bufferGraceMs">バッファ猶予 (ms)</label>
+          <input id="bufferGraceMs" type="number" min="0" step="100" />
+        </div>
+        <div class="setting-item">
+          <label for="seekCooldownMs">シーククールダウン (ms)</label>
+          <input id="seekCooldownMs" type="number" min="0" step="50" />
+        </div>
+        <div class="setting-item">
+          <label for="staleThresholdMs">古い閾値 (ms)</label>
+          <input id="staleThresholdMs" type="number" min="0" step="100" />
+        </div>
+      </section>
+
       <section class="section">
         <h2>一括操作</h2>
         <div class="controls">

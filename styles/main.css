@@ -210,3 +210,24 @@ button:active {
 .preset-list li:hover {
   background: #f9f9f9;
 }
+
+/* Sync settings styles */
+.sync-settings-panel .setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.sync-settings-panel label {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.sync-settings-panel input {
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Sync leader styles */
