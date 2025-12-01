@@ -9,6 +9,8 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
 - [x] chore: レガシーファイル（`app.html`, `app.js`, `background.js`, `manifest.json`, `styles.css`）を `legacy/` へ移動
 - [x] build(ci): `lint` ステージ（Prettier/ESLint）導入、Windows 互換の `npm run lint` を設定
 - [x] chore: Prettier/ESLint の ignore を整理（`legacy/`, `docs/` を除外）
+- [x] MR: `chore/workflow-ci-lint` のレビュー/マージ（手動で作成）
+- [x] docs: テスト手順に検索・プリセット・字幕関連ケースを追記（`docs/TESTING.md`）
 - [x] feat(P3): 同期アルゴリズムの改善（バッファリング・広告耐性） （GitHub: #16）
   - 受け入れ基準:
     - バッファリングや広告が発生した動画があっても、他動画の再生が乱れない
@@ -19,9 +21,8 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
 
 ## 進行中（In Progress）
 
-- [ ] MR: `chore/workflow-ci-lint` のレビュー/マージ（手動で作成）
 - [ ] QA: `docs/TESTING.md` に沿った手動テストの実行とフィードバック反映
-- [ ] docs: テスト手順に検索・プリセット・字幕関連ケースを追記（`docs/TESTING.md`）
+  - 状態: ケース12（バッファ/広告耐性）は 2025-10-20 に Chrome/Firefox で実施済み。それ以外のケースは今後実施・記録。
 - [x] feat(Pα): 検索導線拡張（YouTube Data API検索 + プリセット機能） （GitHub: 新規）
   - 受け入れ基準:
     - YouTube動画検索/サジェストUIを提供（API利用時はキー管理とレート制限対策を実装）。

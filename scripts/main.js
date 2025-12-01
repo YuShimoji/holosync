@@ -15,6 +15,14 @@
   const searchError = document.getElementById('searchError');
 
   const apiKeyInput = document.getElementById('apiKeyInput');
+  const deleteApiKeyBtn = document.getElementById('deleteApiKeyBtn');
+  const checkQuotaBtn = document.getElementById('checkQuotaBtn');
+  const quotaInfo = document.getElementById('quotaInfo');
+
+  const debugToggle = document.getElementById('debugToggle');
+  const debugPanel = document.getElementById('debugPanel');
+  const debugClose = document.getElementById('debugClose');
+  const debugContent = document.getElementById('debugContent');
 
   const savePresetBtn = document.getElementById('savePresetBtn');
   const presetNameInput = document.getElementById('presetNameInput');
@@ -214,7 +222,9 @@
           }
         }
       }
-      if (longestPlaying) return longestPlaying;
+      if (longestPlaying) {
+        return longestPlaying;
+      }
     }
 
     if (SYNC_SETTINGS.leaderMode === 'least-buffered') {
@@ -232,7 +242,9 @@
           }
         }
       }
-      if (leastBuffered) return leastBuffered;
+      if (leastBuffered) {
+        return leastBuffered;
+      }
     }
 
     // Default 'first' mode
@@ -268,8 +280,14 @@
           continue;
         }
         if (suspendedPlayers.has(win)) {
+          const previousSuspension = suspendedPlayers.get(win);
           suspendedPlayers.delete(win);
-          rejoinQueue.push({ v, rec: record, win, reason });
+          rejoinQueue.push({
+            v,
+            rec: record,
+            win,
+            reason: previousSuspension?.reason || 'recovered',
+          });
         }
         activeEntries.push({ v, rec: record, win });
       }
@@ -327,6 +345,29 @@
       }
     } catch (_) {
       // ignore
+    }
+  }
+
+  function attemptRecovery(video, reason, leaderRecord) {
+    if (!SYNC_SETTINGS.retryOnError) {
+      return;
+    }
+    if (!video || !video.iframe) {
+      return;
+    }
+    const iframe = video.iframe;
+    if (SYNC_SETTINGS.fallbackMode === 'mute-continue') {
+      sendCommand(iframe, 'mute');
+      if (leaderRecord && leaderRecord.state === 1) {
+        sendCommand(iframe, 'playVideo');
+      }
+    } else if (SYNC_SETTINGS.fallbackMode === 'pause-catchup') {
+      sendCommand(iframe, 'pauseVideo');
+      if (leaderRecord && typeof leaderRecord.time === 'number') {
+        sendCommand(iframe, 'seekTo', [leaderRecord.time, true]);
+      }
+    } else {
+      void reason;
     }
   }
 
@@ -806,7 +847,9 @@
 
   // Update debug panel content
   function updateDebugPanel() {
-    if (debugPanel.hidden) return;
+    if (debugPanel.hidden) {
+      return;
+    }
 
     const now = Date.now();
     let html = '<div class="health-summary">';
@@ -817,7 +860,9 @@
 
     for (const v of videos) {
       const win = v.iframe?.contentWindow;
-      if (!win) continue;
+      if (!win) {
+        continue;
+      }
       const record = playerStates.get(win);
       const suspension = getSuspensionReason(record, now);
       if (suspension) {
@@ -840,24 +885,34 @@
 
     if (leaderEntry && activeEntries.length > 0) {
       const totalDrift = activeEntries.reduce((sum, entry) => {
-        if (entry.v === leaderEntry.v) return sum;
+        if (entry.v === leaderEntry.v) {
+          return sum;
+        }
         const record = entry.rec;
-        if (!record || typeof record.time !== 'number') return sum;
+        if (!record || typeof record.time !== 'number') {
+          return sum;
+        }
         return sum + Math.abs(record.time - leaderEntry.rec.time);
       }, 0);
 
       const avgDrift = totalDrift / Math.max(1, activeEntries.length - 1);
-      const maxDrift = Math.max(...activeEntries.map(entry => {
-        if (entry.v === leaderEntry.v) return 0;
-        const record = entry.rec;
-        if (!record || typeof record.time !== 'number') return 0;
-        return Math.abs(record.time - leaderEntry.rec.time);
-      }));
+      const maxDrift = Math.max(
+        ...activeEntries.map((entry) => {
+          if (entry.v === leaderEntry.v) {
+            return 0;
+          }
+          const record = entry.rec;
+          if (!record || typeof record.time !== 'number') {
+            return 0;
+          }
+          return Math.abs(record.time - leaderEntry.rec.time);
+        })
+      );
 
       if (maxDrift <= SYNC_SETTINGS.toleranceMs / 1000) {
         healthColor = '#059669'; // green
         healthStatus = '良好';
-      } else if (maxDrift <= SYNC_SETTINGS.toleranceMs / 1000 * 2) {
+      } else if (maxDrift <= (SYNC_SETTINGS.toleranceMs / 1000) * 2) {
         healthColor = '#d97706'; // yellow
         healthStatus = '要調整';
       } else {
@@ -873,7 +928,8 @@
       html += '<div class="health-metrics">動画を追加して再生を開始してください</div>';
     }
 
-    html += '</div><table class="debug-table"><thead><tr><th>ID</th><th>Time</th><th>State</th><th>Drift</th><th>Health</th><th>Last Update</th><th>Last Seek</th></tr></thead><tbody>';
+    html +=
+      '</div><table class="debug-table"><thead><tr><th>ID</th><th>Time</th><th>State</th><th>Drift</th><th>Health</th><th>Last Update</th><th>Last Seek</th></tr></thead><tbody>';
 
     if (leaderEntry) {
       videos.forEach((v) => {
@@ -896,7 +952,7 @@
           const absDrift = Math.abs(driftSec);
           if (absDrift <= SYNC_SETTINGS.toleranceMs / 1000) {
             healthIndicator = '🟢'; // green
-          } else if (absDrift <= SYNC_SETTINGS.toleranceMs / 1000 * 2) {
+          } else if (absDrift <= (SYNC_SETTINGS.toleranceMs / 1000) * 2) {
             healthIndicator = '🟡'; // yellow
           } else {
             healthIndicator = '🔴'; // red
@@ -913,13 +969,20 @@
 
   function getStateLabel(state) {
     switch (state) {
-      case -1: return '未開始';
-      case 0: return '終了';
-      case 1: return '再生中';
-      case 2: return '一時停止';
-      case 3: return 'バッファリング';
-      case 5: return '動画キュー済';
-      default: return state >= 100 ? '広告中' : `不明(${state})`;
+      case -1:
+        return '未開始';
+      case 0:
+        return '終了';
+      case 1:
+        return '再生中';
+      case 2:
+        return '一時停止';
+      case 3:
+        return 'バッファリング';
+      case 5:
+        return '動画キュー済';
+      default:
+        return state >= 100 ? '広告中' : `不明(${state})`;
     }
   }
 })();

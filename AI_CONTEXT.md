@@ -54,3 +54,14 @@
 - 変更反映:
   - `docs/ISSUES.md` のコンフリクト解消とバックログ再編、提案の採用/検討項目を追記
   - 本ログに採否の根拠を記録
+
+## Log: Phase3 sync buffering tolerance follow-up (2025-12-01)
+
+- 概要:
+  - `feat/phase3-buffer-tolerance` ブランチは main にマージ済み。
+  - GitHub Issue #16 は完了扱い（docs/ISSUES.md の Done セクション参照）。
+- テスト状況:
+  - docs/TESTING.md ケース12（バッファ/広告耐性）は 2025-10-20 に Chrome/Firefox で実施済み。
+- 残タスク:
+  - docs/TESTING.md ケース1〜11, 13〜17 の手動テストと結果記録。
+  - P2 フェーズ（プレイリスト一括追加、共有URL強化など）の計画と実装。

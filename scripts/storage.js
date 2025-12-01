@@ -23,7 +23,12 @@ class StorageAdapter {
 
   isIndexedDBSupported() {
     try {
-      return !!(window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB);
+      return !!(
+        window.indexedDB ||
+        window.mozIndexedDB ||
+        window.webkitIndexedDB ||
+        window.msIndexedDB
+      );
     } catch (e) {
       return false;
     }
@@ -165,10 +170,12 @@ class StorageAdapter {
   getUrlParameter(key) {
     const url = new URL(window.location);
     const param = url.searchParams.get(key);
-    if (!param) return null;
+    if (!param) {
+      return null;
+    }
 
     if (key === 'videos' || key === 'preset') {
-      return param.split(',').filter(id => id.length === 11); // Filter valid YouTube IDs
+      return param.split(',').filter((id) => id.length === 11); // Filter valid YouTube IDs
     } else if (key === 'volume') {
       const vol = parseInt(param, 10);
       return Number.isFinite(vol) ? vol : null;
