@@ -213,6 +213,17 @@
       );
     });
 
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className = 'tile-action-btn';
+    zoomBtn.textContent = '🔍';
+    zoomBtn.title = 'ズームビュー';
+    zoomBtn.addEventListener('click', () => {
+      const entry = videos.find((v) => v.id === videoId);
+      if (entry) {
+        toggleZoomPanel(entry);
+      }
+    });
+
     const removeBtn = document.createElement('button');
     removeBtn.className = 'tile-action-btn tile-remove';
     removeBtn.textContent = '✕';
@@ -221,6 +232,7 @@
 
     actions.appendChild(fullscreenBtn);
     actions.appendChild(popoutBtn);
+    actions.appendChild(zoomBtn);
     actions.appendChild(removeBtn);
 
     // Info header (collapsible, Phase 2-1)
@@ -1825,41 +1837,57 @@
   // ========== Phase 5: Tile Resize ==========
   function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
     let isResizing = false;
-    let startX, startY, startW, startH;
+    let startX, startW, lastW, lastH, rafId;
 
     resizeHandle.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
       isResizing = true;
       startX = e.clientX;
-      startY = e.clientY;
       startW = tile.offsetWidth;
-      startH = tile.offsetHeight;
+      lastW = startW;
+      lastH = Math.round(startW * ASPECT_RATIO);
       tile.classList.add('resizing');
       sizeBadge.style.display = 'block';
-      sizeBadge.textContent = `${Math.round(startW)}×${Math.round(startH)}`;
+      sizeBadge.textContent = `${lastW}×${lastH}`;
 
       const onMove = (ev) => {
-        if (!isResizing) {return;}
+        if (!isResizing) {
+          return;
+        }
         const deltaX = ev.clientX - startX;
         const newW = Math.max(MIN_TILE_WIDTH, startW + deltaX);
-        const newH = newW * ASPECT_RATIO;
-        tile.style.width = newW + 'px';
-        tile.style.height = newH + 'px';
-        sizeBadge.textContent = `${Math.round(newW)}×${Math.round(newH)}`;
+        const newH = Math.round(newW * ASPECT_RATIO);
+        lastW = Math.round(newW);
+        lastH = newH;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+        }
+        rafId = requestAnimationFrame(() => {
+          tile.style.width = lastW + 'px';
+          tile.style.height = lastH + 'px';
+          sizeBadge.textContent = `${lastW}×${lastH}`;
+        });
       };
 
       const onUp = () => {
-        if (!isResizing) {return;}
+        if (!isResizing) {
+          return;
+        }
         isResizing = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+        }
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         tile.classList.remove('resizing');
         sizeBadge.style.display = 'none';
 
-        // Save to videoEntry
-        videoEntry.tileWidth = tile.offsetWidth;
-        videoEntry.tileHeight = tile.offsetHeight;
+        // Apply final size consistently (use tracked values, not offsetWidth)
+        tile.style.width = lastW + 'px';
+        tile.style.height = lastH + 'px';
+        videoEntry.tileWidth = lastW;
+        videoEntry.tileHeight = lastH;
         persistVideos();
       };
 
@@ -1874,7 +1902,9 @@
     let startX, startY, startLeft, startTop;
 
     dragHandle.addEventListener('mousedown', (e) => {
-      if (!cellModeEnabled) {return;}
+      if (!cellModeEnabled) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       isDragging = true;
@@ -1886,7 +1916,9 @@
       gridEl.classList.add('show-cells');
 
       const onMove = (ev) => {
-        if (!isDragging) {return;}
+        if (!isDragging) {
+          return;
+        }
         const deltaX = ev.clientX - startX;
         const deltaY = ev.clientY - startY;
         tile.style.left = startLeft + deltaX + 'px';
@@ -1897,7 +1929,9 @@
       };
 
       const onUp = (ev) => {
-        if (!isDragging) {return;}
+        if (!isDragging) {
+          return;
+        }
         isDragging = false;
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
@@ -1942,7 +1976,9 @@
   }
 
   function positionTileInCell(tile, videoEntry) {
-    if (!cellModeEnabled) {return;}
+    if (!cellModeEnabled) {
+      return;
+    }
     const { cellWidth, cellHeight } = getCellDimensions();
     const col = videoEntry.cellCol ?? 0;
     const row = videoEntry.cellRow ?? 0;
@@ -1962,7 +1998,9 @@
   function updateDropTargetHighlight(x, y) {
     clearDropTargetHighlight();
     const cell = getCellFromPoint(x, y);
-    if (!cell || !cellOverlayContainer) {return;}
+    if (!cell || !cellOverlayContainer) {
+      return;
+    }
     const overlays = cellOverlayContainer.querySelectorAll('.cell-overlay');
     const idx = cell.row * cellColumns + cell.col;
     if (overlays[idx]) {
@@ -1971,7 +2009,9 @@
   }
 
   function clearDropTargetHighlight() {
-    if (!cellOverlayContainer) {return;}
+    if (!cellOverlayContainer) {
+      return;
+    }
     cellOverlayContainer.querySelectorAll('.drop-target').forEach((el) => {
       el.classList.remove('drop-target');
     });
@@ -2027,15 +2067,13 @@
       cellOverlayContainer = null;
     }
 
-    // Reset tile styles
+    // Reset tile styles — always clear inline size so CSS grid controls layout
     videos.forEach((v) => {
       v.tile.classList.remove('cell-positioned');
       v.tile.style.left = '';
       v.tile.style.top = '';
-      if (!v.tileWidth) {
-        v.tile.style.width = '';
-        v.tile.style.height = '';
-      }
+      v.tile.style.width = '';
+      v.tile.style.height = '';
     });
   }
 
@@ -2063,11 +2101,17 @@
       if (layout !== 'auto') {
         gridEl.classList.add('layout-' + layout);
       }
-      if (layout === '1') {cellColumns = 1;}
-      else if (layout === '2') {cellColumns = 2;}
-      else if (layout === '3') {cellColumns = 3;}
-      else if (layout === '4') {cellColumns = 4;}
-      else {cellColumns = 2;}
+      if (layout === '1') {
+        cellColumns = 1;
+      } else if (layout === '2') {
+        cellColumns = 2;
+      } else if (layout === '3') {
+        cellColumns = 3;
+      } else if (layout === '4') {
+        cellColumns = 4;
+      } else {
+        cellColumns = 2;
+      }
     }
 
     persistLayoutSettings();
@@ -2117,11 +2161,303 @@
   // Handle window resize for cell mode
   let resizeTimeout;
   window.addEventListener('resize', () => {
-    if (!cellModeEnabled) {return;}
+    if (!cellModeEnabled) {
+      return;
+    }
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
       createCellOverlays();
       videos.forEach((v) => positionTileInCell(v.tile, v));
     }, 100);
   });
+
+  // ========== Zoom View Panel ==========
+  function toggleZoomPanel(videoEntry) {
+    if (videoEntry.zoomPanel) {
+      destroyZoomPanel(videoEntry);
+    } else {
+      createZoomPanel(videoEntry);
+    }
+  }
+
+  function createZoomPanel(videoEntry) {
+    if (videoEntry.zoomPanel) {
+      return;
+    }
+
+    const panel = document.createElement('div');
+    panel.className = 'zoom-panel';
+    const panelX = Math.min(
+      Math.max(0, videoEntry.zoomPanelX ?? window.innerWidth - 380),
+      window.innerWidth - 200
+    );
+    const panelY = Math.min(Math.max(0, videoEntry.zoomPanelY ?? 60), window.innerHeight - 100);
+    panel.style.left = panelX + 'px';
+    panel.style.top = panelY + 'px';
+    panel.style.opacity = (videoEntry.zoomOpacity ?? 100) / 100;
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'zoom-panel-header';
+    const title = document.createElement('span');
+    title.className = 'zoom-panel-title';
+    title.textContent = '\uD83D\uDD0D ' + (videoEntry.meta?.title || videoEntry.id);
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'zoom-panel-close';
+    closeBtn.textContent = '\u2715';
+    closeBtn.addEventListener('click', () => destroyZoomPanel(videoEntry));
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    // Viewport
+    const viewport = document.createElement('div');
+    viewport.className = 'zoom-panel-viewport';
+    viewport.style.width = (videoEntry.zoomPanelW ?? 320) + 'px';
+    viewport.style.height = (videoEntry.zoomPanelH ?? 180) + 'px';
+
+    const zoomIframe = document.createElement('iframe');
+    zoomIframe.src = `https://www.youtube.com/embed/${videoEntry.id}?enablejsapi=1&playsinline=1&mute=1&modestbranding=1&rel=0&controls=0`;
+    zoomIframe.allow = 'autoplay; encrypted-media';
+    zoomIframe.loading = 'lazy';
+    zoomIframe.setAttribute('referrerpolicy', 'origin');
+    zoomIframe.title = `Zoom: ${videoEntry.id}`;
+
+    const scale = videoEntry.zoomScale ?? 2.5;
+    const originX = videoEntry.zoomOriginX ?? 50;
+    const originY = videoEntry.zoomOriginY ?? 20;
+    zoomIframe.style.transform = `scale(${scale})`;
+    zoomIframe.style.transformOrigin = `${originX}% ${originY}%`;
+
+    viewport.appendChild(zoomIframe);
+
+    // Controls
+    const controls = document.createElement('div');
+    controls.className = 'zoom-panel-controls';
+
+    function addSlider(labelText, min, max, step, value, onChange) {
+      const lbl = document.createElement('label');
+      lbl.textContent = labelText;
+      const inp = document.createElement('input');
+      inp.type = 'range';
+      inp.min = min;
+      inp.max = max;
+      inp.step = step;
+      inp.value = value;
+      const val = document.createElement('span');
+      val.className = 'zoom-val';
+      val.textContent = step >= 1 ? String(Math.round(value)) : Number(value).toFixed(1);
+      inp.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        val.textContent = step >= 1 ? String(Math.round(v)) : v.toFixed(1);
+        onChange(v);
+      });
+      controls.appendChild(lbl);
+      controls.appendChild(inp);
+      controls.appendChild(val);
+    }
+
+    addSlider('X', 0, 100, 1, originX, (v) => {
+      videoEntry.zoomOriginX = v;
+      zoomIframe.style.transformOrigin = `${v}% ${videoEntry.zoomOriginY}%`;
+      persistVideos();
+    });
+    addSlider('Y', 0, 100, 1, originY, (v) => {
+      videoEntry.zoomOriginY = v;
+      zoomIframe.style.transformOrigin = `${videoEntry.zoomOriginX}% ${v}%`;
+      persistVideos();
+    });
+    addSlider('\u500D\u7387', 1.5, 5, 0.5, scale, (v) => {
+      videoEntry.zoomScale = v;
+      zoomIframe.style.transform = `scale(${v})`;
+      persistVideos();
+    });
+    addSlider('\u900F\u904E', 10, 100, 5, videoEntry.zoomOpacity ?? 100, (v) => {
+      videoEntry.zoomOpacity = v;
+      panel.style.opacity = v / 100;
+      persistVideos();
+    });
+
+    // Resize handle
+    const resizeEl = document.createElement('div');
+    resizeEl.className = 'zoom-panel-resize';
+    resizeEl.textContent = '\u2922';
+
+    panel.appendChild(header);
+    panel.appendChild(viewport);
+    panel.appendChild(controls);
+    panel.appendChild(resizeEl);
+
+    document.body.appendChild(panel);
+    videoEntry.zoomPanel = panel;
+
+    setupZoomPanelDrag(panel, header, videoEntry);
+    setupZoomPanelResize(panel, viewport, resizeEl, videoEntry);
+    syncZoomIframe(videoEntry, zoomIframe);
+  }
+
+  function destroyZoomPanel(videoEntry) {
+    if (videoEntry._zoomSyncInterval) {
+      clearInterval(videoEntry._zoomSyncInterval);
+      videoEntry._zoomSyncInterval = null;
+    }
+    if (videoEntry.zoomPanel) {
+      videoEntry.zoomPanel.remove();
+      videoEntry.zoomPanel = null;
+    }
+  }
+
+  function setupZoomPanelDrag(panel, header, videoEntry) {
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.zoom-panel-close')) {
+        return;
+      }
+      e.preventDefault();
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = panel.offsetLeft;
+      startTop = panel.offsetTop;
+
+      const onMove = (ev) => {
+        if (!isDragging) {
+          return;
+        }
+        panel.style.left = startLeft + ev.clientX - startX + 'px';
+        panel.style.top = startTop + ev.clientY - startY + 'px';
+      };
+
+      const onUp = () => {
+        if (!isDragging) {
+          return;
+        }
+        isDragging = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        videoEntry.zoomPanelX = panel.offsetLeft;
+        videoEntry.zoomPanelY = panel.offsetTop;
+        persistVideos();
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  function setupZoomPanelResize(panel, viewport, handle, videoEntry) {
+    let isResizing = false;
+    let startX, startW;
+
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      startX = e.clientX;
+      startW = viewport.offsetWidth;
+
+      const onMove = (ev) => {
+        if (!isResizing) {
+          return;
+        }
+        const newW = Math.max(160, startW + ev.clientX - startX);
+        const newH = Math.round(newW * (9 / 16));
+        viewport.style.width = newW + 'px';
+        viewport.style.height = newH + 'px';
+      };
+
+      const onUp = () => {
+        if (!isResizing) {
+          return;
+        }
+        isResizing = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        videoEntry.zoomPanelW = viewport.offsetWidth;
+        videoEntry.zoomPanelH = viewport.offsetHeight;
+        persistVideos();
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  function syncZoomIframe(videoEntry, zoomIframe) {
+    zoomIframe.addEventListener(
+      'load',
+      () => {
+        setTimeout(() => {
+          const zoomWin = zoomIframe.contentWindow;
+          if (!zoomWin) {
+            return;
+          }
+          try {
+            zoomWin.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
+          } catch (_) {
+            /* ignore */
+          }
+
+          const mainWin = videoEntry.iframe?.contentWindow;
+          const mainRec = mainWin ? playerStates.get(mainWin) : null;
+          if (mainRec && typeof mainRec.time === 'number') {
+            zoomWin.postMessage(
+              JSON.stringify({ event: 'command', func: 'seekTo', args: [mainRec.time, true] }),
+              ALLOWED_ORIGIN
+            );
+            if (mainRec.state === 1) {
+              zoomWin.postMessage(
+                JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
+                ALLOWED_ORIGIN
+              );
+            }
+          }
+          zoomWin.postMessage(
+            JSON.stringify({ event: 'command', func: 'mute', args: [] }),
+            ALLOWED_ORIGIN
+          );
+        }, 500);
+      },
+      { once: true }
+    );
+
+    // Periodic sync (every 5s) to keep zoom iframe aligned with main
+    videoEntry._zoomSyncInterval = setInterval(() => {
+      if (!videoEntry.zoomPanel) {
+        clearInterval(videoEntry._zoomSyncInterval);
+        videoEntry._zoomSyncInterval = null;
+        return;
+      }
+      const zoomWin = zoomIframe.contentWindow;
+      const mainWin = videoEntry.iframe?.contentWindow;
+      if (!zoomWin || !mainWin) {
+        return;
+      }
+      const mainRec = playerStates.get(mainWin);
+      if (!mainRec || typeof mainRec.time !== 'number') {
+        return;
+      }
+
+      zoomWin.postMessage(
+        JSON.stringify({ event: 'command', func: 'seekTo', args: [mainRec.time, true] }),
+        ALLOWED_ORIGIN
+      );
+      if (mainRec.state === 1) {
+        zoomWin.postMessage(
+          JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
+          ALLOWED_ORIGIN
+        );
+      } else if (mainRec.state === 2) {
+        zoomWin.postMessage(
+          JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }),
+          ALLOWED_ORIGIN
+        );
+      }
+      zoomWin.postMessage(
+        JSON.stringify({ event: 'command', func: 'mute', args: [] }),
+        ALLOWED_ORIGIN
+      );
+    }, 5000);
+  }
 })();
