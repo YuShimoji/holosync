@@ -2171,7 +2171,7 @@
     }, 100);
   });
 
-  // ========== Zoom View Panel ==========
+  // ========== Zoom Loupe (Magnifying Glass) ==========
   function toggleZoomPanel(videoEntry) {
     if (videoEntry.zoomPanel) {
       destroyZoomPanel(videoEntry);
@@ -2185,35 +2185,19 @@
       return;
     }
 
-    const panel = document.createElement('div');
-    panel.className = 'zoom-panel';
-    const panelX = Math.min(
-      Math.max(0, videoEntry.zoomPanelX ?? window.innerWidth - 380),
-      window.innerWidth - 200
-    );
-    const panelY = Math.min(Math.max(0, videoEntry.zoomPanelY ?? 60), window.innerHeight - 100);
-    panel.style.left = panelX + 'px';
-    panel.style.top = panelY + 'px';
-    panel.style.opacity = (videoEntry.zoomOpacity ?? 100) / 100;
+    const diameter = videoEntry.zoomDiameter ?? 250;
+    const scale = videoEntry.zoomScale ?? 3;
+    const originX = videoEntry.zoomOriginX ?? 50;
+    const originY = videoEntry.zoomOriginY ?? 30;
 
-    // Header
-    const header = document.createElement('div');
-    header.className = 'zoom-panel-header';
-    const title = document.createElement('span');
-    title.className = 'zoom-panel-title';
-    title.textContent = '\uD83D\uDD0D ' + (videoEntry.meta?.title || videoEntry.id);
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'zoom-panel-close';
-    closeBtn.textContent = '\u2715';
-    closeBtn.addEventListener('click', () => destroyZoomPanel(videoEntry));
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-
-    // Viewport
-    const viewport = document.createElement('div');
-    viewport.className = 'zoom-panel-viewport';
-    viewport.style.width = (videoEntry.zoomPanelW ?? 320) + 'px';
-    viewport.style.height = (videoEntry.zoomPanelH ?? 180) + 'px';
+    const loupe = document.createElement('div');
+    loupe.className = 'zoom-loupe';
+    const lx = videoEntry.zoomPanelX ?? window.innerWidth - diameter - 40;
+    const ly = videoEntry.zoomPanelY ?? 60;
+    loupe.style.left = Math.max(0, Math.min(lx, window.innerWidth - 100)) + 'px';
+    loupe.style.top = Math.max(0, Math.min(ly, window.innerHeight - 100)) + 'px';
+    loupe.style.width = diameter + 'px';
+    loupe.style.height = diameter + 'px';
 
     const zoomIframe = document.createElement('iframe');
     zoomIframe.src = `https://www.youtube.com/embed/${videoEntry.id}?enablejsapi=1&playsinline=1&mute=1&modestbranding=1&rel=0&controls=0`;
@@ -2221,20 +2205,27 @@
     zoomIframe.loading = 'lazy';
     zoomIframe.setAttribute('referrerpolicy', 'origin');
     zoomIframe.title = `Zoom: ${videoEntry.id}`;
-
-    const scale = videoEntry.zoomScale ?? 2.5;
-    const originX = videoEntry.zoomOriginX ?? 50;
-    const originY = videoEntry.zoomOriginY ?? 20;
     zoomIframe.style.transform = `scale(${scale})`;
     zoomIframe.style.transformOrigin = `${originX}% ${originY}%`;
+    loupe.appendChild(zoomIframe);
 
-    viewport.appendChild(zoomIframe);
+    // Close button (visible on hover)
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'zoom-loupe-close';
+    closeBtn.textContent = '\u2715';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      destroyZoomPanel(videoEntry);
+    });
+    loupe.appendChild(closeBtn);
 
-    // Controls
-    const controls = document.createElement('div');
-    controls.className = 'zoom-panel-controls';
+    // Hover controls tray
+    const tray = document.createElement('div');
+    tray.className = 'zoom-loupe-tray';
 
     function addSlider(labelText, min, max, step, value, onChange) {
+      const row = document.createElement('div');
+      row.className = 'zoom-loupe-slider-row';
       const lbl = document.createElement('label');
       lbl.textContent = labelText;
       const inp = document.createElement('input');
@@ -2243,55 +2234,50 @@
       inp.max = max;
       inp.step = step;
       inp.value = value;
-      const val = document.createElement('span');
-      val.className = 'zoom-val';
-      val.textContent = step >= 1 ? String(Math.round(value)) : Number(value).toFixed(1);
       inp.addEventListener('input', (e) => {
-        const v = parseFloat(e.target.value);
-        val.textContent = step >= 1 ? String(Math.round(v)) : v.toFixed(1);
-        onChange(v);
+        e.stopPropagation();
+        onChange(parseFloat(e.target.value));
       });
-      controls.appendChild(lbl);
-      controls.appendChild(inp);
-      controls.appendChild(val);
+      inp.addEventListener('mousedown', (e) => e.stopPropagation());
+      row.appendChild(lbl);
+      row.appendChild(inp);
+      tray.appendChild(row);
     }
 
     addSlider('X', 0, 100, 1, originX, (v) => {
       videoEntry.zoomOriginX = v;
-      zoomIframe.style.transformOrigin = `${v}% ${videoEntry.zoomOriginY}%`;
+      zoomIframe.style.transformOrigin = `${v}% ${videoEntry.zoomOriginY ?? 30}%`;
       persistVideos();
     });
     addSlider('Y', 0, 100, 1, originY, (v) => {
       videoEntry.zoomOriginY = v;
-      zoomIframe.style.transformOrigin = `${videoEntry.zoomOriginX}% ${v}%`;
+      zoomIframe.style.transformOrigin = `${videoEntry.zoomOriginX ?? 50}% ${v}%`;
       persistVideos();
     });
-    addSlider('\u500D\u7387', 1.5, 5, 0.5, scale, (v) => {
+    addSlider('\u500D', 1.5, 6, 0.5, scale, (v) => {
       videoEntry.zoomScale = v;
       zoomIframe.style.transform = `scale(${v})`;
       persistVideos();
     });
-    addSlider('\u900F\u904E', 10, 100, 5, videoEntry.zoomOpacity ?? 100, (v) => {
-      videoEntry.zoomOpacity = v;
-      panel.style.opacity = v / 100;
+    loupe.appendChild(tray);
+
+    document.body.appendChild(loupe);
+    videoEntry.zoomPanel = loupe;
+
+    // Drag (anywhere on the loupe)
+    setupZoomLoupeDrag(loupe, videoEntry);
+
+    // Scroll wheel to resize
+    loupe.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const cur = videoEntry.zoomDiameter ?? 250;
+      const next = Math.max(100, Math.min(600, cur - Math.sign(e.deltaY) * 30));
+      videoEntry.zoomDiameter = next;
+      loupe.style.width = next + 'px';
+      loupe.style.height = next + 'px';
       persistVideos();
     });
 
-    // Resize handle
-    const resizeEl = document.createElement('div');
-    resizeEl.className = 'zoom-panel-resize';
-    resizeEl.textContent = '\u2922';
-
-    panel.appendChild(header);
-    panel.appendChild(viewport);
-    panel.appendChild(controls);
-    panel.appendChild(resizeEl);
-
-    document.body.appendChild(panel);
-    videoEntry.zoomPanel = panel;
-
-    setupZoomPanelDrag(panel, header, videoEntry);
-    setupZoomPanelResize(panel, viewport, resizeEl, videoEntry);
     syncZoomIframe(videoEntry, zoomIframe);
   }
 
@@ -2306,27 +2292,28 @@
     }
   }
 
-  function setupZoomPanelDrag(panel, header, videoEntry) {
+  function setupZoomLoupeDrag(loupe, videoEntry) {
     let isDragging = false;
     let startX, startY, startLeft, startTop;
 
-    header.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.zoom-panel-close')) {
+    loupe.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.zoom-loupe-close') || e.target.closest('input')) {
         return;
       }
       e.preventDefault();
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
-      startLeft = panel.offsetLeft;
-      startTop = panel.offsetTop;
+      startLeft = loupe.offsetLeft;
+      startTop = loupe.offsetTop;
+      loupe.style.cursor = 'grabbing';
 
       const onMove = (ev) => {
         if (!isDragging) {
           return;
         }
-        panel.style.left = startLeft + ev.clientX - startX + 'px';
-        panel.style.top = startTop + ev.clientY - startY + 'px';
+        loupe.style.left = startLeft + ev.clientX - startX + 'px';
+        loupe.style.top = startTop + ev.clientY - startY + 'px';
       };
 
       const onUp = () => {
@@ -2334,48 +2321,11 @@
           return;
         }
         isDragging = false;
+        loupe.style.cursor = '';
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
-        videoEntry.zoomPanelX = panel.offsetLeft;
-        videoEntry.zoomPanelY = panel.offsetTop;
-        persistVideos();
-      };
-
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  }
-
-  function setupZoomPanelResize(panel, viewport, handle, videoEntry) {
-    let isResizing = false;
-    let startX, startW;
-
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      isResizing = true;
-      startX = e.clientX;
-      startW = viewport.offsetWidth;
-
-      const onMove = (ev) => {
-        if (!isResizing) {
-          return;
-        }
-        const newW = Math.max(160, startW + ev.clientX - startX);
-        const newH = Math.round(newW * (9 / 16));
-        viewport.style.width = newW + 'px';
-        viewport.style.height = newH + 'px';
-      };
-
-      const onUp = () => {
-        if (!isResizing) {
-          return;
-        }
-        isResizing = false;
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        videoEntry.zoomPanelW = viewport.offsetWidth;
-        videoEntry.zoomPanelH = viewport.offsetHeight;
+        videoEntry.zoomPanelX = loupe.offsetLeft;
+        videoEntry.zoomPanelY = loupe.offsetTop;
         persistVideos();
       };
 

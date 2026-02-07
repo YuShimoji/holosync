@@ -133,9 +133,6 @@
 
       <footer class="footer">
         <small>HoloSync Web</small>
-        <button id="debugToggle" class="debug-toggle" title="デバッグパネル切り替え">
-          🐛 Debug
-        </button>
       </footer>
     </aside>
 
@@ -162,19 +159,25 @@
           <span id="gridGapVal">8</span>px
         </div>
         <div class="drop-zone-hint" id="dropHint" hidden>ここにYouTube URLをドロップ</div>
+        <button
+          id="debugToggle"
+          class="debug-toggle toolbar-debug-toggle"
+          title="デバッグパネル切り替え"
+        >
+          🐛 Debug
+        </button>
+      </div>
+      <div id="debugPanel" class="debug-panel" hidden>
+        <header class="debug-header">
+          <h3>同期デバッグパネル</h3>
+          <button id="debugClose" class="debug-close" title="パネルを閉じる">×</button>
+        </header>
+        <div id="debugContent" class="debug-content">
+          <p>動画を追加して再生を開始すると、状態が表示されます。</p>
+        </div>
       </div>
       <div id="grid" class="grid" aria-live="polite"></div>
     </main>
-
-    <div id="debugPanel" class="debug-panel" hidden>
-      <header class="debug-header">
-        <h3>同期デバッグパネル</h3>
-        <button id="debugClose" class="debug-close" title="パネルを閉じる">×</button>
-      </header>
-      <div id="debugContent" class="debug-content">
-        <p>動画を追加して再生を開始すると、状態が表示されます。</p>
-      </div>
-    </div>
 
     <script src="scripts/storage.js"></script>
     <script src="scripts/main.js"></script>

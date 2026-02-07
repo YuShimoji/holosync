@@ -861,20 +861,29 @@ button:active {
   border: 1px solid #d1d5db;
   color: #374151;
 }
+.toolbar-debug-toggle {
+  margin-left: auto;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.toolbar-debug-toggle:hover {
+  background: #d1d5db;
+}
 
 .debug-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 400px;
-  max-height: 100vh;
   background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   color: var(--color-text);
+  max-height: 40vh;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.debug-panel[hidden] {
+  display: none;
 }
 
 .debug-header {
@@ -989,68 +998,24 @@ button:active {
   border-radius: 4px;
 }
 
-/* ========== Zoom View Panel ========== */
-.zoom-panel {
+/* ========== Zoom Loupe (Magnifying Glass) ========== */
+.zoom-loupe {
   position: fixed;
   z-index: 500;
-  background: #1a1a2e;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  min-width: 180px;
-  user-select: none;
-}
-.zoom-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.06);
-  cursor: grab;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.zoom-panel-header:active {
-  cursor: grabbing;
-}
-.zoom-panel-title {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-.zoom-panel-close {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  cursor: pointer;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-.zoom-panel-close:hover {
-  background: rgba(220, 38, 38, 0.6);
-  color: #fff;
-}
-.zoom-panel-viewport {
-  position: relative;
   overflow: hidden;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.25),
+    0 0 0 5px rgba(0, 0, 0, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  user-select: none;
   background: #000;
 }
-.zoom-panel-viewport iframe {
+.zoom-loupe:active {
+  cursor: grabbing;
+}
+.zoom-loupe iframe {
   position: absolute;
   top: 0;
   left: 0;
@@ -1059,46 +1024,67 @@ button:active {
   border: 0;
   pointer-events: none;
 }
-.zoom-panel-controls {
-  padding: 8px 10px;
-  display: grid;
-  grid-template-columns: 32px 1fr 32px;
-  gap: 4px 6px;
-  align-items: center;
-}
-.zoom-panel-controls label {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 10px;
-  white-space: nowrap;
-}
-.zoom-panel-controls input[type='range'] {
-  width: 100%;
-  height: 14px;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-.zoom-val {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: right;
-}
-.zoom-panel-resize {
+.zoom-loupe-close {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 16px;
-  height: 16px;
-  cursor: nwse-resize;
-  opacity: 0.3;
-  transition: opacity 0.15s;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  z-index: 10;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    background 0.15s;
 }
-.zoom-panel-resize:hover {
-  opacity: 0.8;
+.zoom-loupe:hover .zoom-loupe-close {
+  opacity: 1;
+}
+.zoom-loupe-close:hover {
+  background: rgba(220, 38, 38, 0.8);
+  color: #fff;
+}
+.zoom-loupe-tray {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+.zoom-loupe:hover .zoom-loupe-tray {
+  opacity: 1;
+}
+.zoom-loupe-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.zoom-loupe-slider-row label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  min-width: 16px;
+  white-space: nowrap;
+}
+.zoom-loupe-slider-row input[type='range'] {
+  flex: 1;
+  height: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
