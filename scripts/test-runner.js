@@ -46,7 +46,9 @@ function getYearMonth() {
  * 連番生成
  */
 function getNextSequence(ymDir) {
-  if (!fs.existsSync(ymDir)) {return '001';}
+  if (!fs.existsSync(ymDir)) {
+    return '001';
+  }
 
   const dirs = fs
     .readdirSync(ymDir, { withFileTypes: true })
@@ -54,7 +56,9 @@ function getNextSequence(ymDir) {
     .map((d) => d.name)
     .sort();
 
-  if (dirs.length === 0) {return '001';}
+  if (dirs.length === 0) {
+    return '001';
+  }
 
   const last = dirs[dirs.length - 1];
   const seq = parseInt(last.split('_')[1], 10) + 1;
@@ -89,15 +93,119 @@ function prepareArtifactDir() {
 }
 
 /**
+ * Playwrightテスト結果フォルダから成果物をコピー
+ */
+function collectArtifacts(artifactDir) {
+  const playwrightDirs = {
+    report: CONFIG.playwrightReportDir,
+    results: CONFIG.testResultsDir,
+  };
+
+  console.log('📦 成果物を収集中...');
+
+  // HTMLレポートコピー
+  if (fs.existsSync(playwrightDirs.report)) {
+    console.log(`  - HTMLレポート: ${playwrightDirs.report}`);
+    fs.cpSync(playwrightDirs.report, path.join(artifactDir, 'report'), {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  // test-resultsから成果物抽出
+  if (fs.existsSync(playwrightDirs.results)) {
+    const resultDirs = fs
+      .readdirSync(playwrightDirs.results, { withFileTypes: true })
+      .filter((d) => d.isDirectory());
+
+    let screenshotCount = 0;
+    let videoCount = 0;
+    let traceCount = 0;
+
+    resultDirs.forEach((dir) => {
+      const srcPath = path.join(playwrightDirs.results, dir.name);
+      const files = fs.readdirSync(srcPath);
+
+      files.forEach((file) => {
+        const srcFile = path.join(srcPath, file);
+
+        if (file.endsWith('.png')) {
+          fs.copyFileSync(srcFile, path.join(artifactDir, 'screenshots', file));
+          screenshotCount++;
+        } else if (file.endsWith('.webm')) {
+          fs.copyFileSync(srcFile, path.join(artifactDir, 'videos', file));
+          videoCount++;
+        } else if (file.endsWith('.zip')) {
+          fs.copyFileSync(srcFile, path.join(artifactDir, 'traces', file));
+          traceCount++;
+        }
+      });
+    });
+
+    console.log(`  - スクリーンショット: ${screenshotCount}個`);
+    console.log(`  - 動画: ${videoCount}個`);
+    console.log(`  - トレース: ${traceCount}個`);
+  }
+
+  // JSONレポートもコピー
+  const jsonReport = path.join(playwrightDirs.results, 'results.json');
+  if (fs.existsSync(jsonReport)) {
+    fs.copyFileSync(jsonReport, path.join(artifactDir, 'results.json'));
+    console.log('  - JSONレポート: results.json');
+  }
+}
+
+/**
+ * エラーサマリー生成
+ */
+function generateErrorSummary(artifactDir) {
+  const lastRunPath = path.join(CONFIG.testResultsDir, '.last-run.json');
+
+  if (!fs.existsSync(lastRunPath)) {
+    console.log('⚠️  .last-run.json が見つかりません');
+    return;
+  }
+
+  try {
+    const lastRun = JSON.parse(fs.readFileSync(lastRunPath, 'utf8'));
+
+    const summary = {
+      status: lastRun.status,
+      failedCount: lastRun.failedTests?.length || 0,
+      failedTests: lastRun.failedTests || [],
+      timestamp: new Date().toISOString(),
+    };
+
+    fs.writeFileSync(
+      path.join(artifactDir, 'error-summary.json'),
+      JSON.stringify(summary, null, 2)
+    );
+
+    console.log(`📝 エラーサマリー生成: error-summary.json`);
+    console.log(`   失敗テスト数: ${summary.failedCount}`);
+  } catch (error) {
+    console.error('エラーサマリー生成失敗:', error.message);
+  }
+}
+
+/**
  * Playwright実行
  */
 function runPlaywright(options, artifactDir) {
   const args = ['playwright', 'test'];
 
-  if (options.ui) {args.push('--ui');}
-  if (options.debug) {args.push('--debug');}
-  if (options.grep) {args.push(`--grep "${options.grep}"`);}
-  if (options.project) {args.push(`--project="${options.project}"`);}
+  if (options.ui) {
+    args.push('--ui');
+  }
+  if (options.debug) {
+    args.push('--debug');
+  }
+  if (options.grep) {
+    args.push(`--grep "${options.grep}"`);
+  }
+  if (options.project) {
+    args.push(`--project="${options.project}"`);
+  }
 
   // レポート出力先設定
   const reporterArgs = [
@@ -109,6 +217,8 @@ function runPlaywright(options, artifactDir) {
   console.log(`▶️  テスト実行: npx ${args.join(' ')}`);
   console.log(`📁 成果物: ${artifactDir}\n`);
 
+  let success = false;
+
   try {
     execSync(`npx ${args.join(' ')}`, {
       stdio: 'inherit',
@@ -118,11 +228,21 @@ function runPlaywright(options, artifactDir) {
         PLAYWRIGHT_HTML_REPORT: path.join(artifactDir, 'report'),
       },
     });
-    return true;
+    success = true;
   } catch (e) {
     console.error('❌ テスト失敗');
-    return false;
+    success = false;
+  } finally {
+    // 成功・失敗に関わらず成果物を収集
+    collectArtifacts(artifactDir);
+
+    // エラーサマリー生成（失敗時のみ）
+    if (!success) {
+      generateErrorSummary(artifactDir);
+    }
   }
+
+  return success;
 }
 
 /**

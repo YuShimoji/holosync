@@ -25,8 +25,8 @@ jobs:
   e2e:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
+    timeout-minutes: 20  # 15分→20分に延長（YouTube読み込み考慮）
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,18 +42,22 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm i; fi
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+        run: |
+          npx playwright install --with-deps chromium firefox webkit
+          npx playwright install-deps  # システム依存関係も確実にインストール
 
       - name: Run Playwright tests
         run: npx playwright test
         env:
           CI: true
+          # YouTube読み込み安定性向上
+          PLAYWRIGHT_TIMEOUT: 60000
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.run_number }}
           path: |
             playwright-report/
             test-results/
@@ -63,6 +67,14 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-screenshots
+          name: playwright-screenshots-${{ github.run_number }}
           path: test-results/**/*.png
+          retention-days: 7
+
+      - name: Upload videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos-${{ github.run_number }}
+          path: test-results/**/*.webm
           retention-days: 7
