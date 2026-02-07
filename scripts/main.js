@@ -256,6 +256,73 @@
     return null;
   }
 
+  /**
+   * Attempt to recover a video player from a suspended/error state.
+   * @param {object} video - Video object containing iframe and id
+   * @param {string} reason - Suspension reason (buffering, stalled, ad, paused, no-state, no-time)
+   * @param {object} leaderRecord - Current leader player's state record
+   */
+  function attemptRecovery(video, reason, leaderRecord) {
+    if (!SYNC_SETTINGS.retryOnError) {
+      return;
+    }
+
+    const iframe = video.iframe;
+    if (!iframe) {
+      return;
+    }
+
+    // Reason-based recovery strategy
+    switch (reason) {
+      case 'buffering':
+      case 'stalled':
+        if (SYNC_SETTINGS.fallbackMode === 'mute-continue') {
+          // Ensure muted and try to continue playback
+          sendCommand(iframe, 'mute');
+          sendCommand(iframe, 'playVideo');
+        } else if (SYNC_SETTINGS.fallbackMode === 'pause-catchup') {
+          // Pause and wait for buffer to recover
+          sendCommand(iframe, 'pauseVideo');
+          // Will be re-synced in next reconcile cycle
+        }
+        // 'none': do nothing
+        break;
+
+      case 'paused':
+        // Sync with leader's play state
+        if (leaderRecord && leaderRecord.state === 1) {
+          sendCommand(iframe, 'playVideo');
+        }
+        break;
+
+      case 'ad':
+        // Ads will resolve on their own, just maintain mute if needed
+        if (SYNC_SETTINGS.fallbackMode === 'mute-continue') {
+          sendCommand(iframe, 'mute');
+        }
+        break;
+
+      case 'no-state':
+      case 'no-time': {
+        // Request fresh snapshot
+        const win = iframe.contentWindow;
+        if (win) {
+          requestPlayerSnapshot(win);
+        }
+        break;
+      }
+
+      default: {
+        // Unknown reason, request snapshot
+        const w = iframe.contentWindow;
+        if (w) {
+          requestPlayerSnapshot(w);
+        }
+        break;
+      }
+    }
+  }
+
   function reconcile() {
     try {
       if (!videos.length) {
@@ -345,29 +412,6 @@
       }
     } catch (_) {
       // ignore
-    }
-  }
-
-  function attemptRecovery(video, reason, leaderRecord) {
-    if (!SYNC_SETTINGS.retryOnError) {
-      return;
-    }
-    if (!video || !video.iframe) {
-      return;
-    }
-    const iframe = video.iframe;
-    if (SYNC_SETTINGS.fallbackMode === 'mute-continue') {
-      sendCommand(iframe, 'mute');
-      if (leaderRecord && leaderRecord.state === 1) {
-        sendCommand(iframe, 'playVideo');
-      }
-    } else if (SYNC_SETTINGS.fallbackMode === 'pause-catchup') {
-      sendCommand(iframe, 'pauseVideo');
-      if (leaderRecord && typeof leaderRecord.time === 'number') {
-        sendCommand(iframe, 'seekTo', [leaderRecord.time, true]);
-      }
-    } else {
-      void reason;
     }
   }
 
@@ -833,17 +877,27 @@
   // Update leader options when videos change
   let reconcileInterval = setInterval(reconcile, SYNC_SETTINGS.probeIntervalMs);
 
-  // Debug panel toggle
-  debugToggle.addEventListener('click', () => {
-    debugPanel.hidden = !debugPanel.hidden;
-    if (!debugPanel.hidden) {
-      updateDebugPanel();
-    }
-  });
+  // Debug panel toggle - DOM読み込み完了後に設定
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setupDebugPanel();
+    });
+  } else {
+    setupDebugPanel();
+  }
 
-  debugClose.addEventListener('click', () => {
-    debugPanel.hidden = true;
-  });
+  function setupDebugPanel() {
+    debugToggle.addEventListener('click', () => {
+      debugPanel.hidden = !debugPanel.hidden;
+      if (!debugPanel.hidden) {
+        updateDebugPanel();
+      }
+    });
+
+    debugClose.addEventListener('click', () => {
+      debugPanel.hidden = true;
+    });
+  }
 
   // Update debug panel content
   function updateDebugPanel() {

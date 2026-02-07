@@ -35,7 +35,7 @@
       "env": { "jest": true }
     },
     {
-      "files": ["scripts/detect-project-type.js"],
+      "files": ["scripts/detect-project-type.js", "scripts/test-runner.js"],
       "env": { "node": true }
     }
   ]

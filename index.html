@@ -96,9 +96,27 @@
         </label>
       </section>
 
+      <section class="section recovery-settings">
+        <h2>回復設定</h2>
+        <label>
+          <input type="checkbox" id="retryOnError" checked />
+          エラー時に自動回復を試行
+        </label>
+        <label>
+          <select id="fallbackMode">
+            <option value="mute-continue" selected>ミュート継続</option>
+            <option value="pause-catchup">一時停止後追いかけ再生</option>
+            <option value="none">なし</option>
+          </select>
+          フォールバックモード
+        </label>
+      </section>
+
       <footer class="footer">
         <small>HoloSync Web</small>
-        <button id="debugToggle" class="debug-toggle" title="デバッグパネル切り替え">🐛 Debug</button>
+        <button id="debugToggle" class="debug-toggle" title="デバッグパネル切り替え">
+          🐛 Debug
+        </button>
       </footer>
     </aside>
 

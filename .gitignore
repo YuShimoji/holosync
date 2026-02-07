@@ -22,6 +22,11 @@ public/
 docs/html/
 artifacts/
 
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
 # Misc
 *.zip
 *.tar.gz
