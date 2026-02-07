@@ -9,6 +9,12 @@
   const urlInput = document.getElementById('urlInput');
   const addError = document.getElementById('addError');
 
+  // Phase 1: Layout controls
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarOpen = document.getElementById('sidebarOpen');
+  const layoutSelect = document.getElementById('layoutSelect');
+  const dropHint = document.getElementById('dropHint');
+
   const searchForm = document.getElementById('searchForm');
   const searchInput = document.getElementById('searchInput');
   const searchResults = document.getElementById('searchResults');
@@ -52,6 +58,7 @@
     'unMute',
     'setVolume',
     'seekTo',
+    'setPlaybackRate',
   ]);
   const SYNC_SETTINGS = {
     toleranceMs: 300,
@@ -71,8 +78,12 @@
   }
 
   function persistVideos() {
-    const ids = videos.map((v) => v.id);
-    window.storageAdapter.setItem('videos', ids);
+    const data = videos.map((v) => ({
+      id: v.id,
+      syncGroupId: v.syncGroupId,
+      offsetMs: v.offsetMs,
+    }));
+    window.storageAdapter.setItem('videos', data);
   }
 
   function persistVolume(val) {
@@ -127,31 +138,213 @@
     }
   }
 
-  function createTile(videoId) {
+  function createTile(videoId, options = {}) {
     const tile = document.createElement('div');
     tile.className = 'tile';
+    tile.dataset.videoId = videoId;
 
     const frameWrap = document.createElement('div');
     frameWrap.className = 'frame-wrap';
 
     const iframe = document.createElement('iframe');
-    iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&playsinline=1&mute=1`;
+    iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&playsinline=1&mute=1&modestbranding=1&rel=0`;
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
     iframe.loading = 'lazy';
     iframe.setAttribute('referrerpolicy', 'origin');
     iframe.setAttribute('allowfullscreen', '');
     iframe.title = `YouTube video ${videoId}`;
 
+    const initialGroupId = options.syncGroupId ?? null;
+
+    // Sync group badge (Phase 3-1)
+    const syncBadge = document.createElement('div');
+    syncBadge.className = 'tile-sync-badge' + (initialGroupId ? '' : ' no-sync');
+    syncBadge.textContent = initialGroupId || '独立';
+    syncBadge.title = '同期グループ';
+
+    // Action buttons container (Phase 1-3 + existing remove)
+    const actions = document.createElement('div');
+    actions.className = 'tile-actions';
+
+    const fullscreenBtn = document.createElement('button');
+    fullscreenBtn.className = 'tile-action-btn';
+    fullscreenBtn.textContent = '⛶';
+    fullscreenBtn.title = 'フルスクリーン';
+    fullscreenBtn.addEventListener('click', () => {
+      if (frameWrap.requestFullscreen) {
+        frameWrap.requestFullscreen();
+      }
+    });
+
+    const popoutBtn = document.createElement('button');
+    popoutBtn.className = 'tile-action-btn';
+    popoutBtn.textContent = '↗';
+    popoutBtn.title = 'ポップアウト';
+    popoutBtn.addEventListener('click', () => {
+      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0`;
+      window.open(
+        embedUrl,
+        `holosync-${videoId}`,
+        'width=640,height=360,menubar=no,toolbar=no,location=no'
+      );
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'tile-action-btn tile-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'この動画を削除';
+    removeBtn.addEventListener('click', () => removeVideo(videoId, tile));
+
+    actions.appendChild(fullscreenBtn);
+    actions.appendChild(popoutBtn);
+    actions.appendChild(removeBtn);
+
+    // Info header (collapsible, Phase 2-1)
+    const infoHeader = document.createElement('div');
+    infoHeader.className = 'tile-info-header';
+    const infoTitle = document.createElement('span');
+    infoTitle.className = 'tile-info-title';
+    infoTitle.textContent = videoId;
+    const infoToggleIcon = document.createElement('span');
+    infoToggleIcon.className = 'tile-info-toggle';
+    infoToggleIcon.textContent = '▼';
+    infoHeader.appendChild(infoTitle);
+    infoHeader.appendChild(infoToggleIcon);
+
+    // Info body (hidden by default)
+    const infoPanel = document.createElement('div');
+    infoPanel.className = 'tile-info';
+    const infoBody = document.createElement('div');
+    infoBody.className = 'tile-info-body';
+    infoBody.innerHTML = '<em>読み込み中...</em>';
+    infoPanel.appendChild(infoBody);
+
+    infoHeader.addEventListener('click', () => {
+      const isOpen = infoPanel.classList.toggle('open');
+      infoToggleIcon.textContent = isOpen ? '▲' : '▼';
+    });
+
+    // Double-click on frameWrap for fullscreen (Phase 1-3)
+    frameWrap.addEventListener('dblclick', () => {
+      if (frameWrap.requestFullscreen) {
+        frameWrap.requestFullscreen();
+      }
+    });
+
+    // Offset control (Phase 3-3)
+    const offsetControl = document.createElement('div');
+    offsetControl.className = 'tile-offset-control';
+    const offsetInput = document.createElement('input');
+    offsetInput.type = 'number';
+    offsetInput.className = 'tile-offset-input';
+    offsetInput.value = String(options.offsetMs ?? 0);
+    offsetInput.step = '100';
+    offsetInput.placeholder = '0';
+    offsetInput.title = 'リーダーからのオフセット (ms)';
+    const offsetLabel = document.createElement('span');
+    offsetLabel.className = 'tile-offset-label';
+    offsetLabel.textContent = 'ms';
+    offsetControl.appendChild(offsetInput);
+    offsetControl.appendChild(offsetLabel);
+
     frameWrap.appendChild(iframe);
+    tile.appendChild(syncBadge);
+    tile.appendChild(offsetControl);
+    tile.appendChild(actions);
     tile.appendChild(frameWrap);
+    tile.appendChild(infoHeader);
+    tile.appendChild(infoPanel);
 
     gridEl.appendChild(tile);
 
-    videos.push({ iframe, id: videoId });
+    const videoEntry = {
+      iframe,
+      id: videoId,
+      tile,
+      syncGroupId: initialGroupId,
+      offsetMs: options.offsetMs ?? 0,
+      meta: null,
+    };
+    videos.push(videoEntry);
+
+    offsetInput.addEventListener('change', () => {
+      videoEntry.offsetMs = parseInt(offsetInput.value, 10) || 0;
+      persistVideos();
+    });
+
     initializeSyncForIframe(iframe);
+    fetchVideoMeta(videoId, infoTitle, infoBody);
     if (!isRestoring) {
       persistVideos();
     }
+  }
+
+  /** Fetch video metadata via oEmbed (no API key needed) */
+  async function fetchVideoMeta(videoId, titleEl, bodyEl) {
+    try {
+      const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        bodyEl.textContent = 'メタデータ取得失敗';
+        return;
+      }
+      const data = await resp.json();
+      const entry = videos.find((v) => v.id === videoId);
+      if (entry) {
+        entry.meta = { title: data.title, author: data.author_name };
+      }
+      titleEl.textContent = data.title || videoId;
+      bodyEl.innerHTML = '';
+      const channelDiv = document.createElement('div');
+      channelDiv.className = 'info-channel';
+      channelDiv.textContent = data.author_name || '';
+      bodyEl.appendChild(channelDiv);
+
+      // If Data API key is available, fetch description
+      if (window.YOUTUBE_API_KEY) {
+        fetchVideoDescription(videoId, bodyEl);
+      }
+    } catch (_) {
+      bodyEl.textContent = 'メタデータ取得失敗';
+    }
+  }
+
+  /** Fetch video description via YouTube Data API (optional) */
+  async function fetchVideoDescription(videoId, bodyEl) {
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${window.YOUTUBE_API_KEY}`;
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        return;
+      }
+      const data = await resp.json();
+      if (data.items && data.items[0]) {
+        const desc = data.items[0].snippet.description || '';
+        const descDiv = document.createElement('div');
+        descDiv.className = 'info-description';
+        descDiv.textContent = desc;
+        bodyEl.appendChild(descDiv);
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  function removeVideo(videoId, tile) {
+    const idx = videos.findIndex((v) => v.id === videoId);
+    if (idx === -1) {
+      return;
+    }
+    const video = videos[idx];
+    const win = video.iframe?.contentWindow;
+    if (win) {
+      playerStates.delete(win);
+      suspendedPlayers.delete(win);
+    }
+    video.iframe.src = '';
+    tile.remove();
+    videos.splice(idx, 1);
+    persistVideos();
   }
 
   function initializeSyncForIframe(iframe) {
@@ -390,6 +583,18 @@
         }
       }
 
+      // Attempt recovery for currently suspended players
+      for (const v of videos) {
+        const win = v.iframe?.contentWindow;
+        if (!win) {
+          continue;
+        }
+        const suspended = suspendedPlayers.get(win);
+        if (suspended) {
+          attemptRecovery(v, suspended.reason, leaderRecord);
+        }
+      }
+
       const rejoinToleranceSeconds =
         (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
       for (const entry of rejoinQueue) {
@@ -431,6 +636,13 @@
       const t = Number(args?.[0]);
       const seconds = Number.isFinite(t) ? Math.max(0, t) : 0;
       return [seconds, true];
+    }
+    if (func === 'setPlaybackRate') {
+      const r = parseFloat(args[0]);
+      if (Number.isFinite(r) && r >= 0.25 && r <= 2) {
+        return [r];
+      }
+      return [1];
     }
     return [];
   }
@@ -478,8 +690,43 @@
     videos.forEach((v) => sendCommand(v.iframe, 'unMute'));
   }
 
+  function syncAll() {
+    if (!videos.length) {
+      return;
+    }
+    const now = Date.now();
+    const activeEntries = [];
+    for (const v of videos) {
+      const win = v.iframe?.contentWindow;
+      if (!win) {
+        continue;
+      }
+      const rec = playerStates.get(win);
+      if (!getSuspensionReason(rec, now)) {
+        activeEntries.push({ v, rec, win });
+      }
+    }
+    const leader = pickLeader(activeEntries);
+    if (!leader || typeof leader.rec?.time !== 'number') {
+      return;
+    }
+    for (const v of videos) {
+      if (v === leader.v) {
+        continue;
+      }
+      sendCommand(v.iframe, 'seekTo', [leader.rec.time, true]);
+      if (leader.rec.state === 1) {
+        sendCommand(v.iframe, 'playVideo');
+      }
+    }
+  }
+
   function setVolumeAll(val) {
     videos.forEach((v) => sendCommand(v.iframe, 'setVolume', [val]));
+  }
+
+  function setSpeedAll(rate) {
+    videos.forEach((v) => sendCommand(v.iframe, 'setPlaybackRate', [rate]));
   }
 
   addForm.addEventListener('submit', (e) => {
@@ -502,10 +749,21 @@
     urlInput.focus();
   });
 
+  const syncAllBtn = document.getElementById('syncAll');
+  const speedAllSelect = document.getElementById('speedAll');
+
   playAllBtn.addEventListener('click', playAll);
   pauseAllBtn.addEventListener('click', pauseAll);
   muteAllBtn.addEventListener('click', muteAll);
   unmuteAllBtn.addEventListener('click', unmuteAll);
+  syncAllBtn.addEventListener('click', syncAll);
+
+  speedAllSelect.addEventListener('change', (e) => {
+    const rate = parseFloat(e.target.value);
+    if (Number.isFinite(rate)) {
+      setSpeedAll(rate);
+    }
+  });
 
   volumeAll.addEventListener('input', (e) => {
     const val = parseInt(e.target.value, 10);
@@ -531,9 +789,13 @@
         volumeVal.textContent = String(vol);
       }
       isRestoring = true;
-      (storedVideos || []).forEach((vid) => {
+      (storedVideos || []).forEach((entry) => {
+        // Support both old format (string) and new format (object)
+        const vid = typeof entry === 'string' ? entry : entry?.id;
+        const syncGroupId = typeof entry === 'object' ? (entry.syncGroupId ?? null) : null;
+        const offsetMs = typeof entry === 'object' ? (entry.offsetMs ?? 0) : 0;
         if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
-          createTile(vid);
+          createTile(vid, { syncGroupId, offsetMs });
         }
       });
       isRestoring = false;
@@ -633,12 +895,62 @@
       presetList.innerHTML = '';
       presets.forEach((preset) => {
         const li = document.createElement('li');
-        li.textContent = preset.name;
+        li.className = 'preset-item';
+
+        // Thumbnail row (up to 3 small thumbnails)
+        const thumbRow = document.createElement('div');
+        thumbRow.className = 'preset-thumbs';
+        (preset.videoIds || []).slice(0, 3).forEach((vid) => {
+          const img = document.createElement('img');
+          img.src = `https://img.youtube.com/vi/${vid}/default.jpg`;
+          img.alt = '';
+          img.className = 'preset-thumb';
+          thumbRow.appendChild(img);
+        });
+
+        const info = document.createElement('div');
+        info.className = 'preset-info';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'preset-name';
+        nameSpan.textContent = preset.name;
+        const meta = document.createElement('span');
+        meta.className = 'preset-meta';
+        const count = (preset.videoIds || []).length;
+        const dateStr = preset.updatedAt ? new Date(preset.updatedAt).toLocaleDateString() : '';
+        meta.textContent = `${count}本 ${dateStr}`;
+        info.appendChild(nameSpan);
+        info.appendChild(meta);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'preset-delete';
+        deleteBtn.textContent = '✕';
+        deleteBtn.title = 'プリセットを削除';
+        deleteBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm(`プリセット "${preset.name}" を削除しますか？`)) {
+            await deletePreset(preset.name);
+          }
+        });
+
+        li.appendChild(thumbRow);
+        li.appendChild(info);
+        li.appendChild(deleteBtn);
         li.addEventListener('click', () => loadPreset(preset.name));
         presetList.appendChild(li);
       });
     } catch (error) {
       console.error('Load presets failed:', error);
+    }
+  }
+
+  async function deletePreset(name) {
+    try {
+      const presets = (await window.storageAdapter.getItem('presets')) || [];
+      const filtered = presets.filter((p) => p.name !== name);
+      await window.storageAdapter.setItem('presets', filtered);
+      loadPresets();
+    } catch (error) {
+      console.error('Delete preset failed:', error);
     }
   }
 
@@ -649,9 +961,18 @@
         return;
       }
 
-      // Clear current videos
-      videos.forEach((v) => v.iframe.remove());
+      // Clear current videos properly
+      for (const v of videos) {
+        const win = v.iframe?.contentWindow;
+        if (win) {
+          playerStates.delete(win);
+          suspendedPlayers.delete(win);
+        }
+        v.iframe.src = '';
+        v.tile?.remove();
+      }
       videos.length = 0;
+      gridEl.innerHTML = '';
 
       // Load preset videos
       preset.videoIds.forEach((id) => {
@@ -659,11 +980,8 @@
           createTile(id);
         }
       });
-
-      alert(`プリセット "${name}" を読み込みました。`);
     } catch (error) {
       console.error('Load preset failed:', error);
-      alert('プリセット読み込みに失敗しました。');
     }
   }
 
@@ -1039,4 +1357,404 @@
         return state >= 100 ? '広告中' : `不明(${state})`;
     }
   }
+
+  // ========== Phase 1-1: Sidebar collapse ==========
+  function setSidebarCollapsed(collapsed) {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarOpen.hidden = !collapsed;
+    window.storageAdapter.setItem('sidebarCollapsed', collapsed);
+  }
+
+  sidebarToggle.addEventListener('click', () => {
+    setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+  });
+  sidebarOpen.addEventListener('click', () => {
+    setSidebarCollapsed(false);
+  });
+
+  // Restore sidebar state
+  (async () => {
+    const collapsed = await window.storageAdapter.getItem('sidebarCollapsed');
+    if (collapsed === true) {
+      setSidebarCollapsed(true);
+    }
+  })();
+
+  // ========== Phase 1-2: Layout presets ==========
+  function setLayout(mode) {
+    // Remove all layout classes
+    gridEl.className = 'grid';
+    if (mode && mode !== 'auto') {
+      gridEl.classList.add(`layout-${mode}`);
+    }
+    window.storageAdapter.setItem('layoutMode', mode);
+  }
+
+  layoutSelect.addEventListener('change', (e) => {
+    setLayout(e.target.value);
+  });
+
+  // Restore layout
+  (async () => {
+    const mode = await window.storageAdapter.getItem('layoutMode');
+    if (mode && mode !== 'auto') {
+      layoutSelect.value = mode;
+      setLayout(mode);
+    }
+  })();
+
+  // ========== Phase 2-2: Drag & Drop + Clipboard ==========
+  function handleDroppedText(text) {
+    if (!text) {
+      return;
+    }
+    // Try to extract YouTube URLs/IDs from dropped text
+    const lines = text.split(/[\s\n]+/);
+    let added = 0;
+    for (const line of lines) {
+      const id = parseYouTubeId(line.trim());
+      if (id && !hasVideo(id)) {
+        createTile(id);
+        added++;
+      }
+    }
+    return added;
+  }
+
+  // Drag and drop on grid
+  gridEl.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    gridEl.classList.add('drag-over');
+    dropHint.hidden = false;
+  });
+  gridEl.addEventListener('dragleave', (e) => {
+    if (!gridEl.contains(e.relatedTarget)) {
+      gridEl.classList.remove('drag-over');
+      dropHint.hidden = true;
+    }
+  });
+  gridEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    gridEl.classList.remove('drag-over');
+    dropHint.hidden = true;
+    const text = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list');
+    handleDroppedText(text);
+  });
+
+  // Also allow drop on the whole content area
+  const contentEl = document.getElementById('content');
+  contentEl.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    dropHint.hidden = false;
+  });
+  contentEl.addEventListener('dragleave', (e) => {
+    if (!contentEl.contains(e.relatedTarget)) {
+      dropHint.hidden = true;
+    }
+  });
+  contentEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropHint.hidden = true;
+    const text = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list');
+    handleDroppedText(text);
+  });
+
+  // Clipboard paste support (Ctrl+V anywhere outside input)
+  document.addEventListener('paste', (e) => {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      return;
+    }
+    const text = e.clipboardData?.getData('text/plain');
+    if (text) {
+      const added = handleDroppedText(text);
+      if (added > 0) {
+        e.preventDefault();
+      }
+    }
+  });
+
+  // ========== Phase 3-1: Sync Groups ==========
+  const SYNC_GROUPS = ['A', 'B', 'C'];
+
+  function setSyncGroup(videoId, groupId) {
+    const entry = videos.find((v) => v.id === videoId);
+    if (!entry) {
+      return;
+    }
+    entry.syncGroupId = groupId;
+    // Update badge
+    const badge = entry.tile?.querySelector('.tile-sync-badge');
+    if (badge) {
+      if (groupId) {
+        badge.textContent = groupId;
+        badge.classList.remove('no-sync');
+      } else {
+        badge.textContent = '独立';
+        badge.classList.add('no-sync');
+      }
+    }
+    persistVideos();
+  }
+
+  // Context menu on sync badge to change group
+  gridEl.addEventListener('click', (e) => {
+    const badge = e.target.closest('.tile-sync-badge');
+    if (!badge) {
+      return;
+    }
+    const tile = badge.closest('.tile');
+    if (!tile) {
+      return;
+    }
+    const videoId = tile.dataset.videoId;
+    const entry = videos.find((v) => v.id === videoId);
+    if (!entry) {
+      return;
+    }
+    // Cycle through groups: A -> B -> C -> null (independent) -> A
+    const options = [...SYNC_GROUPS, null];
+    const currentIdx = options.indexOf(entry.syncGroupId);
+    const nextIdx = (currentIdx + 1) % options.length;
+    setSyncGroup(videoId, options[nextIdx]);
+  });
+
+  // ========== Phase 3-1: Group-aware reconcile override ==========
+  // Replace reconcile with group-aware version
+  function groupAwareReconcile() {
+    try {
+      if (!videos.length) {
+        return;
+      }
+      const now = Date.now();
+
+      // Group videos by syncGroupId
+      const groups = new Map();
+      for (const v of videos) {
+        const gid = v.syncGroupId;
+        if (!gid) {
+          continue;
+        }
+        if (!groups.has(gid)) {
+          groups.set(gid, []);
+        }
+        groups.get(gid).push(v);
+      }
+
+      // Reconcile each group independently
+      for (const [, groupVideos] of groups) {
+        reconcileGroup(groupVideos, now);
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  function reconcileGroup(groupVideos, now) {
+    const activeEntries = [];
+    const rejoinQueue = [];
+
+    for (const v of groupVideos) {
+      const win = v.iframe?.contentWindow;
+      if (!win) {
+        continue;
+      }
+      const record = playerStates.get(win);
+      const suspension = getSuspensionReason(record, now);
+      if (suspension) {
+        const previous = suspendedPlayers.get(win);
+        if (!previous || previous.reason !== suspension) {
+          suspendedPlayers.set(win, { since: now, reason: suspension });
+        }
+        continue;
+      }
+      if (suspendedPlayers.has(win)) {
+        const previousSuspension = suspendedPlayers.get(win);
+        suspendedPlayers.delete(win);
+        rejoinQueue.push({
+          v,
+          rec: record,
+          win,
+          reason: previousSuspension?.reason || 'recovered',
+        });
+      }
+      activeEntries.push({ v, rec: record, win });
+    }
+
+    const leaderEntry = pickLeader(activeEntries);
+    if (!leaderEntry) {
+      return;
+    }
+    const leaderRecord = leaderEntry.rec;
+    if (!leaderRecord || typeof leaderRecord.time !== 'number') {
+      return;
+    }
+    const toleranceSeconds = SYNC_SETTINGS.toleranceMs / 1000;
+    const leaderPlaying = leaderRecord.state === 1;
+
+    for (const entry of activeEntries) {
+      if (entry.v === leaderEntry.v) {
+        continue;
+      }
+      const record = entry.rec;
+      if (!record || typeof record.time !== 'number') {
+        continue;
+      }
+      // Apply per-video offset
+      const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      const expectedTime = leaderRecord.time + offsetSec;
+      const drift = record.time - expectedTime;
+      if (Math.abs(drift) > toleranceSeconds) {
+        sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
+      }
+      const isPlaying = record.state === 1;
+      if (leaderPlaying && !isPlaying) {
+        sendCommand(entry.v.iframe, 'playVideo');
+      } else if (!leaderPlaying && isPlaying) {
+        sendCommand(entry.v.iframe, 'pauseVideo');
+      }
+    }
+
+    // Attempt recovery for suspended players in this group
+    for (const v of groupVideos) {
+      const win = v.iframe?.contentWindow;
+      if (!win) {
+        continue;
+      }
+      const suspended = suspendedPlayers.get(win);
+      if (suspended) {
+        attemptRecovery(v, suspended.reason, leaderRecord);
+      }
+    }
+
+    const rejoinToleranceSeconds =
+      (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
+    for (const entry of rejoinQueue) {
+      const record = entry.rec;
+      if (!record || typeof record.time !== 'number') {
+        continue;
+      }
+      const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      const expectedTime = leaderRecord.time + offsetSec;
+      const drift = record.time - expectedTime;
+      if (Math.abs(drift) > rejoinToleranceSeconds) {
+        sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
+      }
+      if (leaderPlaying) {
+        sendCommand(entry.v.iframe, 'playVideo');
+      } else if (record.state === 1) {
+        sendCommand(entry.v.iframe, 'pauseVideo');
+      }
+      attemptRecovery(entry.v, entry.reason, leaderRecord);
+    }
+  }
+
+  // Replace the reconcile interval with group-aware version
+  clearInterval(reconcileInterval);
+  reconcileInterval = setInterval(groupAwareReconcile, SYNC_SETTINGS.probeIntervalMs);
+
+  // ========== Phase 4-1: Keyboard shortcuts ==========
+  document.addEventListener('keydown', (e) => {
+    // Skip if user is typing in an input
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      return;
+    }
+
+    switch (e.key) {
+      case ' ':
+        e.preventDefault();
+        // Toggle play/pause for all
+        if (
+          videos.some((v) => {
+            const rec = playerStates.get(v.iframe?.contentWindow);
+            return rec && rec.state === 1;
+          })
+        ) {
+          pauseAll();
+        } else {
+          playAll();
+        }
+        break;
+      case 'm':
+      case 'M':
+        // Toggle mute
+        muteAll();
+        break;
+      case 'u':
+      case 'U':
+        unmuteAll();
+        break;
+      case 'f':
+      case 'F':
+        // Fullscreen first video
+        if (videos.length > 0) {
+          const fw = videos[0].tile?.querySelector('.frame-wrap');
+          if (fw && fw.requestFullscreen) {
+            fw.requestFullscreen();
+          }
+        }
+        break;
+      case 's':
+      case 'S':
+        // Sync all
+        syncAll();
+        break;
+      case 'Escape':
+        // Close sidebar if open on mobile, or exit debug
+        if (!debugPanel.hidden) {
+          debugPanel.hidden = true;
+        }
+        break;
+    }
+
+    // Number keys 1-9 to focus/fullscreen specific tile
+    if (e.key >= '1' && e.key <= '9') {
+      const idx = parseInt(e.key, 10) - 1;
+      if (idx < videos.length) {
+        const fw = videos[idx].tile?.querySelector('.frame-wrap');
+        if (fw && fw.requestFullscreen && e.shiftKey) {
+          fw.requestFullscreen();
+        }
+      }
+    }
+  });
+
+  // ========== Phase 4-4: Audio focus ==========
+  let audioFocusVideoId = null;
+
+  function setAudioFocus(videoId) {
+    audioFocusVideoId = videoId;
+    for (const v of videos) {
+      if (videoId === null) {
+        // No focus = all unmuted (respect global volume)
+        sendCommand(v.iframe, 'unMute');
+      } else if (v.id === videoId) {
+        sendCommand(v.iframe, 'unMute');
+      } else {
+        sendCommand(v.iframe, 'mute');
+      }
+    }
+  }
+
+  // Click on a tile's frame-wrap to set audio focus
+  gridEl.addEventListener('click', (e) => {
+    const frameWrap = e.target.closest('.frame-wrap');
+    if (!frameWrap) {
+      return;
+    }
+    const tile = frameWrap.closest('.tile');
+    if (!tile) {
+      return;
+    }
+    const videoId = tile.dataset.videoId;
+    if (audioFocusVideoId === videoId) {
+      // Toggle off
+      setAudioFocus(null);
+    } else {
+      setAudioFocus(videoId);
+    }
+  });
 })();
