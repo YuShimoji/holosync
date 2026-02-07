@@ -91,3 +91,26 @@
   - 実機ブラウザでの手動テスト（ケース15〜24）
   - docs/ISSUES.md の完了マーク更新
   - コミット、push、PR
+
+## Log: Phase 5 — タイルリサイズ・フリー配置・余白制御 実装
+
+- 目的: 動画タイルのフリーサイズリサイズ、セルベース配置、行間余白制御、デバッグパネル修正
+- 変更ファイル: `index.html`, `styles/main.css`, `scripts/main.js`, `docs/TESTING.md`
+- 実装内容:
+  - **タスクA**: デバッグパネルの閉じるボタン修正（クリック領域拡大、フレックスレイアウト修正）
+  - **Phase 5-1**: セルグリッドオーバーレイ + タイル配置モデル（`cell-mode` クラス、`cell-overlay-container`）
+  - **Phase 5-2**: フリーサイズリサイズ（ピクセル単位、`⤡` ハンドル、サイズバッジ表示）
+  - **Phase 5-3**: タイルのドラッグ移動（`⋮⋮` ハンドル、セル間移動、ドロップターゲットハイライト）
+  - **Phase 5-4**: 行間余白制御（`grid-auto-rows: min-content`、間隔スライダー 0〜24px）
+  - **Phase 5-5**: 永続化（`cellCol`, `cellRow`, `tileWidth`, `tileHeight` を videos データに追加）
+- UI追加:
+  - ツールバーに「フリー配置」レイアウトオプション
+  - ツールバーに「間隔」スライダー
+  - タイルにリサイズハンドル（右下）とドラッグハンドル（上部中央）
+- CSS追加:
+  - `.grid.cell-mode`, `.cell-overlay`, `.tile-resize-handle`, `.tile-drag-handle`, `.tile-size-badge`
+  - `.gap-controls`, `.gap-slider`
+- テスト: docs/TESTING.md にケース27〜31を追加
+- 残タスク:
+  - 実機ブラウザでの手動テスト（ケース27〜31）
+  - コミット、push、PR

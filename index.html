@@ -153,7 +153,13 @@
             <option value="3">3列</option>
             <option value="4">4列</option>
             <option value="theater">シアター</option>
+            <option value="free">フリー配置</option>
           </select>
+        </div>
+        <div class="gap-controls">
+          <label class="gap-label">間隔:</label>
+          <input id="gridGap" type="range" min="0" max="24" step="2" value="8" class="gap-slider" />
+          <span id="gridGapVal">8</span>px
         </div>
         <div class="drop-zone-hint" id="dropHint" hidden>ここにYouTube URLをドロップ</div>
       </div>
