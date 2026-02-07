@@ -7,10 +7,15 @@
     <link rel="stylesheet" href="styles/main.css" />
   </head>
   <body>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <header class="brand">
-        <h1>HoloSync</h1>
-        <p class="subtitle">YouTube 複数動画の一括操作と同期</p>
+        <button id="sidebarToggle" class="sidebar-toggle" title="メニューを折りたたむ">
+          <span class="toggle-icon">◀</span>
+        </button>
+        <div class="brand-text">
+          <h1>HoloSync</h1>
+          <p class="subtitle">YouTube 複数動画の一括操作と同期</p>
+        </div>
       </header>
 
       <section class="section">
@@ -58,6 +63,20 @@
           <button id="pauseAll">全て一時停止</button>
           <button id="muteAll">全てミュート</button>
           <button id="unmuteAll">全てミュート解除</button>
+          <button id="syncAll">同期</button>
+          <label class="speed">
+            速度
+            <select id="speedAll">
+              <option value="0.25">0.25x</option>
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="1.75">1.75x</option>
+              <option value="2">2x</option>
+            </select>
+          </label>
           <label class="volume">
             音量
             <input id="volumeAll" type="range" min="0" max="100" step="1" value="50" />
@@ -120,7 +139,24 @@
       </footer>
     </aside>
 
-    <main class="content">
+    <main class="content" id="content">
+      <div class="content-toolbar" id="contentToolbar">
+        <button id="sidebarOpen" class="sidebar-open-btn" title="メニューを開く" hidden>
+          <span>☰</span>
+        </button>
+        <div class="layout-controls">
+          <label class="layout-label">レイアウト:</label>
+          <select id="layoutSelect" class="layout-select">
+            <option value="auto">自動</option>
+            <option value="1">1列</option>
+            <option value="2">2列</option>
+            <option value="3">3列</option>
+            <option value="4">4列</option>
+            <option value="theater">シアター</option>
+          </select>
+        </div>
+        <div class="drop-zone-hint" id="dropHint" hidden>ここにYouTube URLをドロップ</div>
+      </div>
       <div id="grid" class="grid" aria-live="polite"></div>
     </main>
 

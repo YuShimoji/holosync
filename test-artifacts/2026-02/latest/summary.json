@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-02-07T05:57:16.668Z",
+  "duration": "39.2s",
+  "options": {
+    "ui": false,
+    "debug": false,
+    "grep": null,
+    "project": "chromium"
+  },
+  "directories": {
+    "report": "./report/",
+    "screenshots": "./screenshots/",
+    "videos": "./videos/",
+    "traces": "./traces/"
+  }
+}

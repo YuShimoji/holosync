@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Report - 2026-02-07_002</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 2rem;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; color: #1a1a1a; }
+    .meta {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .meta p { margin: 0.5rem 0; font-size: 0.9rem; color: #666; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); }
+    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; color: #444; }
+    .card a {
+      display: inline-block;
+      margin-top: 0.5rem;
+      color: #0066cc;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .card a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎭 Playwright Test Report</h1>
+    <div class="meta">
+      <p><strong>実行日時:</strong> 2026-02-07T05:57:16.668Z</p>
+      <p><strong>所要時間:</strong> 39.2s</p>
+      <p><strong>フォルダ:</strong> 2026-02-07_002</p>
+    </div>
+    
+    <div class="grid">
+      <div class="card">
+        <h3>📊 HTMLレポート</h3>
+        <a href="./report/index.html">開く →</a>
+      </div>
+      <div class="card">
+        <h3>📸 スクリーンショット</h3>
+        <a href="./screenshots/">一覧 →</a>
+      </div>
+      <div class="card">
+        <h3>🎥 動画</h3>
+        <a href="./videos/">一覧 →</a>
+      </div>
+      <div class="card">
+        <h3>🔍 トレース</h3>
+        <a href="./traces/">一覧 →</a>
+      </div>
+      <div class="card">
+        <h3>📝 サマリーJSON</h3>
+        <a href="./summary.json">開く →</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
