@@ -15,6 +15,19 @@
   const layoutSelect = document.getElementById('layoutSelect');
   const dropHint = document.getElementById('dropHint');
 
+  // Phase 5: Cell mode and resize controls
+  const gridGapInput = document.getElementById('gridGap');
+  const gridGapVal = document.getElementById('gridGapVal');
+
+  // Cell mode state
+  let cellModeEnabled = false;
+  let cellColumns = 2;
+  let cellGap = 8;
+  let cellOverlayContainer = null;
+  const DEFAULT_TILE_WIDTH = 320;
+  const MIN_TILE_WIDTH = 200;
+  const ASPECT_RATIO = 9 / 16;
+
   const searchForm = document.getElementById('searchForm');
   const searchInput = document.getElementById('searchInput');
   const searchResults = document.getElementById('searchResults');
@@ -82,8 +95,19 @@
       id: v.id,
       syncGroupId: v.syncGroupId,
       offsetMs: v.offsetMs,
+      cellCol: v.cellCol ?? null,
+      cellRow: v.cellRow ?? null,
+      tileWidth: v.tileWidth ?? null,
+      tileHeight: v.tileHeight ?? null,
     }));
     window.storageAdapter.setItem('videos', data);
+  }
+
+  function persistLayoutSettings() {
+    window.storageAdapter.setItem('layoutSettings', {
+      layout: layoutSelect.value,
+      gap: cellGap,
+    });
   }
 
   function persistVolume(val) {
@@ -247,10 +271,30 @@
     offsetControl.appendChild(offsetInput);
     offsetControl.appendChild(offsetLabel);
 
+    // Phase 5: Resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'tile-resize-handle';
+    resizeHandle.textContent = '⤡';
+    resizeHandle.title = 'ドラッグでサイズ変更';
+
+    // Phase 5: Drag handle
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'tile-drag-handle';
+    dragHandle.textContent = '⋮⋮';
+    dragHandle.title = 'ドラッグで移動';
+
+    // Size badge (shown during resize)
+    const sizeBadge = document.createElement('div');
+    sizeBadge.className = 'tile-size-badge';
+    sizeBadge.style.display = 'none';
+
     frameWrap.appendChild(iframe);
     tile.appendChild(syncBadge);
     tile.appendChild(offsetControl);
     tile.appendChild(actions);
+    tile.appendChild(dragHandle);
+    tile.appendChild(resizeHandle);
+    tile.appendChild(sizeBadge);
     tile.appendChild(frameWrap);
     tile.appendChild(infoHeader);
     tile.appendChild(infoPanel);
@@ -264,8 +308,24 @@
       syncGroupId: initialGroupId,
       offsetMs: options.offsetMs ?? 0,
       meta: null,
+      cellCol: options.cellCol ?? null,
+      cellRow: options.cellRow ?? null,
+      tileWidth: options.tileWidth ?? null,
+      tileHeight: options.tileHeight ?? null,
     };
     videos.push(videoEntry);
+
+    // Apply custom size if provided
+    if (videoEntry.tileWidth && videoEntry.tileHeight) {
+      tile.style.width = videoEntry.tileWidth + 'px';
+      tile.style.height = videoEntry.tileHeight + 'px';
+    }
+
+    // Resize logic
+    setupTileResize(tile, videoEntry, resizeHandle, sizeBadge);
+
+    // Drag logic
+    setupTileDrag(tile, videoEntry, dragHandle);
 
     offsetInput.addEventListener('change', () => {
       videoEntry.offsetMs = parseInt(offsetInput.value, 10) || 0;
@@ -794,8 +854,12 @@
         const vid = typeof entry === 'string' ? entry : entry?.id;
         const syncGroupId = typeof entry === 'object' ? (entry.syncGroupId ?? null) : null;
         const offsetMs = typeof entry === 'object' ? (entry.offsetMs ?? 0) : 0;
+        const cellCol = typeof entry === 'object' ? (entry.cellCol ?? null) : null;
+        const cellRow = typeof entry === 'object' ? (entry.cellRow ?? null) : null;
+        const tileWidth = typeof entry === 'object' ? (entry.tileWidth ?? null) : null;
+        const tileHeight = typeof entry === 'object' ? (entry.tileHeight ?? null) : null;
         if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
-          createTile(vid, { syncGroupId, offsetMs });
+          createTile(vid, { syncGroupId, offsetMs, cellCol, cellRow, tileWidth, tileHeight });
         }
       });
       isRestoring = false;
@@ -1756,5 +1820,308 @@
     } else {
       setAudioFocus(videoId);
     }
+  });
+
+  // ========== Phase 5: Tile Resize ==========
+  function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
+    let isResizing = false;
+    let startX, startY, startW, startH;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = tile.offsetWidth;
+      startH = tile.offsetHeight;
+      tile.classList.add('resizing');
+      sizeBadge.style.display = 'block';
+      sizeBadge.textContent = `${Math.round(startW)}×${Math.round(startH)}`;
+
+      const onMove = (ev) => {
+        if (!isResizing) return;
+        const deltaX = ev.clientX - startX;
+        const newW = Math.max(MIN_TILE_WIDTH, startW + deltaX);
+        const newH = newW * ASPECT_RATIO;
+        tile.style.width = newW + 'px';
+        tile.style.height = newH + 'px';
+        sizeBadge.textContent = `${Math.round(newW)}×${Math.round(newH)}`;
+      };
+
+      const onUp = () => {
+        if (!isResizing) return;
+        isResizing = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        tile.classList.remove('resizing');
+        sizeBadge.style.display = 'none';
+
+        // Save to videoEntry
+        videoEntry.tileWidth = tile.offsetWidth;
+        videoEntry.tileHeight = tile.offsetHeight;
+        persistVideos();
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // ========== Phase 5: Tile Drag ==========
+  function setupTileDrag(tile, videoEntry, dragHandle) {
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      if (!cellModeEnabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = tile.offsetLeft;
+      startTop = tile.offsetTop;
+      tile.classList.add('dragging');
+      gridEl.classList.add('show-cells');
+
+      const onMove = (ev) => {
+        if (!isDragging) return;
+        const deltaX = ev.clientX - startX;
+        const deltaY = ev.clientY - startY;
+        tile.style.left = (startLeft + deltaX) + 'px';
+        tile.style.top = (startTop + deltaY) + 'px';
+
+        // Highlight drop target cell
+        updateDropTargetHighlight(ev.clientX, ev.clientY);
+      };
+
+      const onUp = (ev) => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        tile.classList.remove('dragging');
+        gridEl.classList.remove('show-cells');
+        clearDropTargetHighlight();
+
+        // Snap to cell
+        const cell = getCellFromPoint(ev.clientX, ev.clientY);
+        if (cell) {
+          videoEntry.cellCol = cell.col;
+          videoEntry.cellRow = cell.row;
+          positionTileInCell(tile, videoEntry);
+          persistVideos();
+        }
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // ========== Phase 5: Cell Mode Functions ==========
+  function getCellDimensions() {
+    const gridRect = gridEl.getBoundingClientRect();
+    const availableWidth = gridRect.width - cellGap * 2;
+    const cellWidth = (availableWidth - cellGap * (cellColumns - 1)) / cellColumns;
+    const cellHeight = cellWidth * ASPECT_RATIO;
+    return { cellWidth, cellHeight, gridRect };
+  }
+
+  function getCellFromPoint(x, y) {
+    const { cellWidth, cellHeight, gridRect } = getCellDimensions();
+    const relX = x - gridRect.left - cellGap + gridEl.scrollLeft;
+    const relY = y - gridRect.top - cellGap + gridEl.scrollTop;
+    const col = Math.floor(relX / (cellWidth + cellGap));
+    const row = Math.floor(relY / (cellHeight + cellGap));
+    return {
+      col: Math.max(0, Math.min(col, cellColumns - 1)),
+      row: Math.max(0, row),
+    };
+  }
+
+  function positionTileInCell(tile, videoEntry) {
+    if (!cellModeEnabled) return;
+    const { cellWidth, cellHeight } = getCellDimensions();
+    const col = videoEntry.cellCol ?? 0;
+    const row = videoEntry.cellRow ?? 0;
+    const left = cellGap + col * (cellWidth + cellGap);
+    const top = cellGap + row * (cellHeight + cellGap);
+    tile.style.left = left + 'px';
+    tile.style.top = top + 'px';
+    tile.classList.add('cell-positioned');
+
+    // Apply custom size or default cell size
+    if (!videoEntry.tileWidth) {
+      tile.style.width = cellWidth + 'px';
+      tile.style.height = cellHeight + 'px';
+    }
+  }
+
+  function updateDropTargetHighlight(x, y) {
+    clearDropTargetHighlight();
+    const cell = getCellFromPoint(x, y);
+    if (!cell || !cellOverlayContainer) return;
+    const overlays = cellOverlayContainer.querySelectorAll('.cell-overlay');
+    const idx = cell.row * cellColumns + cell.col;
+    if (overlays[idx]) {
+      overlays[idx].classList.add('drop-target');
+    }
+  }
+
+  function clearDropTargetHighlight() {
+    if (!cellOverlayContainer) return;
+    cellOverlayContainer.querySelectorAll('.drop-target').forEach((el) => {
+      el.classList.remove('drop-target');
+    });
+  }
+
+  function createCellOverlays() {
+    if (cellOverlayContainer) {
+      cellOverlayContainer.remove();
+    }
+    cellOverlayContainer = document.createElement('div');
+    cellOverlayContainer.className = 'cell-overlay-container';
+
+    const { cellWidth, cellHeight } = getCellDimensions();
+    const rows = Math.max(10, Math.ceil(videos.length / cellColumns) + 2);
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cellColumns; c++) {
+        const overlay = document.createElement('div');
+        overlay.className = 'cell-overlay';
+        overlay.style.left = (cellGap + c * (cellWidth + cellGap)) + 'px';
+        overlay.style.top = (cellGap + r * (cellHeight + cellGap)) + 'px';
+        overlay.style.width = cellWidth + 'px';
+        overlay.style.height = cellHeight + 'px';
+        overlay.dataset.col = c;
+        overlay.dataset.row = r;
+        cellOverlayContainer.appendChild(overlay);
+      }
+    }
+
+    gridEl.insertBefore(cellOverlayContainer, gridEl.firstChild);
+  }
+
+  function enableCellMode() {
+    cellModeEnabled = true;
+    gridEl.classList.add('cell-mode');
+    createCellOverlays();
+
+    // Position all tiles
+    videos.forEach((v, idx) => {
+      if (v.cellCol === null || v.cellRow === null) {
+        v.cellCol = idx % cellColumns;
+        v.cellRow = Math.floor(idx / cellColumns);
+      }
+      positionTileInCell(v.tile, v);
+    });
+  }
+
+  function disableCellMode() {
+    cellModeEnabled = false;
+    gridEl.classList.remove('cell-mode');
+    if (cellOverlayContainer) {
+      cellOverlayContainer.remove();
+      cellOverlayContainer = null;
+    }
+
+    // Reset tile styles
+    videos.forEach((v) => {
+      v.tile.classList.remove('cell-positioned');
+      v.tile.style.left = '';
+      v.tile.style.top = '';
+      if (!v.tileWidth) {
+        v.tile.style.width = '';
+        v.tile.style.height = '';
+      }
+    });
+  }
+
+  function updateGridGap(gap) {
+    cellGap = gap;
+    gridEl.style.gap = gap + 'px';
+    gridEl.style.padding = gap + 'px';
+
+    if (cellModeEnabled) {
+      createCellOverlays();
+      videos.forEach((v) => positionTileInCell(v.tile, v));
+    }
+  }
+
+  // ========== Phase 5: Layout Mode Handler ==========
+  function handleLayoutChange(layout) {
+    // Remove all layout classes
+    gridEl.classList.remove('layout-1', 'layout-2', 'layout-3', 'layout-4', 'layout-theater');
+
+    if (layout === 'free') {
+      cellColumns = 4; // Default for free mode
+      enableCellMode();
+    } else {
+      disableCellMode();
+      if (layout !== 'auto') {
+        gridEl.classList.add('layout-' + layout);
+      }
+      if (layout === '1') cellColumns = 1;
+      else if (layout === '2') cellColumns = 2;
+      else if (layout === '3') cellColumns = 3;
+      else if (layout === '4') cellColumns = 4;
+      else cellColumns = 2;
+    }
+
+    persistLayoutSettings();
+  }
+
+  // Layout select event
+  layoutSelect.addEventListener('change', (e) => {
+    handleLayoutChange(e.target.value);
+  });
+
+  // Gap slider event
+  if (gridGapInput) {
+    gridGapInput.addEventListener('input', (e) => {
+      const gap = parseInt(e.target.value, 10);
+      gridGapVal.textContent = gap;
+      updateGridGap(gap);
+      persistLayoutSettings();
+    });
+  }
+
+  // Load layout settings on init
+  async function loadLayoutSettings() {
+    try {
+      const settings = await window.storageAdapter.getItem('layoutSettings');
+      if (settings) {
+        if (settings.layout) {
+          layoutSelect.value = settings.layout;
+          handleLayoutChange(settings.layout);
+        }
+        if (typeof settings.gap === 'number') {
+          cellGap = settings.gap;
+          if (gridGapInput) {
+            gridGapInput.value = settings.gap;
+            gridGapVal.textContent = settings.gap;
+          }
+          updateGridGap(settings.gap);
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  // Call after initializeApp
+  loadLayoutSettings();
+
+  // Handle window resize for cell mode
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    if (!cellModeEnabled) return;
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      createCellOverlays();
+      videos.forEach((v) => positionTileInCell(v.tile, v));
+    }, 100);
   });
 })();
