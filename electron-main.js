@@ -4,19 +4,26 @@ const fs = require('fs');
 const path = require('path');
 
 let mainWindow;
-let server;
-const PORT = 8080;
+// ポートを動的に割り当てるため 0 を指定
+const PORT = 0;
 
-// アプリケーションのルートパスを取得（パッケージ化対応）
-function getAppPath() {
-  // app.isPackaged を使ってパッケージ化されているか判定
-  if (app.isPackaged) {
-    // パッケージ化されている場合は process.resourcesPath から app を取得
-    return path.join(process.resourcesPath, 'app');
-  } else {
-    // 開発時は __dirname を使用
-    return __dirname;
+const logPath = path.join(app.getPath('userData'), 'holosync.log');
+
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp}: ${message}\n`;
+  try {
+    fs.appendFileSync(logPath, logMessage);
+  } catch (e) {
+    console.error('Failed to write log:', e);
   }
+  console.log(message);
+}
+
+// アプリケーションのルートパスを取得
+function getAppPath() {
+  // __dirname はパッケージ化されていても app.asar 内部を正しく指す
+  return __dirname;
 }
 
 // MIMEタイプの定義
@@ -34,58 +41,67 @@ const MIME_TYPES = {
 };
 
 function startServer() {
+  // ログファイルの場所を出力（開発時コンソール用）
+  console.log(`Log file: ${logPath}`);
+  log('Starting server...');
+
   const appPath = getAppPath();
-  console.log(`App path: ${appPath}`);
+  log(`App path (__dirname): ${appPath}`);
+  log(`Resources path: ${process.resourcesPath}`);
 
   server = http.createServer((req, res) => {
-    // リクエストURLからファイルパスを生成
-    let safePath = path.normalize(req.url).replace(/^(\.\.[\/\\])+/, '');
-    let filePath = path.join(
-      appPath,
-      safePath === '/' || safePath === '\\' ? 'index.html' : safePath
-    );
+    try {
+      // リクエストURLからファイルパスを生成
+      let safePath = path.normalize(req.url).replace(/^(\.\.[\/\\])+/, '');
+      let filePath = path.join(
+        appPath,
+        safePath === '/' || safePath === '\\' ? 'index.html' : safePath
+      );
 
-    // クエリパラメータの除去
-    filePath = filePath.split('?')[0];
+      // クエリパラメータの除去
+      filePath = filePath.split('?')[0];
 
-    const extname = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+      log(`Request: ${req.url} -> FilePath: ${filePath}`);
 
-    fs.readFile(filePath, (error, content) => {
-      if (error) {
-        if (error.code === 'ENOENT') {
-          console.error(`File not found: ${filePath}`);
-          res.writeHead(404);
-          res.end('404 Not Found');
+      const extname = path.extname(filePath).toLowerCase();
+      const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+
+      fs.readFile(filePath, (error, content) => {
+        if (error) {
+          log(`Error reading file: ${filePath}, Error: ${error.code}`);
+          if (error.code === 'ENOENT') {
+            res.writeHead(404);
+            res.end('404 Not Found');
+          } else {
+            res.writeHead(500);
+            res.end('500: ' + error.code);
+          }
         } else {
-          console.error(`Server error: ${error.code} for ${filePath}`);
-          res.writeHead(500);
-          res.end('500: ' + error.code);
+          res.writeHead(200, { 'Content-Type': contentType });
+          res.end(content, 'utf-8');
         }
-      } else {
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(content, 'utf-8');
-      }
-    });
-  });
-
-  server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') {
-      console.log('Address in use, retrying...');
-      setTimeout(() => {
-        server.close();
-        server.listen(PORT);
-      }, 1000);
+      });
+    } catch (err) {
+      log(`Critical error in request handler: ${err.message}`);
+      res.writeHead(500);
+      res.end('Internal Server Error');
     }
   });
 
-  server.listen(PORT, () => {
-    console.log(`Internal server running at http://localhost:${PORT}/`);
-    createWindow();
+  server.on('error', (e) => {
+    log(`Server error: ${e.code}`);
+  });
+
+  // ポート0を指定して空いているポートを自動割り当て
+  server.listen(0, '127.0.0.1', () => {
+    const address = server.address();
+    const assignedPort = address.port;
+    log(`Internal server running at http://localhost:${assignedPort}/`);
+    createWindow(assignedPort);
   });
 }
 
-function createWindow() {
+function createWindow(port) {
   const appPath = getAppPath();
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -98,7 +114,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL(`http://localhost:${PORT}`);
+  mainWindow.loadURL(`http://localhost:${port}`);
 
   // 開発時は以下を有効化しても良い
   // mainWindow.webContents.openDevTools();
