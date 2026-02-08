@@ -44,13 +44,54 @@
 
 ## デスクトップアプリ化（配布用ビルド）
 
-以下のコマンドを実行すると、`dist` ディレクトリ内にインストーラー（`.exe`）とポータブル版が生成されます。
+以下のコマンドを実行すると、`dist` ディレクトリ内にポータブル版（`.exe`）が生成されます。
 
 ```bash
 npm run build
 ```
 
+ビルド後、`dist/HoloSync-win32-x64/HoloSync.exe` をダブルクリックするだけで起動できます。
+
 詳細な確認項目は `docs/TESTING.md` を参照してください。
+
+## 他の端末での使用方法
+
+### 方法1: ソースからセットアップ（開発者向け）
+
+1. リポジトリをクローン
+   ```bash
+   git clone https://github.com/YuShimoji/holosync.git
+   cd holosync
+   ```
+
+2. 依存関係をインストール
+   ```bash
+   npm install
+   ```
+
+3. アプリを起動
+   ```bash
+   npm start
+   ```
+
+4. （オプション）配布用ビルドを作成
+   ```bash
+   npm run build
+   ```
+   → `dist/HoloSync-win32-x64/HoloSync.exe` が生成されます
+
+### 方法2: ビルド済みファイルを配布
+
+1. ビルド実行済みの端末で `dist/HoloSync-win32-x64/` フォルダをコピー
+2. 他の端末にフォルダごと配置
+3. `HoloSync.exe` をダブルクリックで起動
+
+**注意**: Node.js や npm のインストールは不要です。ビルド済みフォルダには実行に必要なすべてが含まれています。
+
+### 動作要件
+
+- **OS**: Windows 10/11（64bit）
+- **ネットワーク**: YouTube動画の再生にインターネット接続が必要
 
 ## 開発ワークフロー（要約）
 
