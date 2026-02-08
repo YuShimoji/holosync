@@ -16,6 +16,7 @@ Thumbs.db
 /dist/
 /build/
 /out/
+dist/
 .next/
 node_modules/
 public/
