@@ -15,6 +15,22 @@
   --color-text-secondary: #666;
   --color-border: #e0e0e0;
   --color-error: #b00020;
+  --color-hover-bg: #e5e7eb;
+  --color-input-bg: #ffffff;
+}
+
+[data-theme='dark'],
+body.dark-mode {
+  --color-primary: #60a5fa;
+  --color-primary-dark: #3b82f6;
+  --color-bg: #121212;
+  --color-surface: #1e1e1e;
+  --color-text: #e0e0e0;
+  --color-text-secondary: #a0a0a0;
+  --color-border: #333333;
+  --color-error: #cf6679;
+  --color-hover-bg: #374151;
+  --color-input-bg: #2d2d2d;
 }
 
 body {
@@ -70,7 +86,7 @@ body.sidebar-collapsed .sidebar {
 .brand h1 {
   font-size: 20px;
   margin: 0 0 4px;
-  color: #1a73e8;
+  color: var(--color-primary);
 }
 
 .brand .subtitle {
@@ -96,7 +112,7 @@ body.sidebar-collapsed .sidebar {
   transition: background 0.15s;
 }
 .sidebar-toggle:hover {
-  background: #e5e7eb;
+  background: var(--color-hover-bg);
 }
 .sidebar-toggle .toggle-icon {
   transition: transform 0.25s;
@@ -105,13 +121,33 @@ body.sidebar-collapsed .sidebar-toggle .toggle-icon {
   transform: rotate(180deg);
 }
 
+.dark-mode-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.dark-mode-toggle:hover {
+  background: var(--color-hover-bg);
+}
+
 .section {
   margin-top: 16px;
 }
 .section h2 {
   margin: 0 0 8px;
   font-size: 14px;
-  color: #333;
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -148,7 +184,7 @@ body.sidebar-collapsed .sidebar-toggle .toggle-icon {
 }
 
 .mode-tab:not(.active):hover {
-  background: #e5e7eb;
+  background: var(--color-hover-bg);
 }
 
 .bulk-textarea {
@@ -160,6 +196,8 @@ body.sidebar-collapsed .sidebar-toggle .toggle-icon {
   border-radius: 4px;
   resize: vertical;
   font-family: inherit;
+  background: var(--color-input-bg);
+  color: var(--color-text);
 }
 
 .bulk-textarea:focus {
@@ -186,15 +224,15 @@ body.sidebar-collapsed .sidebar-toggle .toggle-icon {
 
 input,
 select {
-  background: #ffffff;
-  color: #333;
-  border: 1px solid #ccc;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 6px;
 }
 
 label {
-  color: #333;
+  color: var(--color-text);
   font-size: 13px;
 }
 
@@ -213,7 +251,7 @@ label {
 .url-preview {
   margin-top: 8px;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--color-hover-bg);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   display: flex;
@@ -227,7 +265,7 @@ label {
   height: 36px;
   object-fit: cover;
   border-radius: 4px;
-  background: #eee;
+  background: var(--color-hover-bg);
 }
 
 .url-preview .preview-info {
@@ -251,17 +289,23 @@ label {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hint {
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 12px;
   margin: 6px 0 0;
 }
 .error {
-  color: #b00020;
+  color: var(--color-error);
   font-size: 12px;
   margin-top: 6px;
 }
@@ -293,7 +337,7 @@ label {
 
 .footer {
   margin-top: 16px;
-  color: #888;
+  color: var(--color-text-secondary);
 }
 
 .content {
@@ -1292,8 +1336,14 @@ button:active {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {

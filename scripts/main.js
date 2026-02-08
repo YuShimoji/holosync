@@ -33,6 +33,7 @@
   const sidebarOpen = document.getElementById('sidebarOpen');
   const layoutSelect = document.getElementById('layoutSelect');
   const dropHint = document.getElementById('dropHint');
+  const darkModeToggle = document.getElementById('darkModeToggle');
 
   // Phase 5: Cell mode and resize controls
   const gridGapInput = document.getElementById('gridGap');
@@ -782,6 +783,10 @@
     videos.forEach((v) => sendCommand(v.iframe, 'unMute'));
   }
 
+  function setSpeedAll(rate) {
+    videos.forEach((v) => sendCommand(v.iframe, 'setPlaybackRate', [rate]));
+  }
+
   function syncAll() {
     if (!videos.length) {
       return;
@@ -819,13 +824,13 @@
 
   // URL Preview Logic
   let previewDebounceTimer = null;
-  
+
   async function updateUrlPreview(videoId) {
     if (!videoId) {
       urlPreview.hidden = true;
       return;
     }
-    
+
     // Don't fetch if already added
     if (hasVideo(videoId)) {
       urlPreview.hidden = false;
@@ -839,10 +844,13 @@
     try {
       const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
       const resp = await fetch(url);
-      if (!resp.ok) throw new Error('Not found');
-      
+      if (!resp.ok) {
+        throw new Error('Not found');
+      }
+
       const data = await resp.json();
-      urlPreviewThumb.src = data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/default.jpg`;
+      urlPreviewThumb.src =
+        data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/default.jpg`;
       urlPreviewThumb.hidden = false;
       urlPreviewTitle.textContent = data.title;
       urlPreviewAuthor.textContent = data.author_name;
@@ -860,8 +868,10 @@
 
   urlInput.addEventListener('input', () => {
     const val = urlInput.value.trim();
-    if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-    
+    if (previewDebounceTimer) {
+      clearTimeout(previewDebounceTimer);
+    }
+
     if (!val) {
       urlPreview.hidden = true;
       addError.hidden = true;
@@ -919,7 +929,10 @@
 
   // Parse bulk input and count valid URLs
   function parseBulkUrls(text) {
-    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+    const lines = text
+      .split(/[\n\r]+/)
+      .map((l) => l.trim())
+      .filter(Boolean);
     const ids = [];
     for (const line of lines) {
       const id = parseYouTubeId(line);
@@ -932,15 +945,17 @@
 
   bulkUrlInput.addEventListener('input', () => {
     const ids = parseBulkUrls(bulkUrlInput.value);
-    const newCount = ids.filter(id => !hasVideo(id)).length;
+    const newCount = ids.filter((id) => !hasVideo(id)).length;
     const dupCount = ids.length - newCount;
-    
+
     if (ids.length === 0) {
       bulkCount.textContent = '';
       bulkCount.classList.remove('has-items');
     } else {
       let text = `${newCount}件追加可能`;
-      if (dupCount > 0) text += ` (${dupCount}件重複)`;
+      if (dupCount > 0) {
+        text += ` (${dupCount}件重複)`;
+      }
       bulkCount.textContent = text;
       bulkCount.classList.toggle('has-items', newCount > 0);
     }
@@ -949,15 +964,15 @@
   bulkAddBtn.addEventListener('click', () => {
     addError.hidden = true;
     const ids = parseBulkUrls(bulkUrlInput.value);
-    const newIds = ids.filter(id => !hasVideo(id));
-    
+    const newIds = ids.filter((id) => !hasVideo(id));
+
     if (newIds.length === 0) {
       addError.textContent = '追加できる動画がありません。URLを確認してください。';
       addError.hidden = false;
       return;
     }
 
-    newIds.forEach(id => createTile(id));
+    newIds.forEach((id) => createTile(id));
     bulkUrlInput.value = '';
     bulkCount.textContent = `✅ ${newIds.length}件追加しました`;
     bulkCount.classList.add('has-items');
@@ -1006,7 +1021,9 @@
   showHelpBtn.addEventListener('click', showHelp);
   closeHelpBtn.addEventListener('click', hideHelp);
   helpModal.addEventListener('click', (e) => {
-    if (e.target === helpModal) hideHelp();
+    if (e.target === helpModal) {
+      hideHelp();
+    }
   });
 
   playAllBtn.addEventListener('click', playAll);
@@ -1031,6 +1048,12 @@
 
   async function initializeApp() {
     try {
+      // Restore dark mode preference
+      const darkModeEnabled = await window.storageAdapter.getItem('darkMode');
+      if (darkModeEnabled === true) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+
       // Priority 1: Check for Deep Link session (session param)
       const sharedSession = window.storageAdapter.parseShareUrl();
       if (sharedSession) {
@@ -1045,7 +1068,7 @@
             setVolumeAll(vol);
           }
         }
-        
+
         if (sharedSession.speed !== undefined) {
           const rate = parseFloat(sharedSession.speed);
           if (Number.isFinite(rate)) {
@@ -1684,6 +1707,20 @@
   sidebarOpen.addEventListener('click', () => {
     setSidebarCollapsed(false);
   });
+
+  // Dark mode toggle
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const isDark = currentTheme !== 'dark';
+      if (isDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      window.storageAdapter.setItem('darkMode', isDark);
+    });
+  }
 
   // Restore sidebar state
   (async () => {
