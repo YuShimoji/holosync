@@ -7,6 +7,18 @@ let mainWindow;
 let server;
 const PORT = 8080;
 
+// アプリケーションのルートパスを取得（パッケージ化対応）
+function getAppPath() {
+  // app.isPackaged を使ってパッケージ化されているか判定
+  if (app.isPackaged) {
+    // パッケージ化されている場合は process.resourcesPath から app を取得
+    return path.join(process.resourcesPath, 'app');
+  } else {
+    // 開発時は __dirname を使用
+    return __dirname;
+  }
+}
+
 // MIMEタイプの定義
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -18,15 +30,21 @@ const MIME_TYPES = {
   '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
-  '.md': 'text/markdown'
+  '.md': 'text/markdown',
 };
 
 function startServer() {
+  const appPath = getAppPath();
+  console.log(`App path: ${appPath}`);
+
   server = http.createServer((req, res) => {
     // リクエストURLからファイルパスを生成
     let safePath = path.normalize(req.url).replace(/^(\.\.[\/\\])+/, '');
-    let filePath = path.join(__dirname, safePath === '/' || safePath === '\\' ? 'index.html' : safePath);
-    
+    let filePath = path.join(
+      appPath,
+      safePath === '/' || safePath === '\\' ? 'index.html' : safePath
+    );
+
     // クエリパラメータの除去
     filePath = filePath.split('?')[0];
 
@@ -35,7 +53,7 @@ function startServer() {
 
     fs.readFile(filePath, (error, content) => {
       if (error) {
-        if(error.code === 'ENOENT') {
+        if (error.code === 'ENOENT') {
           console.error(`File not found: ${filePath}`);
           res.writeHead(404);
           res.end('404 Not Found');
@@ -68,15 +86,16 @@ function startServer() {
 }
 
 function createWindow() {
+  const appPath = getAppPath();
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    icon: path.join(__dirname, 'favicon.ico'),
+    icon: path.join(appPath, 'favicon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true // YouTube IFrame APIのために必要
-    }
+      webSecurity: true, // YouTube IFrame APIのために必要
+    },
   });
 
   mainWindow.loadURL(`http://localhost:${PORT}`);
