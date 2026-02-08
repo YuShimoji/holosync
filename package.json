@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "YouTube multi-video synchronization web app",
+  "main": "electron-main.js",
   "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . HoloSync --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(docs|e2e|test-artifacts|playwright-report|\\.git|\\.github|\\.gitlab|\\.husky)\"",
     "lint": "eslint \"scripts/*.js\" \"scripts/**/*.js\" --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -25,7 +28,9 @@
     "dev:background": "http-server . -p 8080 -c-1 -s"
   },
   "devDependencies": {
+    "@electron/packager": "^19.0.2",
     "@playwright/test": "^1.50.0",
+    "electron": "^40.2.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
