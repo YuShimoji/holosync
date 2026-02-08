@@ -20,11 +20,32 @@
 
       <section class="section">
         <h2>動画を追加</h2>
-        <form id="addForm" class="add-form">
-          <input id="urlInput" type="url" placeholder="YouTubeのURLを貼り付け" required />
-          <button type="submit" class="primary">追加</button>
-        </form>
-        <p class="hint">対応例: https://www.youtube.com/watch?v=..., https://youtu.be/...</p>
+        <div class="add-mode-tabs">
+          <button id="singleModeBtn" class="mode-tab active" title="1つずつ追加">単体</button>
+          <button id="bulkModeBtn" class="mode-tab" title="複数URLを一括追加">一括</button>
+        </div>
+        <div id="singleAddMode">
+          <form id="addForm" class="add-form">
+            <input id="urlInput" type="url" placeholder="YouTubeのURLを貼り付け" required />
+            <button type="submit" class="primary">追加</button>
+          </form>
+          <div id="urlPreview" class="url-preview" hidden>
+            <img id="urlPreviewThumb" src="" alt="" class="preview-thumb" />
+            <div class="preview-info">
+              <div id="urlPreviewTitle" class="preview-title"></div>
+              <div id="urlPreviewAuthor" class="preview-author"></div>
+            </div>
+          </div>
+          <p class="hint">対応例: https://www.youtube.com/watch?v=..., https://youtu.be/...</p>
+        </div>
+        <div id="bulkAddMode" hidden>
+          <textarea id="bulkUrlInput" class="bulk-textarea" placeholder="複数のYouTube URLを改行で区切って貼り付け&#10;例:&#10;https://www.youtube.com/watch?v=abc123...&#10;https://youtu.be/xyz789..."></textarea>
+          <div class="bulk-actions">
+            <button id="bulkAddBtn" class="primary">一括追加</button>
+            <span id="bulkCount" class="bulk-count"></span>
+          </div>
+          <p class="hint">改行区切りで複数URLを貼り付けてください。重複は自動でスキップされます。</p>
+        </div>
         <div id="addError" class="error" hidden></div>
       </section>
 
@@ -131,6 +152,14 @@
         </label>
       </section>
 
+      <section class="section onboarding-section">
+        <h2>クイックスタート</h2>
+        <div class="onboarding-buttons">
+          <button id="loadDemoBtn" class="demo-btn" title="サンプル動画をセットして機能を体験">🎬 デモをロード</button>
+          <button id="showHelpBtn" class="help-btn" title="ショートカットキー一覧を表示">❓ ヘルプ</button>
+        </div>
+      </section>
+
       <footer class="footer">
         <small>HoloSync Web</small>
       </footer>
@@ -158,6 +187,9 @@
           <input id="gridGap" type="range" min="0" max="24" step="2" value="8" class="gap-slider" />
           <span id="gridGapVal">8</span>px
         </div>
+        <button id="shareBtn" class="share-btn" title="現在の状態を共有URLとしてコピー">
+          🔗 共有
+        </button>
         <div class="drop-zone-hint" id="dropHint" hidden>ここにYouTube URLをドロップ</div>
         <button
           id="debugToggle"
@@ -178,6 +210,29 @@
       </div>
       <div id="grid" class="grid" aria-live="polite"></div>
     </main>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2>キーボードショートカット</h2>
+          <button id="closeHelpBtn" class="modal-close">×</button>
+        </header>
+        <div class="modal-body">
+          <table class="shortcut-table">
+            <tr><td><kbd>Space</kbd></td><td>全て再生/一時停止</td></tr>
+            <tr><td><kbd>M</kbd></td><td>全てミュート</td></tr>
+            <tr><td><kbd>U</kbd></td><td>全てミュート解除</td></tr>
+            <tr><td><kbd>S</kbd></td><td>全て同期</td></tr>
+            <tr><td><kbd>F</kbd></td><td>最初の動画をフルスクリーン</td></tr>
+            <tr><td><kbd>Shift+1~9</kbd></td><td>N番目の動画をフルスクリーン</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>デバッグパネルを閉じる</td></tr>
+            <tr><td><kbd>?</kbd></td><td>このヘルプを表示</td></tr>
+          </table>
+          <p class="modal-hint">タイルをクリックするとその動画のみ音声再生（再クリックで解除）</p>
+        </div>
+      </div>
+    </div>
 
     <script src="scripts/storage.js"></script>
     <script src="scripts/main.js"></script>

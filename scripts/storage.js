@@ -155,7 +155,7 @@ class StorageAdapter {
     // Encode various data types in URL parameters
     const url = new URL(window.location);
     if (key === 'videos') {
-      // Array of video IDs
+      // Array of video IDs (Legacy)
       url.searchParams.set('videos', value.join(','));
     } else if (key === 'volume') {
       // Volume number
@@ -165,6 +165,85 @@ class StorageAdapter {
       url.searchParams.set('preset', value.join(','));
     }
     window.history.replaceState(null, '', url.toString());
+  }
+
+  /**
+   * Generate a shareable URL with full session state
+   * @param {Object} state - Full session state
+   * @returns {string} - Complete URL
+   */
+  generateShareUrl(state) {
+    try {
+      // Minify keys to save space
+      const minified = {
+        v: state.videos.map(v => ({
+          i: v.id,
+          g: v.syncGroupId || undefined, // undefined keys are stripped by JSON.stringify
+          o: v.offsetMs || undefined,
+          r: v.cellRow || undefined,
+          c: v.cellCol || undefined,
+          w: v.tileWidth || undefined,
+          h: v.tileHeight || undefined
+        })),
+        s: { // settings
+          l: state.layout,
+          v: state.volume,
+          r: state.speed,
+          g: state.gap
+        }
+      };
+      
+      const json = JSON.stringify(minified);
+      const encoded = btoa(encodeURIComponent(json)); // handle UTF-8 chars if any
+      
+      const url = new URL(window.location);
+      // Clear legacy params to avoid confusion
+      url.searchParams.delete('videos');
+      url.searchParams.delete('volume');
+      url.searchParams.delete('preset');
+      
+      url.searchParams.set('session', encoded);
+      return url.toString();
+    } catch (e) {
+      console.error('Failed to generate share URL:', e);
+      return window.location.href;
+    }
+  }
+
+  /**
+   * Parse session state from URL
+   * @returns {Object|null} - Restored state or null
+   */
+  parseShareUrl() {
+    const url = new URL(window.location);
+    const session = url.searchParams.get('session');
+    
+    if (!session) return null;
+    
+    try {
+      const json = decodeURIComponent(atob(session));
+      const minified = JSON.parse(json);
+      
+      // Expand keys back to full names
+      return {
+        videos: (minified.v || []).map(v => ({
+          id: v.i,
+          syncGroupId: v.g || null,
+          offsetMs: v.o || 0,
+          cellRow: v.r || null,
+          cellCol: v.c || null,
+          tileWidth: v.w || null,
+          tileHeight: v.h || null
+        })),
+        layout: minified.s?.l || 'auto',
+        volume: minified.s?.v ?? 50,
+        speed: minified.s?.r ?? 1.0,
+        gap: minified.s?.g ?? 8
+      };
+    } catch (e) {
+      console.warn('Failed to parse session param:', e);
+      return null;
+    }
   }
 
   getUrlParameter(key) {

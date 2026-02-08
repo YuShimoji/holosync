@@ -8,6 +8,25 @@
   const addForm = document.getElementById('addForm');
   const urlInput = document.getElementById('urlInput');
   const addError = document.getElementById('addError');
+  const urlPreview = document.getElementById('urlPreview');
+  const urlPreviewThumb = document.getElementById('urlPreviewThumb');
+  const urlPreviewTitle = document.getElementById('urlPreviewTitle');
+  const urlPreviewAuthor = document.getElementById('urlPreviewAuthor');
+
+  // Bulk add mode elements
+  const singleModeBtn = document.getElementById('singleModeBtn');
+  const bulkModeBtn = document.getElementById('bulkModeBtn');
+  const singleAddMode = document.getElementById('singleAddMode');
+  const bulkAddMode = document.getElementById('bulkAddMode');
+  const bulkUrlInput = document.getElementById('bulkUrlInput');
+  const bulkAddBtn = document.getElementById('bulkAddBtn');
+  const bulkCount = document.getElementById('bulkCount');
+
+  // Onboarding & Help elements
+  const loadDemoBtn = document.getElementById('loadDemoBtn');
+  const showHelpBtn = document.getElementById('showHelpBtn');
+  const helpModal = document.getElementById('helpModal');
+  const closeHelpBtn = document.getElementById('closeHelpBtn');
 
   // Phase 1: Layout controls
   const sidebarToggle = document.getElementById('sidebarToggle');
@@ -18,6 +37,7 @@
   // Phase 5: Cell mode and resize controls
   const gridGapInput = document.getElementById('gridGap');
   const gridGapVal = document.getElementById('gridGapVal');
+  const shareBtn = document.getElementById('shareBtn');
 
   // Cell mode state
   let cellModeEnabled = false;
@@ -797,9 +817,65 @@
     videos.forEach((v) => sendCommand(v.iframe, 'setVolume', [val]));
   }
 
-  function setSpeedAll(rate) {
-    videos.forEach((v) => sendCommand(v.iframe, 'setPlaybackRate', [rate]));
+  // URL Preview Logic
+  let previewDebounceTimer = null;
+  
+  async function updateUrlPreview(videoId) {
+    if (!videoId) {
+      urlPreview.hidden = true;
+      return;
+    }
+    
+    // Don't fetch if already added
+    if (hasVideo(videoId)) {
+      urlPreview.hidden = false;
+      urlPreviewThumb.src = '';
+      urlPreviewTitle.textContent = '⚠️ 追加済み';
+      urlPreviewAuthor.textContent = 'この動画は既にリストにあります';
+      urlPreviewThumb.hidden = true;
+      return;
+    }
+
+    try {
+      const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('Not found');
+      
+      const data = await resp.json();
+      urlPreviewThumb.src = data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/default.jpg`;
+      urlPreviewThumb.hidden = false;
+      urlPreviewTitle.textContent = data.title;
+      urlPreviewAuthor.textContent = data.author_name;
+      urlPreview.hidden = false;
+      addError.hidden = true;
+    } catch (e) {
+      // Fallback for non-embeddable or error
+      urlPreviewThumb.src = `https://img.youtube.com/vi/${videoId}/default.jpg`;
+      urlPreviewThumb.hidden = false;
+      urlPreviewTitle.textContent = `ID: ${videoId}`;
+      urlPreviewAuthor.textContent = 'メタデータ取得不可 (追加可能)';
+      urlPreview.hidden = false;
+    }
   }
+
+  urlInput.addEventListener('input', () => {
+    const val = urlInput.value.trim();
+    if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+    
+    if (!val) {
+      urlPreview.hidden = true;
+      addError.hidden = true;
+      return;
+    }
+
+    const id = parseYouTubeId(val);
+    if (id) {
+      addError.hidden = true;
+      previewDebounceTimer = setTimeout(() => updateUrlPreview(id), 300);
+    } else {
+      urlPreview.hidden = true;
+    }
+  });
 
   addForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -814,15 +890,124 @@
     if (hasVideo(id)) {
       addError.textContent = 'この動画は既に追加されています。';
       addError.hidden = false;
+      urlInput.select();
       return;
     }
     createTile(id);
     urlInput.value = '';
+    urlPreview.hidden = true;
     urlInput.focus();
   });
 
   const syncAllBtn = document.getElementById('syncAll');
   const speedAllSelect = document.getElementById('speedAll');
+
+  // ========== Bulk Add Mode ==========
+  singleModeBtn.addEventListener('click', () => {
+    singleModeBtn.classList.add('active');
+    bulkModeBtn.classList.remove('active');
+    singleAddMode.hidden = false;
+    bulkAddMode.hidden = true;
+  });
+
+  bulkModeBtn.addEventListener('click', () => {
+    bulkModeBtn.classList.add('active');
+    singleModeBtn.classList.remove('active');
+    bulkAddMode.hidden = false;
+    singleAddMode.hidden = true;
+  });
+
+  // Parse bulk input and count valid URLs
+  function parseBulkUrls(text) {
+    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+    const ids = [];
+    for (const line of lines) {
+      const id = parseYouTubeId(line);
+      if (id && !ids.includes(id)) {
+        ids.push(id);
+      }
+    }
+    return ids;
+  }
+
+  bulkUrlInput.addEventListener('input', () => {
+    const ids = parseBulkUrls(bulkUrlInput.value);
+    const newCount = ids.filter(id => !hasVideo(id)).length;
+    const dupCount = ids.length - newCount;
+    
+    if (ids.length === 0) {
+      bulkCount.textContent = '';
+      bulkCount.classList.remove('has-items');
+    } else {
+      let text = `${newCount}件追加可能`;
+      if (dupCount > 0) text += ` (${dupCount}件重複)`;
+      bulkCount.textContent = text;
+      bulkCount.classList.toggle('has-items', newCount > 0);
+    }
+  });
+
+  bulkAddBtn.addEventListener('click', () => {
+    addError.hidden = true;
+    const ids = parseBulkUrls(bulkUrlInput.value);
+    const newIds = ids.filter(id => !hasVideo(id));
+    
+    if (newIds.length === 0) {
+      addError.textContent = '追加できる動画がありません。URLを確認してください。';
+      addError.hidden = false;
+      return;
+    }
+
+    newIds.forEach(id => createTile(id));
+    bulkUrlInput.value = '';
+    bulkCount.textContent = `✅ ${newIds.length}件追加しました`;
+    bulkCount.classList.add('has-items');
+    setTimeout(() => {
+      bulkCount.textContent = '';
+      bulkCount.classList.remove('has-items');
+    }, 3000);
+  });
+
+  // ========== Onboarding & Help ==========
+  const DEMO_VIDEOS = [
+    'dQw4w9WgXcQ', // Rick Astley - Never Gonna Give You Up
+    'jNQXAC9IVRw', // Me at the zoo (first YouTube video)
+    '9bZkp7q19f0', // PSY - Gangnam Style
+  ];
+
+  loadDemoBtn.addEventListener('click', () => {
+    let addedCount = 0;
+    for (const id of DEMO_VIDEOS) {
+      if (!hasVideo(id)) {
+        createTile(id);
+        addedCount++;
+      }
+    }
+    if (addedCount > 0) {
+      loadDemoBtn.textContent = `✅ ${addedCount}件追加`;
+      setTimeout(() => {
+        loadDemoBtn.textContent = '🎬 デモをロード';
+      }, 2000);
+    } else {
+      loadDemoBtn.textContent = '既に追加済み';
+      setTimeout(() => {
+        loadDemoBtn.textContent = '🎬 デモをロード';
+      }, 2000);
+    }
+  });
+
+  function showHelp() {
+    helpModal.classList.add('active');
+  }
+
+  function hideHelp() {
+    helpModal.classList.remove('active');
+  }
+
+  showHelpBtn.addEventListener('click', showHelp);
+  closeHelpBtn.addEventListener('click', hideHelp);
+  helpModal.addEventListener('click', (e) => {
+    if (e.target === helpModal) hideHelp();
+  });
 
   playAllBtn.addEventListener('click', playAll);
   pauseAllBtn.addEventListener('click', pauseAll);
@@ -846,7 +1031,59 @@
 
   async function initializeApp() {
     try {
-      // First check URL parameters for shared data
+      // Priority 1: Check for Deep Link session (session param)
+      const sharedSession = window.storageAdapter.parseShareUrl();
+      if (sharedSession) {
+        isRestoring = true;
+
+        // Restore Settings
+        if (sharedSession.volume !== undefined) {
+          const vol = parseInt(sharedSession.volume, 10);
+          if (Number.isFinite(vol)) {
+            volumeAll.value = String(vol);
+            volumeVal.textContent = String(vol);
+            setVolumeAll(vol);
+          }
+        }
+        
+        if (sharedSession.speed !== undefined) {
+          const rate = parseFloat(sharedSession.speed);
+          if (Number.isFinite(rate)) {
+            speedAllSelect.value = String(rate);
+            setSpeedAll(rate);
+          }
+        }
+
+        if (sharedSession.layout) {
+          layoutSelect.value = sharedSession.layout;
+          setLayout(sharedSession.layout);
+        }
+
+        if (sharedSession.gap !== undefined) {
+          const gap = parseInt(sharedSession.gap, 10);
+          if (Number.isFinite(gap)) {
+            gridGapInput.value = String(gap);
+            gridGapVal.textContent = String(gap);
+            cellGap = gap;
+            // grid gap update logic is usually in event listener, trigger it manually if needed
+            // But layout update might handle it if we add gap to setLayout or update style directly
+            gridEl.style.gap = `${gap}px`;
+          }
+        }
+
+        // Restore Videos
+        (sharedSession.videos || []).forEach((v) => {
+          if (!hasVideo(v.id)) {
+            createTile(v.id, v);
+          }
+        });
+
+        isRestoring = false;
+        return;
+      }
+
+      // Priority 2: Legacy/Storage Fallback
+      // First check URL parameters for shared data (legacy)
       const urlVideos = await window.storageAdapter.getItem('videos');
       const urlVolume = await window.storageAdapter.getItem('volume');
       const urlPreset = await window.storageAdapter.getItem('preset');
@@ -1779,10 +2016,16 @@
         syncAll();
         break;
       case 'Escape':
-        // Close sidebar if open on mobile, or exit debug
-        if (!debugPanel.hidden) {
+        // Close sidebar if open on mobile, or exit debug, or close help
+        if (helpModal.classList.contains('active')) {
+          hideHelp();
+        } else if (!debugPanel.hidden) {
           debugPanel.hidden = true;
         }
+        break;
+      case '?':
+        // Show help modal
+        showHelp();
         break;
     }
 
