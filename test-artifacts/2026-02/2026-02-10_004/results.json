@@ -1,0 +1,513 @@
+{
+  "config": {
+    "configFile": "c:\\Users\\thank\\Storage\\App Projects\\HoloSync\\playwright.config.ts",
+    "rootDir": "c:/Users/thank/Storage/App Projects/HoloSync/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "c:/Users/thank/Storage/App Projects/HoloSync/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "c:/Users/thank/Storage/App Projects/HoloSync/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "c:/Users/thank/Storage/App Projects/HoloSync/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "c:/Users/thank/Storage/App Projects/HoloSync/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "c:/Users/thank/Storage/App Projects/HoloSync/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "c:/Users/thank/Storage/App Projects/HoloSync/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "c:/Users/thank/Storage/App Projects/HoloSync/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "c:/Users/thank/Storage/App Projects/HoloSync/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "c:/Users/thank/Storage/App Projects/HoloSync/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "c:/Users/thank/Storage/App Projects/HoloSync/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.1",
+    "workers": 4,
+    "webServer": {
+      "command": "npm run dev:background",
+      "url": "http://localhost:8080",
+      "reuseExistingServer": true,
+      "timeout": 120000,
+      "stdout": "pipe",
+      "stderr": "pipe"
+    }
+  },
+  "suites": [
+    {
+      "title": "example.spec.ts",
+      "file": "example.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "HoloSync Basic Functionality",
+          "file": "example.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page loads successfully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4535,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n=== Test Setup ===\n"
+                        },
+                        {
+                          "text": "Page loaded successfully\n"
+                        },
+                        {
+                          "text": "=== Test: page loads successfully ===\n"
+                        },
+                        {
+                          "text": "All UI elements are visible\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-07T05:25:41.555Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a30a6eba6312f6b87ea5-0efbfb1b42795817616f",
+              "file": "example.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "can add YouTube video",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 6541,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n=== Test Setup ===\n"
+                        },
+                        {
+                          "text": "Page loaded successfully\n"
+                        },
+                        {
+                          "text": "=== Test: can add YouTube video ===\n"
+                        },
+                        {
+                          "text": "Adding video: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Grid before: {\n  gridTileCount: \u001b[33m0\u001b[39m,\n  iframeCount: \u001b[33m0\u001b[39m,\n  gridHTML: \u001b[32m''\u001b[39m,\n  timestamp: \u001b[32m'2026-02-07T05:25:44.410Z'\u001b[39m\n}\n"
+                        },
+                        {
+                          "text": "Adding video (attempt 1/2): https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Input value after fill: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "[Browser warning]: Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://www.youtube.com') does not match the recipient window's origin ('http://localhost:8080').\n"
+                        },
+                        {
+                          "text": "[Browser warning]: Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://www.youtube.com') does not match the recipient window's origin ('http://localhost:8080').\n"
+                        },
+                        {
+                          "text": "[Browser warning]: Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://www.youtube.com') does not match the recipient window's origin ('http://localhost:8080').\n"
+                        },
+                        {
+                          "text": "Successfully added video: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Iframe src: https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&playsinline=1&mute=1\n"
+                        },
+                        {
+                          "text": "✓ Video added successfully\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-07T05:25:41.577Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a30a6eba6312f6b87ea5-5f7323c8349a0ff44c8e",
+              "file": "example.spec.ts",
+              "line": 50,
+              "column": 7
+            },
+            {
+              "title": "batch controls are present",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3955,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n=== Test Setup ===\n"
+                        },
+                        {
+                          "text": "Page loaded successfully\n"
+                        },
+                        {
+                          "text": "=== Test: batch controls are present ===\n"
+                        },
+                        {
+                          "text": "✓ All batch control buttons are visible\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-07T05:25:41.582Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a30a6eba6312f6b87ea5-1e411c95a71547588e8f",
+              "file": "example.spec.ts",
+              "line": 78,
+              "column": 7
+            },
+            {
+              "title": "settings panel is accessible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 4187,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n=== Test Setup ===\n"
+                        },
+                        {
+                          "text": "Page loaded successfully\n"
+                        },
+                        {
+                          "text": "=== Test: settings panel is accessible ===\n"
+                        },
+                        {
+                          "text": "✓ Settings panel is accessible\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-07T05:25:41.677Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a30a6eba6312f6b87ea5-81ff3728ce6e8d2f9482",
+              "file": "example.spec.ts",
+              "line": 91,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "HoloSync AI Agent Helper Functions",
+          "file": "example.spec.ts",
+          "line": 103,
+          "column": 6,
+          "specs": [
+            {
+              "title": "helper: add multiple videos",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 17065,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "=== Test: helper: add multiple videos ===\n"
+                        },
+                        {
+                          "text": "Adding video 1/2: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Adding video (attempt 1/3): https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Input value after fill: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Successfully added video: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Adding video 2/2: https://youtu.be/9bZkp7q19f0\n"
+                        },
+                        {
+                          "text": "Adding video (attempt 1/3): https://youtu.be/9bZkp7q19f0\n"
+                        },
+                        {
+                          "text": "Input value after fill: https://youtu.be/9bZkp7q19f0\n"
+                        },
+                        {
+                          "text": "networkidle timeout, continuing...\n"
+                        },
+                        {
+                          "text": "Successfully added video: https://youtu.be/9bZkp7q19f0\n"
+                        },
+                        {
+                          "text": "✓ Successfully added 2 videos\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-07T05:25:46.063Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a30a6eba6312f6b87ea5-a6173d0f6cad2ddfc7d7",
+              "file": "example.spec.ts",
+              "line": 110,
+              "column": 7
+            },
+            {
+              "title": "helper: play and pause all",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8528,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "=== Test: helper: play and pause all ===\n"
+                        },
+                        {
+                          "text": "Adding video (attempt 1/3): https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Input value after fill: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Successfully added video: https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"
+                        },
+                        {
+                          "text": "Clicking play all button\n"
+                        },
+                        {
+                          "text": "Clicking pause all button\n"
+                        },
+                        {
+                          "text": "✓ Play and pause all buttons work\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-07T05:25:46.563Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a30a6eba6312f6b87ea5-1435284e145c8aa9a87a",
+              "file": "example.spec.ts",
+              "line": 142,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-02-07T05:25:37.480Z",
+    "duration": 26213.385000000002,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

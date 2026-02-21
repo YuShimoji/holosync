@@ -94,3 +94,6 @@
 
 ## 不具合報告
 - バグを見つけた場合は `.gitlab/issue_templates/Bug.md` を使ってIssueを作成してください
+
+## E2E Test Runs
+- 2026-02-10: `npm run test:run` (Playwright) passed 30 tests (chromium/firefox/webkit + mobile emulations). Artifacts: `test-artifacts/2026-02/2026-02-10_004/`.

@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-02-10T11:53:18.159Z",
+  "duration": "87.2s",
+  "options": {
+    "ui": false,
+    "debug": false,
+    "grep": null,
+    "project": null
+  },
+  "directories": {
+    "report": "./report/",
+    "screenshots": "./screenshots/",
+    "videos": "./videos/",
+    "traces": "./traces/"
+  }
+}
