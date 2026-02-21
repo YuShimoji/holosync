@@ -1182,6 +1182,18 @@ button:active {
   border-radius: 4px;
 }
 
+.embed-settings label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.embed-settings input[type='checkbox'] {
+  margin: 0;
+}
+
 /* ========== Zoom Loupe (Magnifying Glass) ========== */
 .zoom-loupe {
   position: fixed;
@@ -1375,6 +1387,66 @@ button:active {
 
 .modal-body {
   padding: 16px;
+}
+
+.share-modal {
+  max-width: 520px;
+}
+
+.share-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.share-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.share-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+}
+
+.share-actions button {
+  flex: 1;
+}
+
+.share-status {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 6px 8px;
+  background: var(--color-hover-bg);
+  border-radius: 4px;
+}
+
+.share-status.error {
+  color: var(--color-error);
+}
+
+.share-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+}
+
+.share-qr img {
+  width: 180px;
+  height: 180px;
+  background: #fff;
+  border-radius: 6px;
 }
 
 .shortcut-table {

@@ -27,6 +27,16 @@
   const showHelpBtn = document.getElementById('showHelpBtn');
   const helpModal = document.getElementById('helpModal');
   const closeHelpBtn = document.getElementById('closeHelpBtn');
+  const shareModal = document.getElementById('shareModal');
+  const closeShareBtn = document.getElementById('closeShareBtn');
+  const shareUrlInput = document.getElementById('shareUrlInput');
+  const copyShareBtn = document.getElementById('copyShareBtn');
+  const openShareBtn = document.getElementById('openShareBtn');
+  const importShareBtn = document.getElementById('importShareBtn');
+  const shareQrBtn = document.getElementById('shareQrBtn');
+  const shareQrBox = document.getElementById('shareQrBox');
+  const shareQrImg = document.getElementById('shareQrImg');
+  const shareStatus = document.getElementById('shareStatus');
 
   // Phase 1: Layout controls
   const sidebarToggle = document.getElementById('sidebarToggle');
@@ -39,6 +49,10 @@
   const gridGapInput = document.getElementById('gridGap');
   const gridGapVal = document.getElementById('gridGapVal');
   const shareBtn = document.getElementById('shareBtn');
+  const embedControlsToggle = document.getElementById('embedControls');
+  const embedModestBrandingToggle = document.getElementById('embedModestBranding');
+  const embedRelatedVideosToggle = document.getElementById('embedRelatedVideos');
+  const embedPlaysInlineToggle = document.getElementById('embedPlaysInline');
 
   // Cell mode state
   let cellModeEnabled = false;
@@ -107,6 +121,74 @@
     maxDriftCorrectionMs: 1000, // Maximum correction per sync cycle
     syncFrequencyHz: 2, // Sync attempts per second
   };
+  const DEFAULT_EMBED_SETTINGS = {
+    controls: 1,
+    modestbranding: 1,
+    rel: 0,
+    playsinline: 1,
+  };
+  let embedSettings = { ...DEFAULT_EMBED_SETTINGS };
+
+  function sanitizeEmbedSettings(candidate) {
+    if (!candidate || typeof candidate !== 'object') {
+      return { ...DEFAULT_EMBED_SETTINGS };
+    }
+    return {
+      controls: candidate.controls ? 1 : 0,
+      modestbranding: candidate.modestbranding ? 1 : 0,
+      rel: candidate.rel ? 1 : 0,
+      playsinline: candidate.playsinline ? 1 : 0,
+    };
+  }
+
+  function syncEmbedSettingsUI() {
+    if (embedControlsToggle) {
+      embedControlsToggle.checked = embedSettings.controls === 1;
+    }
+    if (embedModestBrandingToggle) {
+      embedModestBrandingToggle.checked = embedSettings.modestbranding === 1;
+    }
+    if (embedRelatedVideosToggle) {
+      embedRelatedVideosToggle.checked = embedSettings.rel === 1;
+    }
+    if (embedPlaysInlineToggle) {
+      embedPlaysInlineToggle.checked = embedSettings.playsinline === 1;
+    }
+  }
+
+  function persistEmbedSettings() {
+    window.storageAdapter.setItem('embedSettings', embedSettings);
+  }
+
+  function buildEmbedUrl(videoId, options = {}) {
+    const params = new URLSearchParams();
+    params.set('enablejsapi', options.enablejsapi === 0 ? '0' : '1');
+    params.set(
+      'playsinline',
+      String(options.playsinline !== undefined ? options.playsinline : embedSettings.playsinline)
+    );
+    params.set(
+      'modestbranding',
+      String(
+        options.modestbranding !== undefined ? options.modestbranding : embedSettings.modestbranding
+      )
+    );
+    params.set('rel', String(options.rel !== undefined ? options.rel : embedSettings.rel));
+    params.set(
+      'controls',
+      String(options.controls !== undefined ? options.controls : embedSettings.controls)
+    );
+    if (options.mute !== undefined) {
+      params.set('mute', String(options.mute));
+    }
+    if (options.autoplay !== undefined) {
+      params.set('autoplay', String(options.autoplay));
+    }
+    if (Number.isFinite(options.start)) {
+      params.set('start', String(Math.max(0, Math.floor(options.start))));
+    }
+    return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  }
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
@@ -192,7 +274,7 @@
     frameWrap.className = 'frame-wrap';
 
     const iframe = document.createElement('iframe');
-    iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&playsinline=1&mute=1&modestbranding=1&rel=0`;
+    iframe.src = buildEmbedUrl(videoId, { mute: 1 });
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
     iframe.loading = 'lazy';
     iframe.setAttribute('referrerpolicy', 'origin');
@@ -226,7 +308,7 @@
     popoutBtn.textContent = '↗';
     popoutBtn.title = 'ポップアウト';
     popoutBtn.addEventListener('click', () => {
-      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0`;
+      const embedUrl = buildEmbedUrl(videoId, { autoplay: 1, mute: 0, enablejsapi: 0 });
       window.open(
         embedUrl,
         `holosync-${videoId}`,
@@ -1018,6 +1100,101 @@
     helpModal.classList.remove('active');
   }
 
+  function setShareStatus(message, isError = false) {
+    if (!shareStatus) {
+      return;
+    }
+    shareStatus.textContent = message;
+    shareStatus.hidden = !message;
+    shareStatus.classList.toggle('error', isError);
+  }
+
+  function buildShareState() {
+    return {
+      videos: videos.map((v) => ({
+        id: v.id,
+        syncGroupId: v.syncGroupId,
+        offsetMs: v.offsetMs,
+        cellCol: v.cellCol ?? null,
+        cellRow: v.cellRow ?? null,
+        tileWidth: v.tileWidth ?? null,
+        tileHeight: v.tileHeight ?? null,
+      })),
+      layout: layoutSelect.value,
+      volume: parseInt(volumeAll.value, 10),
+      speed: parseFloat(speedAllSelect.value),
+      gap: cellGap,
+      embedSettings,
+    };
+  }
+
+  function getShareUrl() {
+    const state = buildShareState();
+    return window.storageAdapter.generateShareUrl(state);
+  }
+
+  function normalizeShareUrl(input) {
+    const raw = input.trim();
+    if (!raw) {
+      return null;
+    }
+    try {
+      return new URL(raw).toString();
+    } catch (_) {
+      try {
+        return new URL(`https://${raw}`).toString();
+      } catch (e) {
+        return null;
+      }
+    }
+  }
+
+  async function copyToClipboard(text) {
+    if (!text) {
+      return false;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {
+      // Fallback below
+    }
+    try {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      temp.setAttribute('readonly', '');
+      temp.style.position = 'absolute';
+      temp.style.left = '-9999px';
+      document.body.appendChild(temp);
+      temp.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(temp);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function showShareModal(url) {
+    if (!shareModal) {
+      return;
+    }
+    shareUrlInput.value = url;
+    shareQrBox.hidden = true;
+    shareQrImg.removeAttribute('src');
+    setShareStatus('');
+    shareModal.classList.add('active');
+  }
+
+  function hideShareModal() {
+    if (!shareModal) {
+      return;
+    }
+    shareModal.classList.remove('active');
+  }
+
   showHelpBtn.addEventListener('click', showHelp);
   closeHelpBtn.addEventListener('click', hideHelp);
   helpModal.addEventListener('click', (e) => {
@@ -1025,6 +1202,78 @@
       hideHelp();
     }
   });
+
+  shareBtn.addEventListener('click', async () => {
+    const url = getShareUrl();
+    showShareModal(url);
+    const copied = await copyToClipboard(url);
+    if (copied) {
+      shareBtn.classList.add('success');
+      setShareStatus('Copied to clipboard.');
+      setTimeout(() => shareBtn.classList.remove('success'), 1200);
+    } else {
+      setShareStatus('Copy failed. Please copy manually.', true);
+    }
+  });
+
+  if (closeShareBtn) {
+    closeShareBtn.addEventListener('click', hideShareModal);
+  }
+  if (shareModal) {
+    shareModal.addEventListener('click', (e) => {
+      if (e.target === shareModal) {
+        hideShareModal();
+      }
+    });
+  }
+  if (copyShareBtn) {
+    copyShareBtn.addEventListener('click', async () => {
+      const url = normalizeShareUrl(shareUrlInput.value);
+      if (!url) {
+        setShareStatus('Invalid URL.', true);
+        return;
+      }
+      const copied = await copyToClipboard(url);
+      setShareStatus(copied ? 'Copied to clipboard.' : 'Copy failed.', !copied);
+    });
+  }
+  if (openShareBtn) {
+    openShareBtn.addEventListener('click', () => {
+      const url = normalizeShareUrl(shareUrlInput.value);
+      if (!url) {
+        setShareStatus('Invalid URL.', true);
+        return;
+      }
+      const opened = window.open(url, '_blank', 'noopener');
+      if (!opened) {
+        window.location.href = url;
+      }
+    });
+  }
+  if (importShareBtn) {
+    importShareBtn.addEventListener('click', () => {
+      const url = normalizeShareUrl(shareUrlInput.value);
+      if (!url) {
+        setShareStatus('Invalid URL.', true);
+        return;
+      }
+      window.location.href = url;
+    });
+  }
+  if (shareQrBtn) {
+    shareQrBtn.addEventListener('click', () => {
+      const url = normalizeShareUrl(shareUrlInput.value);
+      if (!url) {
+        setShareStatus('Invalid URL.', true);
+        return;
+      }
+      shareQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+        url
+      )}`;
+      shareQrBox.hidden = false;
+      setShareStatus('QR generated.');
+    });
+  }
 
   playAllBtn.addEventListener('click', playAll);
   pauseAllBtn.addEventListener('click', pauseAll);
@@ -1046,6 +1295,38 @@
     persistVolume(val);
   });
 
+  function applyEmbedSettingsToExistingVideos() {
+    videos.forEach((video) => {
+      const win = video.iframe?.contentWindow;
+      const state = win ? playerStates.get(win) : null;
+      const start = Number.isFinite(state?.time) ? state.time : undefined;
+      const autoplay = state?.state === 1 ? 1 : 0;
+      video.iframe.src = buildEmbedUrl(video.id, { mute: 1, start, autoplay });
+    });
+    if (videos.length > 0) {
+      setTimeout(() => {
+        syncAll();
+      }, 1200);
+    }
+  }
+
+  function handleEmbedSettingsChange() {
+    embedSettings = sanitizeEmbedSettings({
+      controls: embedControlsToggle?.checked,
+      modestbranding: embedModestBrandingToggle?.checked,
+      rel: embedRelatedVideosToggle?.checked,
+      playsinline: embedPlaysInlineToggle?.checked,
+    });
+    persistEmbedSettings();
+    applyEmbedSettingsToExistingVideos();
+  }
+
+  [embedControlsToggle, embedModestBrandingToggle, embedRelatedVideosToggle, embedPlaysInlineToggle]
+    .filter(Boolean)
+    .forEach((input) => {
+      input.addEventListener('change', handleEmbedSettingsChange);
+    });
+
   async function initializeApp() {
     try {
       // Restore dark mode preference
@@ -1054,10 +1335,21 @@
         document.documentElement.setAttribute('data-theme', 'dark');
       }
 
+      const storedEmbedSettings = await window.storageAdapter.getItem('embedSettings');
+      if (storedEmbedSettings) {
+        embedSettings = sanitizeEmbedSettings(storedEmbedSettings);
+      }
+      syncEmbedSettingsUI();
+
       // Priority 1: Check for Deep Link session (session param)
       const sharedSession = window.storageAdapter.parseShareUrl();
       if (sharedSession) {
         isRestoring = true;
+
+        if (sharedSession.embedSettings) {
+          embedSettings = sanitizeEmbedSettings(sharedSession.embedSettings);
+          syncEmbedSettingsUI();
+        }
 
         // Restore Settings
         if (sharedSession.volume !== undefined) {
@@ -2480,7 +2772,7 @@
     loupe.style.height = diameter + 'px';
 
     const zoomIframe = document.createElement('iframe');
-    zoomIframe.src = `https://www.youtube.com/embed/${videoEntry.id}?enablejsapi=1&playsinline=1&mute=1&modestbranding=1&rel=0&controls=0`;
+    zoomIframe.src = buildEmbedUrl(videoEntry.id, { mute: 1, controls: 0 });
     zoomIframe.allow = 'autoplay; encrypted-media';
     zoomIframe.loading = 'lazy';
     zoomIframe.setAttribute('referrerpolicy', 'origin');

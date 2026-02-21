@@ -176,32 +176,40 @@ class StorageAdapter {
     try {
       // Minify keys to save space
       const minified = {
-        v: state.videos.map(v => ({
+        v: state.videos.map((v) => ({
           i: v.id,
           g: v.syncGroupId || undefined, // undefined keys are stripped by JSON.stringify
           o: v.offsetMs || undefined,
           r: v.cellRow || undefined,
           c: v.cellCol || undefined,
           w: v.tileWidth || undefined,
-          h: v.tileHeight || undefined
+          h: v.tileHeight || undefined,
         })),
-        s: { // settings
+        s: {
+          // settings
           l: state.layout,
           v: state.volume,
           r: state.speed,
-          g: state.gap
-        }
+          g: state.gap,
+        },
+        e: {
+          // embed settings
+          c: state.embedSettings?.controls ?? 1,
+          m: state.embedSettings?.modestbranding ?? 1,
+          r: state.embedSettings?.rel ?? 0,
+          p: state.embedSettings?.playsinline ?? 1,
+        },
       };
-      
+
       const json = JSON.stringify(minified);
       const encoded = btoa(encodeURIComponent(json)); // handle UTF-8 chars if any
-      
+
       const url = new URL(window.location);
       // Clear legacy params to avoid confusion
       url.searchParams.delete('videos');
       url.searchParams.delete('volume');
       url.searchParams.delete('preset');
-      
+
       url.searchParams.set('session', encoded);
       return url.toString();
     } catch (e) {
@@ -217,28 +225,36 @@ class StorageAdapter {
   parseShareUrl() {
     const url = new URL(window.location);
     const session = url.searchParams.get('session');
-    
-    if (!session) return null;
-    
+
+    if (!session) {
+      return null;
+    }
+
     try {
       const json = decodeURIComponent(atob(session));
       const minified = JSON.parse(json);
-      
+
       // Expand keys back to full names
       return {
-        videos: (minified.v || []).map(v => ({
+        videos: (minified.v || []).map((v) => ({
           id: v.i,
           syncGroupId: v.g || null,
           offsetMs: v.o || 0,
           cellRow: v.r || null,
           cellCol: v.c || null,
           tileWidth: v.w || null,
-          tileHeight: v.h || null
+          tileHeight: v.h || null,
         })),
         layout: minified.s?.l || 'auto',
         volume: minified.s?.v ?? 50,
         speed: minified.s?.r ?? 1.0,
-        gap: minified.s?.g ?? 8
+        gap: minified.s?.g ?? 8,
+        embedSettings: {
+          controls: minified.e?.c ?? 1,
+          modestbranding: minified.e?.m ?? 1,
+          rel: minified.e?.r ?? 0,
+          playsinline: minified.e?.p ?? 1,
+        },
       };
     } catch (e) {
       console.warn('Failed to parse session param:', e);

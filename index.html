@@ -161,6 +161,27 @@
         </label>
       </section>
 
+      <section class="section embed-settings">
+        <h2>Embed Settings</h2>
+        <label>
+          <input id="embedControls" type="checkbox" checked />
+          Show player controls (controls=1)
+        </label>
+        <label>
+          <input id="embedModestBranding" type="checkbox" checked />
+          Minimize YouTube branding (modestbranding=1)
+        </label>
+        <label>
+          <input id="embedRelatedVideos" type="checkbox" />
+          Show related videos (rel=1)
+        </label>
+        <label>
+          <input id="embedPlaysInline" type="checkbox" checked />
+          Inline playback (playsinline=1)
+        </label>
+        <p class="hint">Changes reload existing tiles to apply parameters.</p>
+      </section>
+
       <section class="section onboarding-section">
         <h2>クイックスタート</h2>
         <div class="onboarding-buttons">
@@ -223,6 +244,33 @@
       </div>
       <div id="grid" class="grid" aria-live="polite"></div>
     </main>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="modal-overlay">
+      <div class="modal-content share-modal">
+        <header class="modal-header">
+          <h2>Share Session</h2>
+          <button id="closeShareBtn" class="modal-close">×</button>
+        </header>
+        <div class="modal-body share-body">
+          <label class="share-label" for="shareUrlInput">Share URL</label>
+          <div class="share-row">
+            <input id="shareUrlInput" type="text" />
+            <button id="copyShareBtn" class="primary">Copy</button>
+          </div>
+          <div class="share-row share-actions">
+            <button id="openShareBtn">Open</button>
+            <button id="importShareBtn">Restore</button>
+            <button id="shareQrBtn">QR</button>
+          </div>
+          <div id="shareStatus" class="share-status" hidden></div>
+          <div id="shareQrBox" class="share-qr" hidden>
+            <img id="shareQrImg" alt="Share QR" />
+            <p class="hint">QR is generated via an external service.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Help Modal -->
     <div id="helpModal" class="modal-overlay">

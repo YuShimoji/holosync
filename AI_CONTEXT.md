@@ -114,3 +114,31 @@
 - 残タスク:
   - 実機ブラウザでの手動テスト（ケース27〜31）
   - コミット、push、PR
+
+## Log: E2E test run (2026-02-10)
+
+- Run: `npm run test:run` (Playwright)
+- Result: 30 passed (chromium/firefox/webkit + mobile emulations)
+- Artifacts: `test-artifacts/2026-02/2026-02-10_004/`
+- Note: installed Playwright browsers with `npx playwright install`
+
+## Log: P2 embed settings UI + ISSUES consistency cleanup (2026-02-14)
+
+- Updated files:
+  - `index.html`
+  - `styles/main.css`
+  - `scripts/main.js`
+  - `scripts/storage.js`
+  - `docs/ISSUES.md`
+  - `.cursor/MISSION_LOG.md`
+- Implemented:
+  - Added sidebar UI toggles for embed parameters: `controls`, `modestbranding`, `rel`, `playsinline`.
+  - Added persistence for embed settings via `storageAdapter` key `embedSettings`.
+  - Added deep-link session encode/decode support for embed settings in `scripts/storage.js`.
+  - Applied setting changes to existing tiles by reloading iframe URLs and auto re-sync.
+- ISSUES cleanup:
+  - Moved completed `feat(Pα)` item from In Progress to Done.
+  - Removed duplicated completed items from `次のステップ（P2優先度）`.
+  - Kept P2 next-step section focused on pending tasks.
+- Validation:
+  - `npm run lint` passed with no errors (one existing warning: `DEFAULT_TILE_WIDTH` unused).
