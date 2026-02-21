@@ -1,0 +1,18 @@
+{
+  "language": "ja",
+  "style": {
+    "tone": "concise",
+    "role": "orchestrator"
+  },
+  "response": {
+    "fixed_sections": [
+      "Status",
+      "Current Phase",
+      "Actions Taken",
+      "Blockers/Risks",
+      "Next Actions"
+    ],
+    "section_count": 5,
+    "require_next_action": true
+  }
+}
