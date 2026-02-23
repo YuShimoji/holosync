@@ -1,90 +1,211 @@
 #requires -Version 5.1
+
 param(
-    [int]$DaysUntilStale = 21
+    [ValidateSet("github", "markdown")]
+    [string]$Target = "github",
+    [switch]$DryRun = $false
 )
 
-# 1) 環境変数からGitLabトークン取得
-$gitlabToken = $env:GITLAB_TOKEN
-if ([string]::IsNullOrEmpty($gitlabToken)) {
-    Write-Host "エラー: 環境変数 GITLAB_TOKEN が設定されていません。" -ForegroundColor Red
-    exit 1
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Get-GitHubRepoFromOrigin {
+    $remoteUrl = git remote get-url origin 2>$null
+    if (-not $remoteUrl) {
+        throw "origin remote was not found."
+    }
+
+    if ($remoteUrl -match 'github\.com[:/](?<owner>[^/]+)/(?<repo>[^/.]+)(\.git)?$') {
+        return @{
+            owner = $Matches.owner
+            repo = $Matches.repo
+            remoteUrl = $remoteUrl
+        }
+    }
+
+    throw "origin is not a GitHub repo URL: $remoteUrl"
 }
 
-# 2) プロジェクト情報の解決
-$remoteUrl = git remote get-url origin
-if (-not $remoteUrl) {
-    Write-Host "エラー: origin リモートが見つかりません。" -ForegroundColor Red
-    exit 1
-}
-$projectId = $remoteUrl -replace '.*gitlab.com[:/](.*).git', '$1' -replace '/', '%2F'
-$gitlabApiUrl = "https://gitlab.com/api/v4"
-$headers = @{ "PRIVATE-TOKEN" = $gitlabToken }
+function New-IssueDrafts {
+    param(
+        [array]$Issues
+    )
 
-# 3) 追加するIssue定義（タイトル、説明、ラベル）
+    $outDir = "docs\tasks"
+    if (-not (Test-Path $outDir)) {
+        New-Item -ItemType Directory -Path $outDir | Out-Null
+    }
+
+    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $path = Join-Path $outDir "ISSUE_DRAFT_$stamp.md"
+
+    $lines = @(
+        "# Issue Drafts ($stamp)",
+        "",
+        "This file is generated because GitHub API auth was not available.",
+        ""
+    )
+
+    $index = 1
+    foreach ($issue in $Issues) {
+        $labels = if ($issue.labels.Count -gt 0) { ($issue.labels -join ", ") } else { "(none)" }
+        $lines += @(
+            "## $index. $($issue.title)",
+            "",
+            "**Labels**: $labels",
+            "",
+            $issue.body.Trim(),
+            "",
+            "---",
+            ""
+        )
+        $index++
+    }
+
+    Set-Content -Path $path -Value $lines -Encoding UTF8
+    return $path
+}
+
 $issues = @(
-    @{ title = "docs: READMEの内容と実装の整合性を確認・更新"; 
-       description = @"
-READMEの記述（Chrome拡張）と現在のWebアプリ実装（`index.html`/`scripts/main.js`）に差異があります。整合性のある内容に更新してください。
-- 現状: Webアプリとして動作（YouTube IFrame Player API, HTML/CSS/JS）
-- 期待: 使い方/機能/仕様/ドキュメント/CIの説明を最新化
-"@; 
-       labels = "type::task,priority::P1" },
+    @{
+        title = "fix(account): stabilize app watch-history and YouTube-history flow"
+        body = @"
+Background:
+- Embedded playback may not always reflect in YouTube account history.
+- Local app-side history must always persist.
 
-    @{ title = "feat: 同期アルゴリズムの改善（基準選択/ドリフト補正/遅延対策）"; 
-       description = @"
-同期の品質向上:
-- 基準プレイヤーの選定ロジック（手動/自動）
-- ドリフト検知と補正の頻度/閾値見直し
-- バッファリング時の追従戦略
-- ネットワーク遅延や広告による停止の扱い
-"@;
-       labels = "type::feature,priority::P1" },
+Done criteria:
+- App-side watch history is recorded after meaningful playback.
+- History items can restore a tile with one click.
+- A direct open path to youtube.com/watch is available.
+"@
+        labels = @("type::bug", "priority::P1")
+    },
+    @{
+        title = "fix(layout): remove title space pressure and maximize video viewport"
+        body = @"
+Background:
+- Header/title rows consume playable area.
 
-    @{ title = "feat: プリセット/ブックマーク機能（URLセット保存・読み込み・共有）"; 
-       description = @"
-以下に対応:
-- 現在の動画セット（ID/タイトル）をローカル保存
-- プリセットの読み込み/削除
-- 共有用URL生成（クエリ文字列 or JSON短縮URL）
-"@; 
-       labels = "type::feature,priority::P2" },
-
-    @{ title = "feat: キーボードショートカット（再生/停止/同期/音量/速度）"; 
-       description = "アクセシビリティと操作性向上のため、主要操作へショートカット割当て"; 
-       labels = "type::feature,priority::P3" },
-
-    @{ title = "feat: レイアウト改善（ドラッグ&ドロップ並べ替え/プリセット）"; 
-       description = "動画カードの順序変更、レイアウトプリセットの保存・適用"; 
-       labels = "type::feature,priority::P3" },
-
-    @{ title = "feat: 音声コントロールの拡張（個別ミュート/ソロ）"; 
-       description = "複数動画の中で1つだけ音声ON、他を自動ミュートなどのユースケースに対応"; 
-       labels = "type::feature,priority::P2" },
-
-    @{ title = "chore: GitHubミラーの追加（リモート設定と同期運用）"; 
-       description = @"
-GitHub側のリモートを追加し、ミラー運用を開始:
-- 追加: `git remote add github <repo-url>`
-- 運用: `git push github --all` / `--tags`
-- CIのバッジ/リンクが混在しないようREADMEに注記
-"@; 
-       labels = "type::task,priority::P3" },
-
-    @{ title = "test: E2E自動化方針の検討（Playwright）"; 
-       description = "主要フロー（追加/再生/停止/同期/削除/音量/速度）の自動化方針を整理"; 
-       labels = "type::task,priority::P3" }
+Done criteria:
+- Tile title uses overlay style on video.
+- Toolbar collapse + immersive mode maximize visible area.
+"@
+        labels = @("type::bug", "priority::P1")
+    },
+    @{
+        title = "fix(fullscreen): prevent fullscreen lock-in and guarantee exit paths"
+        body = @"
+Done criteria:
+- Esc exits fullscreen reliably.
+- Exit button works while fullscreen is active.
+- F11 immersive toggle and fullscreen behavior do not conflict.
+"@
+        labels = @("type::bug", "priority::P1")
+    },
+    @{
+        title = "feat(layout): allow user-controlled tile order and front stacking"
+        body = @"
+Done criteria:
+- Tile order can be moved left/right.
+- Drag start brings target tile to front in free layout.
+- Order is persisted.
+"@
+        labels = @("type::feature", "priority::P2")
+    },
+    @{
+        title = "fix(meta): description panel always shows meaningful state"
+        body = @"
+Done criteria:
+- Existing tiles refresh description after API key change.
+- Clear hint appears when API key is missing or API fetch fails.
+"@
+        labels = @("type::bug", "priority::P1")
+    },
+    @{
+        title = "chore(workflow): adopt and maintain shared-workflows submodule"
+        body = @"
+Done criteria:
+- .shared-workflows is managed as submodule (main tracking).
+- scripts/session-start.ps1 resolves workflow assets from submodule first.
+- docs/WORKFLOW.md includes init and update commands.
+"@
+        labels = @("type::task", "priority::P1")
+    },
+    @{
+        title = "test(e2e): add regression coverage for latest UI hotfixes"
+        body = @"
+Add Playwright cases for:
+- fullscreen enter/exit
+- watch-history recording and restore
+- title overlay and info expansion
+- toolbar collapse and immersive mode
+"@
+        labels = @("type::test", "priority::P2")
+    }
 )
 
-# 4) Issue作成
+if ($Target -eq "markdown") {
+    $draftPath = New-IssueDrafts -Issues $issues
+    Write-Host "Markdown draft created: $draftPath" -ForegroundColor Green
+    exit 0
+}
+
+$token = $env:GITHUB_TOKEN
+if ([string]::IsNullOrWhiteSpace($token)) {
+    $token = $env:GH_TOKEN
+}
+
+if ([string]::IsNullOrWhiteSpace($token)) {
+    Write-Host "GITHUB_TOKEN/GH_TOKEN is not set. Skipping GitHub API." -ForegroundColor Yellow
+    $draftPath = New-IssueDrafts -Issues $issues
+    Write-Host "Draft file created instead: $draftPath" -ForegroundColor Green
+    exit 0
+}
+
+$repo = Get-GitHubRepoFromOrigin
+$headers = @{
+    Authorization = "Bearer $token"
+    Accept = "application/vnd.github+json"
+    "X-GitHub-Api-Version" = "2022-11-28"
+}
+
 foreach ($issue in $issues) {
-    $body = @{ title = $issue.title; description = $issue.description; labels = $issue.labels } | ConvertTo-Json
+    if ($DryRun) {
+        Write-Host "[DryRun] $($issue.title)" -ForegroundColor Cyan
+        continue
+    }
+
+    $payload = @{
+        title = $issue.title
+        body = $issue.body
+        labels = $issue.labels
+    }
+
     try {
-        $resp = Invoke-RestMethod -Uri "$gitlabApiUrl/projects/$projectId/issues" -Method Post -Headers $headers -ContentType "application/json" -Body $body
-        Write-Host ("Created: {0} -> {1}" -f $resp.iid, $resp.web_url) -ForegroundColor Green
+        $resp = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/$($repo.owner)/$($repo.repo)/issues" `
+            -Method Post `
+            -Headers $headers `
+            -ContentType "application/json" `
+            -Body ($payload | ConvertTo-Json -Depth 5)
+        Write-Host ("Created: #{0} {1}" -f $resp.number, $resp.html_url) -ForegroundColor Green
     } catch {
-        Write-Host "エラー: Issue作成に失敗しました -> $($issue.title)" -ForegroundColor Red
-        if ($_.Exception.Response) {
-            Write-Host $_.Exception.Response.StatusCode.Value__ $_.Exception.Response.StatusDescription
+        Write-Host ("Label create failed, retrying without labels: {0}" -f $issue.title) -ForegroundColor Yellow
+        $retryPayload = @{
+            title = $issue.title
+            body = $issue.body
+        }
+        try {
+            $resp = Invoke-RestMethod `
+                -Uri "https://api.github.com/repos/$($repo.owner)/$($repo.repo)/issues" `
+                -Method Post `
+                -Headers $headers `
+                -ContentType "application/json" `
+                -Body ($retryPayload | ConvertTo-Json -Depth 5)
+            Write-Host ("Created: #{0} {1}" -f $resp.number, $resp.html_url) -ForegroundColor Green
+        } catch {
+            Write-Host ("Failed to create issue: {0}" -f $issue.title) -ForegroundColor Red
         }
     }
 }

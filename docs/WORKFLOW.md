@@ -8,6 +8,20 @@
 - Issueベースで進捗が見えること（カンバン運用）
 - コード品質をCIで自動検証すること（ESLint/Prettier）
 
+## Shared Workflows 連携（2026-02-23 追加）
+
+- 本リポジトリは `.shared-workflows` を **git submodule** として使用します。
+- クローン直後は必ず以下を実行:
+  - `git submodule update --init --recursive`
+- shared-workflows 更新を取り込む場合:
+  - `git submodule update --remote --merge .shared-workflows`
+  - `git add .shared-workflows`
+  - `git commit -m "chore(workflow): update shared-workflows submodule"`
+- セッション開始前チェック:
+  - `powershell -NoProfile -File scripts/session-start.ps1`
+  - `node .shared-workflows/scripts/sw-update-check.js`
+  - `node .shared-workflows/scripts/sw-doctor.js --profile shared-orch-bootstrap --format text`
+
 ## Issue運用
 
 - 種類: `Feature`（新機能）, `Bug`（不具合）, `Task/Chore`（雑務/整備）

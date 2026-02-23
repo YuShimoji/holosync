@@ -29,6 +29,16 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
     - ケース12（バッファ/広告耐性）: 2025-10-20 実施済み
     - **ケース27〜31（Phase 5 フリー配置/リサイズ/余白）: 未実施（今回の検証対象）**
 
+## 直近引き継ぎタスク（2026-02-23）
+
+- [ ] QA(P1): `dist/HoloSync-win32-x64/HoloSync.exe` でホットフィックス挙動を手動確認
+  - 観点: 履歴記録、タイトルオーバーレイ、全画面入出、Toolbar/Immersive、概要表示
+- [ ] test(P1): Playwright に UI回帰（全画面復帰、履歴表示、概要再取得、没入表示）を追加
+- [ ] docs(P1): `README.md` に `dist` 再生成手順（`npm run build`）と検証観点を追記
+- [ ] chore(P1): `.shared-workflows` 更新運用を定期化（`sw-update-check` + `sw-doctor`）
+- [ ] chore(P2): `scripts/main.js` の分割計画（player/layout/history/workflow）を起票
+- [ ] ops(P2): GitHubトークン設定後に `scripts/create-issues.ps1` で GitHub Issue 自動起票
+
 ## バックログ（To Do）
 
 - [x] feat(P1): 同期アルゴリズムの改善（基準選択/ドリフト補正/遅延対策）

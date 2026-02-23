@@ -142,3 +142,27 @@
   - Kept P2 next-step section focused on pending tasks.
 - Validation:
   - `npm run lint` passed with no errors (one existing warning: `DEFAULT_TILE_WIDTH` unused).
+
+## Log: Hotfix + shared-workflows integration (2026-02-23)
+
+- ユーザー報告のUI/操作系不具合に対応:
+  - 視聴履歴（アプリ内）保存UI追加
+  - タイトルを動画オーバーレイ化し表示面積を拡大
+  - 全画面復帰導線を強化（Esc/Exitボタン/F11没入表示）
+  - タイル並び順操作（←/→）と自由配置時の前面化
+  - 概要欄再取得（APIキー変更時）と失敗理由ヒント表示
+  - Electron のメニューバー非表示・タイトルバー圧縮
+- shared-workflows 更新取り込み:
+  - `.shared-workflows` を submodule 追加（branch: `main`）
+  - `docs/windsurf_workflow/` を upstream 同期
+  - `prompts/orchestrator/modules/` に `P2.5_diverge.md` / `P2.5_slice.md` を追加
+  - `scripts/session-start.ps1` を submodule 優先解決に更新
+  - `docs/WORKFLOW.md` に submodule 初期化/更新手順を追記
+  - `docs/tasks/`, `docs/inbox/`, `docs/HANDOVER.md`, `REPORT_CONFIG.yml` を整備
+- 引き継ぎ向け:
+  - `scripts/create-issues.ps1` を GitHub API + markdown下書き対応に刷新
+  - `docs/ISSUES.md` に直近引き継ぎタスク（2026-02-23）を追記
+- 確認:
+  - `npm run lint` 通過
+  - `.shared-workflows/scripts/sw-update-check.js` は `OK`
+  - `sw-doctor` bootstrap は critical なし（rulesファイル警告は継続）

@@ -32,3 +32,4 @@ playwright/.cache/
 # Misc
 *.zip
 *.tar.gz
+docs/tasks/ISSUE_DRAFT_*.md

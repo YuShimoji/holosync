@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 let mainWindow;
+let server;
 // ポートを動的に割り当てるため 0 を指定
-const PORT = 0;
 
 const logPath = path.join(app.getPath('userData'), 'holosync.log');
 
@@ -106,6 +106,9 @@ function createWindow(port) {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    fullscreenable: true,
     icon: path.join(appPath, 'favicon.ico'),
     webPreferences: {
       nodeIntegration: false,
@@ -114,6 +117,8 @@ function createWindow(port) {
     },
   });
 
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.removeMenu();
   mainWindow.loadURL(`http://localhost:${port}`);
 
   // 開発時は以下を有効化しても良い
