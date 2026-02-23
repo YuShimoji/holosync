@@ -51,6 +51,11 @@
   const shareBtn = document.getElementById('shareBtn');
   const toolbarToggleBtn = document.getElementById('toolbarToggleBtn');
   const immersiveToggleBtn = document.getElementById('immersiveToggleBtn');
+  const windowFrameToggleBtn = document.getElementById('windowFrameToggleBtn');
+  const windowControls = document.getElementById('windowControls');
+  const windowMinBtn = document.getElementById('windowMinBtn');
+  const windowMaxBtn = document.getElementById('windowMaxBtn');
+  const windowCloseBtn = document.getElementById('windowCloseBtn');
   const embedControlsToggle = document.getElementById('embedControls');
   const embedModestBrandingToggle = document.getElementById('embedModestBranding');
   const embedRelatedVideosToggle = document.getElementById('embedRelatedVideos');
@@ -75,6 +80,9 @@
   const quotaInfo = document.getElementById('quotaInfo');
 
   const debugToggle = document.getElementById('debugToggle');
+  const sidebarToolbarToggle = document.getElementById('sidebarToolbarToggle');
+  const edgeToolbarReveal = document.getElementById('edgeToolbarReveal');
+  const edgeSidebarReveal = document.getElementById('edgeSidebarReveal');
   const debugPanel = document.getElementById('debugPanel');
   const debugClose = document.getElementById('debugClose');
   const debugContent = document.getElementById('debugContent');
@@ -99,12 +107,14 @@
   const suspendedPlayers = new Map();
   let isRestoring = false;
   let immersiveModeEnabled = false;
+  let framelessModeEnabled = false;
   let sidebarStateBeforeImmersive = null;
   let toolbarStateBeforeImmersive = null;
 
   const WATCH_HISTORY_MAX = 30;
   const WATCH_HISTORY_CAPTURE_INTERVAL_MS = 120000;
-  const WATCH_HISTORY_MIN_PLAYED_SECONDS = 20;
+  const WATCH_HISTORY_MIN_PLAYED_SECONDS = 5;
+  const EDGE_REVEAL_DISTANCE_PX = 28;
 
   // Security hardening for postMessage sender to YouTube IFrame API
   const ALLOWED_ORIGIN = 'https://www.youtube.com';
@@ -283,12 +293,40 @@
     }
   }
 
+  function clearEdgeRevealProximity() {
+    document.body.classList.remove('edge-near-top', 'edge-near-left');
+  }
+
+  function syncEdgeRevealState() {
+    const toolbarHidden = document.body.classList.contains('toolbar-collapsed');
+    const sidebarHidden = document.body.classList.contains('sidebar-collapsed');
+
+    if (edgeToolbarReveal) {
+      edgeToolbarReveal.hidden = !toolbarHidden;
+    }
+    if (edgeSidebarReveal) {
+      edgeSidebarReveal.hidden = !sidebarHidden;
+    }
+
+    if (!toolbarHidden || document.body.classList.contains('immersive-mode')) {
+      document.body.classList.remove('edge-near-top');
+    }
+    if (!sidebarHidden || document.body.classList.contains('immersive-mode')) {
+      document.body.classList.remove('edge-near-left');
+    }
+  }
+
   function setToolbarCollapsed(collapsed) {
     document.body.classList.toggle('toolbar-collapsed', collapsed);
     if (toolbarToggleBtn) {
       toolbarToggleBtn.classList.toggle('success', collapsed);
       toolbarToggleBtn.textContent = collapsed ? 'Toolbar Off' : 'Toolbar';
     }
+    if (sidebarToolbarToggle) {
+      sidebarToolbarToggle.classList.toggle('success', collapsed);
+      sidebarToolbarToggle.textContent = collapsed ? 'Show Toolbar' : 'Hide Toolbar';
+    }
+    syncEdgeRevealState();
     window.storageAdapter.setItem('toolbarCollapsed', collapsed);
   }
 
@@ -323,6 +361,38 @@
     toolbarStateBeforeImmersive = null;
     if (document.fullscreenElement) {
       await exitFullscreenSafe();
+    }
+  }
+
+  function hasElectronWindowBridge() {
+    return Boolean(
+      window.electronWindow && typeof window.electronWindow.getPreferences === 'function'
+    );
+  }
+
+  function applyFramelessState(enabled) {
+    framelessModeEnabled = Boolean(enabled);
+    document.body.classList.toggle('frameless-mode', framelessModeEnabled);
+    if (windowFrameToggleBtn) {
+      windowFrameToggleBtn.classList.toggle('success', framelessModeEnabled);
+      windowFrameToggleBtn.textContent = framelessModeEnabled ? 'Frameless On' : 'Frameless';
+      windowFrameToggleBtn.hidden = !hasElectronWindowBridge();
+    }
+    if (windowControls) {
+      windowControls.hidden = !framelessModeEnabled || !hasElectronWindowBridge();
+    }
+  }
+
+  async function syncWindowModeFromMain() {
+    if (!hasElectronWindowBridge()) {
+      applyFramelessState(false);
+      return;
+    }
+    try {
+      const prefs = await window.electronWindow.getPreferences();
+      applyFramelessState(Boolean(prefs?.framelessMode));
+    } catch (_) {
+      applyFramelessState(false);
     }
   }
 
@@ -809,11 +879,13 @@
   function trackPlayerState(win, info) {
     const record = playerStates.get(win) || {};
     const previousState = record.state;
-    if (typeof info.currentTime === 'number') {
-      record.time = info.currentTime;
+    const nextTime = Number(info?.currentTime);
+    if (Number.isFinite(nextTime)) {
+      record.time = nextTime;
     }
-    if (typeof info.playerState === 'number') {
-      record.state = info.playerState;
+    const nextState = Number(info?.playerState);
+    if (Number.isFinite(nextState)) {
+      record.state = nextState;
     }
     record.lastUpdate = Date.now();
     playerStates.set(win, record);
@@ -831,7 +903,9 @@
       Math.abs(currentTime - (video.lastHistorySavedPosition || 0)) >=
       WATCH_HISTORY_MIN_PLAYED_SECONDS;
 
-    if (record.state === 1 && hasPlayedEnough && (enoughInterval || positionDelta)) {
+    const shouldCaptureByProgress = hasPlayedEnough && (enoughInterval || positionDelta);
+
+    if ((record.state === 1 || typeof record.state !== 'number') && shouldCaptureByProgress) {
       video.lastHistorySavedAt = now;
       video.lastHistorySavedPosition = currentTime;
       saveWatchHistoryEntry(video, currentTime);
@@ -1146,6 +1220,41 @@
     } catch (_) {
       // ignore
     }
+  }
+
+  function normalizePlayerInfoMessage(payload) {
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const eventType = payload.event;
+    if (
+      eventType !== 'infoDelivery' &&
+      eventType !== 'initialDelivery' &&
+      eventType !== 'onStateChange'
+    ) {
+      return null;
+    }
+
+    const info = payload.info;
+    if (info && typeof info === 'object') {
+      const normalized = {};
+      const currentTime = Number(info.currentTime);
+      if (Number.isFinite(currentTime)) {
+        normalized.currentTime = currentTime;
+      }
+      const playerState = Number(info.playerState);
+      if (Number.isFinite(playerState)) {
+        normalized.playerState = playerState;
+      }
+      return Object.keys(normalized).length ? normalized : null;
+    }
+
+    const state = Number(info);
+    if (eventType === 'onStateChange' && Number.isFinite(state)) {
+      return { playerState: state };
+    }
+    return null;
   }
 
   function playAll() {
@@ -2039,6 +2148,7 @@
   initializeApiKey();
   loadPresets();
   loadWatchHistory();
+  syncWindowModeFromMain();
 
   // Update debug panel periodically
   setInterval(updateDebugPanel, 1000);
@@ -2059,11 +2169,12 @@
       if (!payload || typeof payload !== 'object') {
         return;
       }
-      if (payload.event !== 'infoDelivery' || typeof payload.info !== 'object') {
+      const normalizedInfo = normalizePlayerInfoMessage(payload);
+      if (!normalizedInfo) {
         return;
       }
       const sourceWin = /** @type {Window} */ (event.source);
-      trackPlayerState(sourceWin, payload.info);
+      trackPlayerState(sourceWin, normalizedInfo);
     } catch (_) {
       // ignore
     }
@@ -2299,6 +2410,7 @@
   function setSidebarCollapsed(collapsed) {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
     sidebarOpen.hidden = !collapsed;
+    syncEdgeRevealState();
     window.storageAdapter.setItem('sidebarCollapsed', collapsed);
   }
 
@@ -2308,6 +2420,46 @@
   sidebarOpen.addEventListener('click', () => {
     setSidebarCollapsed(false);
   });
+  if (edgeToolbarReveal) {
+    edgeToolbarReveal.addEventListener('click', () => {
+      setToolbarCollapsed(false);
+      clearEdgeRevealProximity();
+    });
+  }
+  if (edgeSidebarReveal) {
+    edgeSidebarReveal.addEventListener('click', () => {
+      setSidebarCollapsed(false);
+      clearEdgeRevealProximity();
+    });
+  }
+
+  document.addEventListener(
+    'mousemove',
+    (event) => {
+      if (document.body.classList.contains('immersive-mode')) {
+        clearEdgeRevealProximity();
+        return;
+      }
+      const toolbarHidden = document.body.classList.contains('toolbar-collapsed');
+      const sidebarHidden = document.body.classList.contains('sidebar-collapsed');
+      const nearTop = toolbarHidden && event.clientY <= EDGE_REVEAL_DISTANCE_PX;
+      const nearLeft = sidebarHidden && event.clientX <= EDGE_REVEAL_DISTANCE_PX;
+      document.body.classList.toggle('edge-near-top', nearTop);
+      document.body.classList.toggle('edge-near-left', nearLeft);
+    },
+    { passive: true }
+  );
+  document.addEventListener('mouseout', (event) => {
+    if (!event.relatedTarget) {
+      clearEdgeRevealProximity();
+    }
+  });
+  window.addEventListener('blur', clearEdgeRevealProximity);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearEdgeRevealProximity();
+    }
+  });
 
   if (toolbarToggleBtn) {
     toolbarToggleBtn.addEventListener('click', () => {
@@ -2316,9 +2468,44 @@
     });
   }
 
+  if (sidebarToolbarToggle) {
+    sidebarToolbarToggle.addEventListener('click', () => {
+      const next = !document.body.classList.contains('toolbar-collapsed');
+      setToolbarCollapsed(next);
+    });
+  }
+
   if (immersiveToggleBtn) {
     immersiveToggleBtn.addEventListener('click', async () => {
       await setImmersiveMode(!immersiveModeEnabled);
+    });
+  }
+
+  if (windowFrameToggleBtn && hasElectronWindowBridge()) {
+    windowFrameToggleBtn.addEventListener('click', async () => {
+      try {
+        await window.electronWindow.setFramelessMode(!framelessModeEnabled);
+      } catch (_) {
+        // ignore
+      }
+    });
+  }
+
+  if (windowMinBtn && hasElectronWindowBridge()) {
+    windowMinBtn.addEventListener('click', () => {
+      window.electronWindow.minimize();
+    });
+  }
+
+  if (windowMaxBtn && hasElectronWindowBridge()) {
+    windowMaxBtn.addEventListener('click', () => {
+      window.electronWindow.toggleMaximize();
+    });
+  }
+
+  if (windowCloseBtn && hasElectronWindowBridge()) {
+    windowCloseBtn.addEventListener('click', () => {
+      window.electronWindow.close();
     });
   }
 
@@ -2360,15 +2547,16 @@
   // Restore sidebar state
   (async () => {
     const collapsed = await window.storageAdapter.getItem('sidebarCollapsed');
-    if (collapsed === true) {
-      setSidebarCollapsed(true);
-    }
     const toolbarCollapsed = await window.storageAdapter.getItem('toolbarCollapsed');
+    setSidebarCollapsed(collapsed === true);
+
     if (toolbarCollapsed === true) {
       setToolbarCollapsed(true);
     } else if (toolbarCollapsed === null || toolbarCollapsed === undefined) {
-      // Default to compact toolbar so the video area is not reduced on first launch.
+      // Default to hidden toolbar so the video area is not reduced on first launch.
       setToolbarCollapsed(true);
+    } else {
+      setToolbarCollapsed(false);
     }
   })();
 
@@ -2697,6 +2885,10 @@
       case 'S':
         // Sync all
         syncAll();
+        break;
+      case 't':
+      case 'T':
+        setToolbarCollapsed(!document.body.classList.contains('toolbar-collapsed'));
         break;
       case 'Escape':
         if (document.fullscreenElement) {

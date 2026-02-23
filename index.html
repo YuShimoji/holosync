@@ -202,6 +202,13 @@
       <footer class="footer">
         <small>HoloSync Web</small>
         <button
+          id="sidebarToolbarToggle"
+          class="debug-toggle sidebar-toolbar-toggle"
+          title="ツールバーの表示切替"
+        >
+          Toolbar
+        </button>
+        <button
           id="debugToggle"
           class="debug-toggle sidebar-debug-toggle"
           title="デバッグパネル切り替え"
@@ -240,8 +247,22 @@
           Toolbar
         </button>
         <button id="immersiveToggleBtn" class="share-btn" title="没入表示の切替">Immersive</button>
+        <button id="windowFrameToggleBtn" class="share-btn" title="ウィンドウ枠を非表示に切替">
+          Frameless
+        </button>
+        <div id="windowControls" class="window-controls" hidden>
+          <button id="windowMinBtn" class="window-control-btn" title="最小化">-</button>
+          <button id="windowMaxBtn" class="window-control-btn" title="最大化/元に戻す">□</button>
+          <button id="windowCloseBtn" class="window-control-btn danger" title="閉じる">x</button>
+        </div>
         <div class="drop-zone-hint" id="dropHint" hidden>ここにYouTube URLをドロップ</div>
       </div>
+      <button id="edgeToolbarReveal" class="edge-reveal edge-reveal-top" hidden>
+        Show Toolbar
+      </button>
+      <button id="edgeSidebarReveal" class="edge-reveal edge-reveal-left" hidden>
+        Show Sidebar
+      </button>
       <div id="debugPanel" class="debug-panel" hidden>
         <header class="debug-header">
           <h3>同期デバッグパネル</h3>
