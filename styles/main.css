@@ -348,14 +348,23 @@ label {
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 body.immersive-mode .content-toolbar {
   display: none;
 }
 body.toolbar-collapsed .content-toolbar {
-  min-height: 34px;
-  padding: 4px 8px;
-  gap: 8px;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 120;
+  min-height: 0;
+  padding: 4px;
+  gap: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
 }
 body.toolbar-collapsed
   .content-toolbar
@@ -1158,6 +1167,9 @@ button:active {
 }
 .toolbar-debug-toggle:hover {
   background: #d1d5db;
+}
+.sidebar-debug-toggle {
+  margin-left: auto;
 }
 
 .debug-panel {

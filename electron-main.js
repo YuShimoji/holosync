@@ -107,7 +107,6 @@ function createWindow(port) {
     width: 1280,
     height: 800,
     autoHideMenuBar: true,
-    titleBarStyle: 'hidden',
     fullscreenable: true,
     icon: path.join(appPath, 'favicon.ico'),
     webPreferences: {

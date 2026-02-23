@@ -2366,6 +2366,9 @@
     const toolbarCollapsed = await window.storageAdapter.getItem('toolbarCollapsed');
     if (toolbarCollapsed === true) {
       setToolbarCollapsed(true);
+    } else if (toolbarCollapsed === null || toolbarCollapsed === undefined) {
+      // Default to compact toolbar so the video area is not reduced on first launch.
+      setToolbarCollapsed(true);
     }
   })();
 
