@@ -643,8 +643,8 @@
     videos.push(videoEntry);
     syncTileOrderDom();
 
-    // Apply custom size if provided
-    if (videoEntry.tileWidth && videoEntry.tileHeight) {
+    // Only apply persisted tile size in free/cell mode.
+    if (cellModeEnabled && videoEntry.tileWidth && videoEntry.tileHeight) {
       tile.style.width = videoEntry.tileWidth + 'px';
       tile.style.height = videoEntry.tileHeight + 'px';
     }
@@ -3120,8 +3120,11 @@
     tile.style.top = top + 'px';
     tile.classList.add('cell-positioned');
 
-    // Apply custom size or default cell size
-    if (!videoEntry.tileWidth) {
+    // Apply custom size or default cell size.
+    if (videoEntry.tileWidth && videoEntry.tileHeight) {
+      tile.style.width = videoEntry.tileWidth + 'px';
+      tile.style.height = videoEntry.tileHeight + 'px';
+    } else {
       tile.style.width = cellWidth + 'px';
       tile.style.height = cellHeight + 'px';
     }
