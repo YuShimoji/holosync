@@ -210,6 +210,15 @@
     }
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   }
+
+  const zoomLoupeController = window.HoloSyncZoomLoupe?.createController({
+    buildEmbedUrl,
+    persistVideos,
+    playerStates,
+    ALLOWED_ORIGIN,
+    requestPlayerSnapshot,
+  });
+
   function hasVideo(id) {
     return videos.some((v) => v.id === id);
   }
@@ -278,21 +287,6 @@
     }
   }
 
-  async function toggleElementFullscreen(element) {
-    if (document.fullscreenElement === element) {
-      await exitFullscreenSafe();
-      return;
-    }
-    if (!element?.requestFullscreen) {
-      return;
-    }
-    try {
-      await element.requestFullscreen();
-    } catch (_) {
-      // ignore
-    }
-  }
-
   function clearEdgeRevealProximity() {
     document.body.classList.remove('edge-near-top', 'edge-near-left');
   }
@@ -320,7 +314,7 @@
     document.body.classList.toggle('toolbar-collapsed', collapsed);
     if (toolbarToggleBtn) {
       toolbarToggleBtn.classList.toggle('success', collapsed);
-      toolbarToggleBtn.textContent = collapsed ? 'Toolbar Off' : 'Toolbar';
+      toolbarToggleBtn.textContent = collapsed ? 'Show Toolbar' : 'Hide Toolbar';
     }
     if (sidebarToolbarToggle) {
       sidebarToolbarToggle.classList.toggle('success', collapsed);
@@ -405,6 +399,13 @@
       cellRow: v.cellRow ?? null,
       tileWidth: v.tileWidth ?? null,
       tileHeight: v.tileHeight ?? null,
+      zoomDiameter: v.zoomDiameter ?? null,
+      zoomScale: v.zoomScale ?? null,
+      zoomOriginX: v.zoomOriginX ?? null,
+      zoomOriginY: v.zoomOriginY ?? null,
+      zoomPanelX: v.zoomPanelX ?? null,
+      zoomPanelY: v.zoomPanelY ?? null,
+      zoomShape: v.zoomShape ?? null,
     }));
     window.storageAdapter.setItem('videos', data);
   }
@@ -496,12 +497,6 @@
     const actions = document.createElement('div');
     actions.className = 'tile-actions';
 
-    const fullscreenBtn = document.createElement('button');
-    fullscreenBtn.className = 'tile-action-btn';
-    fullscreenBtn.textContent = '⛶';
-    fullscreenBtn.title = 'フルスクリーン';
-    fullscreenBtn.addEventListener('click', () => toggleElementFullscreen(frameWrap));
-
     const popoutBtn = document.createElement('button');
     popoutBtn.className = 'tile-action-btn';
     popoutBtn.textContent = 'YT';
@@ -548,7 +543,6 @@
     actions.appendChild(movePrevBtn);
     actions.appendChild(moveNextBtn);
     actions.appendChild(popoutBtn);
-    actions.appendChild(fullscreenBtn);
     actions.appendChild(removeBtn);
 
     // Info header (collapsible, Phase 2-1)
@@ -576,16 +570,6 @@
       infoToggleIcon.textContent = isOpen ? '▲' : '▼';
     });
 
-    // Double-click on frameWrap for fullscreen (Phase 1-3)
-    frameWrap.addEventListener('dblclick', () => toggleElementFullscreen(frameWrap));
-
-    const fullscreenExitBtn = document.createElement('button');
-    fullscreenExitBtn.className = 'tile-fullscreen-exit';
-    fullscreenExitBtn.textContent = 'Exit Fullscreen';
-    fullscreenExitBtn.addEventListener('click', () => {
-      exitFullscreenSafe();
-    });
-
     // Offset control (Phase 3-3)
     const offsetControl = document.createElement('div');
     offsetControl.className = 'tile-offset-control';
@@ -606,7 +590,7 @@
     const resizeHandle = document.createElement('div');
     resizeHandle.className = 'tile-resize-handle';
     resizeHandle.textContent = '⤡';
-    resizeHandle.title = 'ドラッグでサイズ変更';
+    resizeHandle.title = 'Resize (free layout only)';
 
     // Phase 5: Drag handle
     const dragHandle = document.createElement('div');
@@ -620,15 +604,14 @@
     sizeBadge.style.display = 'none';
 
     frameWrap.appendChild(iframe);
-    frameWrap.appendChild(infoHeader);
-    frameWrap.appendChild(fullscreenExitBtn);
     tile.appendChild(syncBadge);
-    tile.appendChild(offsetControl);
     tile.appendChild(actions);
+    tile.appendChild(offsetControl);
     tile.appendChild(dragHandle);
     tile.appendChild(resizeHandle);
     tile.appendChild(sizeBadge);
     tile.appendChild(frameWrap);
+    tile.appendChild(infoHeader);
     tile.appendChild(infoPanel);
 
     gridEl.appendChild(tile);
@@ -649,6 +632,13 @@
       metaDescription: '',
       lastHistorySavedAt: 0,
       lastHistorySavedPosition: 0,
+      zoomDiameter: options.zoomDiameter ?? null,
+      zoomScale: options.zoomScale ?? null,
+      zoomOriginX: options.zoomOriginX ?? null,
+      zoomOriginY: options.zoomOriginY ?? null,
+      zoomPanelX: options.zoomPanelX ?? null,
+      zoomPanelY: options.zoomPanelY ?? null,
+      zoomShape: options.zoomShape ?? null,
     };
     videos.push(videoEntry);
     syncTileOrderDom();
@@ -1527,6 +1517,13 @@
         cellRow: v.cellRow ?? null,
         tileWidth: v.tileWidth ?? null,
         tileHeight: v.tileHeight ?? null,
+        zoomDiameter: v.zoomDiameter ?? null,
+        zoomScale: v.zoomScale ?? null,
+        zoomOriginX: v.zoomOriginX ?? null,
+        zoomOriginY: v.zoomOriginY ?? null,
+        zoomPanelX: v.zoomPanelX ?? null,
+        zoomPanelY: v.zoomPanelY ?? null,
+        zoomShape: v.zoomShape ?? null,
       })),
       layout: layoutSelect.value,
       volume: parseInt(volumeAll.value, 10),
@@ -1830,8 +1827,29 @@
         const cellRow = typeof entry === 'object' ? (entry.cellRow ?? null) : null;
         const tileWidth = typeof entry === 'object' ? (entry.tileWidth ?? null) : null;
         const tileHeight = typeof entry === 'object' ? (entry.tileHeight ?? null) : null;
+        const zoomDiameter = typeof entry === 'object' ? (entry.zoomDiameter ?? null) : null;
+        const zoomScale = typeof entry === 'object' ? (entry.zoomScale ?? null) : null;
+        const zoomOriginX = typeof entry === 'object' ? (entry.zoomOriginX ?? null) : null;
+        const zoomOriginY = typeof entry === 'object' ? (entry.zoomOriginY ?? null) : null;
+        const zoomPanelX = typeof entry === 'object' ? (entry.zoomPanelX ?? null) : null;
+        const zoomPanelY = typeof entry === 'object' ? (entry.zoomPanelY ?? null) : null;
+        const zoomShape = typeof entry === 'object' ? (entry.zoomShape ?? null) : null;
         if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
-          createTile(vid, { syncGroupId, offsetMs, cellCol, cellRow, tileWidth, tileHeight });
+          createTile(vid, {
+            syncGroupId,
+            offsetMs,
+            cellCol,
+            cellRow,
+            tileWidth,
+            tileHeight,
+            zoomDiameter,
+            zoomScale,
+            zoomOriginX,
+            zoomOriginY,
+            zoomPanelX,
+            zoomPanelY,
+            zoomShape,
+          });
         }
       });
       isRestoring = false;
@@ -2867,16 +2885,6 @@
       case 'U':
         unmuteAll();
         break;
-      case 'f':
-      case 'F':
-        // Fullscreen first video
-        if (videos.length > 0) {
-          const fw = videos[0].tile?.querySelector('.frame-wrap');
-          if (fw) {
-            toggleElementFullscreen(fw);
-          }
-        }
-        break;
       case 'F11':
         e.preventDefault();
         setImmersiveMode(!immersiveModeEnabled);
@@ -2910,17 +2918,6 @@
         // Show help modal
         showHelp();
         break;
-    }
-
-    // Number keys 1-9 to focus/fullscreen specific tile
-    if (e.key >= '1' && e.key <= '9') {
-      const idx = parseInt(e.key, 10) - 1;
-      if (idx < videos.length) {
-        const fw = videos[idx].tile?.querySelector('.frame-wrap');
-        if (fw && e.shiftKey) {
-          toggleElementFullscreen(fw);
-        }
-      }
     }
   });
 
@@ -2966,6 +2963,9 @@
     let startX, startW, lastW, lastH, rafId;
 
     resizeHandle.addEventListener('mousedown', (e) => {
+      if (!cellModeEnabled) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       isResizing = true;
@@ -2982,7 +2982,12 @@
           return;
         }
         const deltaX = ev.clientX - startX;
-        const newW = Math.max(MIN_TILE_WIDTH, startW + deltaX);
+        const tileRect = tile.getBoundingClientRect();
+        const gridRect = gridEl.getBoundingClientRect();
+        const maxWidthByGrid = Math.max(MIN_TILE_WIDTH, gridRect.right - tileRect.left - cellGap);
+        const maxWidthByViewport = Math.max(MIN_TILE_WIDTH, window.innerWidth - tileRect.left - 12);
+        const maxWidth = Math.min(maxWidthByGrid, maxWidthByViewport);
+        const newW = Math.max(MIN_TILE_WIDTH, Math.min(startW + deltaX, maxWidth));
         const newH = Math.round(newW * ASPECT_RATIO);
         lastW = Math.round(newW);
         lastH = newH;
@@ -3302,241 +3307,9 @@
 
   // ========== Zoom Loupe (Magnifying Glass) ==========
   function toggleZoomPanel(videoEntry) {
-    if (videoEntry.zoomPanel) {
-      destroyZoomPanel(videoEntry);
-    } else {
-      createZoomPanel(videoEntry);
-    }
-  }
-
-  function createZoomPanel(videoEntry) {
-    if (videoEntry.zoomPanel) {
+    if (!zoomLoupeController) {
       return;
     }
-
-    const diameter = videoEntry.zoomDiameter ?? 250;
-    const scale = videoEntry.zoomScale ?? 3;
-    const originX = videoEntry.zoomOriginX ?? 50;
-    const originY = videoEntry.zoomOriginY ?? 30;
-
-    const loupe = document.createElement('div');
-    loupe.className = 'zoom-loupe';
-    const lx = videoEntry.zoomPanelX ?? window.innerWidth - diameter - 40;
-    const ly = videoEntry.zoomPanelY ?? 60;
-    loupe.style.left = Math.max(0, Math.min(lx, window.innerWidth - 100)) + 'px';
-    loupe.style.top = Math.max(0, Math.min(ly, window.innerHeight - 100)) + 'px';
-    loupe.style.width = diameter + 'px';
-    loupe.style.height = diameter + 'px';
-
-    const zoomIframe = document.createElement('iframe');
-    zoomIframe.src = buildEmbedUrl(videoEntry.id, { mute: 1, controls: 0 });
-    zoomIframe.allow = 'autoplay; encrypted-media';
-    zoomIframe.loading = 'lazy';
-    zoomIframe.setAttribute('referrerpolicy', 'origin');
-    zoomIframe.title = `Zoom: ${videoEntry.id}`;
-    zoomIframe.style.transform = `scale(${scale})`;
-    zoomIframe.style.transformOrigin = `${originX}% ${originY}%`;
-    loupe.appendChild(zoomIframe);
-
-    // Close button (visible on hover)
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'zoom-loupe-close';
-    closeBtn.textContent = '\u2715';
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      destroyZoomPanel(videoEntry);
-    });
-    loupe.appendChild(closeBtn);
-
-    // Hover controls tray
-    const tray = document.createElement('div');
-    tray.className = 'zoom-loupe-tray';
-
-    function addSlider(labelText, min, max, step, value, onChange) {
-      const row = document.createElement('div');
-      row.className = 'zoom-loupe-slider-row';
-      const lbl = document.createElement('label');
-      lbl.textContent = labelText;
-      const inp = document.createElement('input');
-      inp.type = 'range';
-      inp.min = min;
-      inp.max = max;
-      inp.step = step;
-      inp.value = value;
-      inp.addEventListener('input', (e) => {
-        e.stopPropagation();
-        onChange(parseFloat(e.target.value));
-      });
-      inp.addEventListener('mousedown', (e) => e.stopPropagation());
-      row.appendChild(lbl);
-      row.appendChild(inp);
-      tray.appendChild(row);
-    }
-
-    addSlider('X', 0, 100, 1, originX, (v) => {
-      videoEntry.zoomOriginX = v;
-      zoomIframe.style.transformOrigin = `${v}% ${videoEntry.zoomOriginY ?? 30}%`;
-      persistVideos();
-    });
-    addSlider('Y', 0, 100, 1, originY, (v) => {
-      videoEntry.zoomOriginY = v;
-      zoomIframe.style.transformOrigin = `${videoEntry.zoomOriginX ?? 50}% ${v}%`;
-      persistVideos();
-    });
-    addSlider('\u500D', 1.5, 6, 0.5, scale, (v) => {
-      videoEntry.zoomScale = v;
-      zoomIframe.style.transform = `scale(${v})`;
-      persistVideos();
-    });
-    loupe.appendChild(tray);
-
-    document.body.appendChild(loupe);
-    videoEntry.zoomPanel = loupe;
-
-    // Drag (anywhere on the loupe)
-    setupZoomLoupeDrag(loupe, videoEntry);
-
-    // Scroll wheel to resize
-    loupe.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const cur = videoEntry.zoomDiameter ?? 250;
-      const next = Math.max(100, Math.min(600, cur - Math.sign(e.deltaY) * 30));
-      videoEntry.zoomDiameter = next;
-      loupe.style.width = next + 'px';
-      loupe.style.height = next + 'px';
-      persistVideos();
-    });
-
-    syncZoomIframe(videoEntry, zoomIframe);
-  }
-
-  function destroyZoomPanel(videoEntry) {
-    if (videoEntry._zoomSyncInterval) {
-      clearInterval(videoEntry._zoomSyncInterval);
-      videoEntry._zoomSyncInterval = null;
-    }
-    if (videoEntry.zoomPanel) {
-      videoEntry.zoomPanel.remove();
-      videoEntry.zoomPanel = null;
-    }
-  }
-
-  function setupZoomLoupeDrag(loupe, videoEntry) {
-    let isDragging = false;
-    let startX, startY, startLeft, startTop;
-
-    loupe.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.zoom-loupe-close') || e.target.closest('input')) {
-        return;
-      }
-      e.preventDefault();
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      startLeft = loupe.offsetLeft;
-      startTop = loupe.offsetTop;
-      loupe.style.cursor = 'grabbing';
-
-      const onMove = (ev) => {
-        if (!isDragging) {
-          return;
-        }
-        loupe.style.left = startLeft + ev.clientX - startX + 'px';
-        loupe.style.top = startTop + ev.clientY - startY + 'px';
-      };
-
-      const onUp = () => {
-        if (!isDragging) {
-          return;
-        }
-        isDragging = false;
-        loupe.style.cursor = '';
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        videoEntry.zoomPanelX = loupe.offsetLeft;
-        videoEntry.zoomPanelY = loupe.offsetTop;
-        persistVideos();
-      };
-
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  }
-
-  function syncZoomIframe(videoEntry, zoomIframe) {
-    zoomIframe.addEventListener(
-      'load',
-      () => {
-        setTimeout(() => {
-          const zoomWin = zoomIframe.contentWindow;
-          if (!zoomWin) {
-            return;
-          }
-          try {
-            zoomWin.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
-          } catch (_) {
-            /* ignore */
-          }
-
-          const mainWin = videoEntry.iframe?.contentWindow;
-          const mainRec = mainWin ? playerStates.get(mainWin) : null;
-          if (mainRec && typeof mainRec.time === 'number') {
-            zoomWin.postMessage(
-              JSON.stringify({ event: 'command', func: 'seekTo', args: [mainRec.time, true] }),
-              ALLOWED_ORIGIN
-            );
-            if (mainRec.state === 1) {
-              zoomWin.postMessage(
-                JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
-                ALLOWED_ORIGIN
-              );
-            }
-          }
-          zoomWin.postMessage(
-            JSON.stringify({ event: 'command', func: 'mute', args: [] }),
-            ALLOWED_ORIGIN
-          );
-        }, 500);
-      },
-      { once: true }
-    );
-
-    // Periodic sync (every 5s) to keep zoom iframe aligned with main
-    videoEntry._zoomSyncInterval = setInterval(() => {
-      if (!videoEntry.zoomPanel) {
-        clearInterval(videoEntry._zoomSyncInterval);
-        videoEntry._zoomSyncInterval = null;
-        return;
-      }
-      const zoomWin = zoomIframe.contentWindow;
-      const mainWin = videoEntry.iframe?.contentWindow;
-      if (!zoomWin || !mainWin) {
-        return;
-      }
-      const mainRec = playerStates.get(mainWin);
-      if (!mainRec || typeof mainRec.time !== 'number') {
-        return;
-      }
-
-      zoomWin.postMessage(
-        JSON.stringify({ event: 'command', func: 'seekTo', args: [mainRec.time, true] }),
-        ALLOWED_ORIGIN
-      );
-      if (mainRec.state === 1) {
-        zoomWin.postMessage(
-          JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
-          ALLOWED_ORIGIN
-        );
-      } else if (mainRec.state === 2) {
-        zoomWin.postMessage(
-          JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }),
-          ALLOWED_ORIGIN
-        );
-      }
-      zoomWin.postMessage(
-        JSON.stringify({ event: 'command', func: 'mute', args: [] }),
-        ALLOWED_ORIGIN
-      );
-    }, 5000);
+    zoomLoupeController.toggleZoomPanel(videoEntry);
   }
 })();

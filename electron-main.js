@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -134,6 +134,24 @@ function createWindow(port) {
   windowRef.setMenuBarVisibility(false);
   windowRef.removeMenu();
   windowRef.loadURL(`http://localhost:${port}`);
+
+  windowRef.webContents.setWindowOpenHandler(({ url }) => {
+    if (typeof url === 'string' && /^https?:\/\//.test(url)) {
+      void shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  const appOrigin = `http://localhost:${port}`;
+  windowRef.webContents.on('will-navigate', (event, url) => {
+    if (typeof url !== 'string' || url.startsWith(appOrigin)) {
+      return;
+    }
+    event.preventDefault();
+    if (/^https?:\/\//.test(url)) {
+      void shell.openExternal(url);
+    }
+  });
 
   if (windowPrefs.isMaximized) {
     windowRef.maximize();
