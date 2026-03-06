@@ -37,6 +37,10 @@
     {
       "files": ["scripts/detect-project-type.js", "scripts/test-runner.js"],
       "env": { "node": true }
+    },
+    {
+      "files": ["scripts/main.js"],
+      "parserOptions": { "sourceType": "module" }
     }
   ]
 }
