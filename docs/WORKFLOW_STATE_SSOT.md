@@ -10,7 +10,7 @@
 - [ ] `dist/HoloSync-win32-x64/HoloSync.exe` でホットフィックス挙動を手動確認
 - [ ] Playwright に UI回帰テスト（全画面復帰、履歴表示、概要再取得、没入表示など）を追加
 - [ ] `README.md` に `dist` 再生成手順（`npm run build`）と検証観点を追記
-- [ ] `.shared-workflows` 更新運用を定期化（`sw-update-check` + `sw-doctor`）の整備
+- [x] ~~`.shared-workflows` 更新運用~~ → submodule廃止済み（2026-03-07）
 - [ ] （余裕があれば）`scripts/main.js` の分割計画起票等、残りのP2タスクの着手
 
 ## 選別規則
@@ -27,4 +27,4 @@
 - `dist/` 以下のファイルはビルド成果物であるため、直接編集しないこと（ソース変更後は必ず `npm run build` を実行する）。
 - Issue や MR の自動作成は、GitHub トークンが明示的に設定されていない限り行わず（または `scripts/create-issues.ps1` で下書きを生成するにとどめ）、基本は手動操作やドキュメントベースで管理すること。
 - UIや基本機能（同期処理、プレイヤー管理など）の既存アーキテクチャを、事前の相談なしに大きく破壊・リファクタリングしないこと。
-- プロンプト内にハードコードされたルールではなく、常に本ファイル（`docs/WORKFLOW_STATE_SSOT.md`）及び `.shared-workflows` の最新プロンプトを正とすること。
+- プロンプト内にハードコードされたルールではなく、常に本ファイル（`docs/WORKFLOW_STATE_SSOT.md`）及び `CLAUDE.md` の指針を正とすること。

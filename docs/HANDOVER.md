@@ -14,13 +14,9 @@
   - 概要欄の再取得改善（API Key 変更時の再フェッチ）
   - Electron側のメニューバー非表示・タイトルバー圧縮
 
-- shared-workflows 更新を取り込み
-  - `.shared-workflows` サブモジュールを追加（`main` tracking）
-  - `docs/windsurf_workflow/` を最新同期
-  - `prompts/orchestrator/modules/` に `P2.5_diverge.md` / `P2.5_slice.md` を追加
-  - `scripts/session-start.ps1` を submodule 優先解決に更新
-  - `docs/WORKFLOW.md` に submodule 運用手順を追記
-  - `docs/tasks/`, `docs/inbox/`, `REPORT_CONFIG.yml` を整備
+- shared-workflows 更新を取り込み（**注: submoduleは2026-03-07に廃止済み。資産は `legacy/` に移動**）
+  - `docs/windsurf_workflow/` → `legacy/windsurf_workflow/` に移動済み
+  - `prompts/orchestrator/` → `legacy/prompts/` に移動済み
 
 - 引き継ぎ資産を更新
   - `AI_CONTEXT.md` 追記
@@ -38,19 +34,11 @@
 
 ```powershell
 git pull --rebase
-git submodule update --init --recursive
-powershell -NoProfile -File scripts/session-start.ps1
 npm install
 npm run lint
 npm run build
 ```
 
-shared-workflows の更新確認:
-
-```powershell
-node .shared-workflows/scripts/sw-update-check.js
-node .shared-workflows/scripts/sw-doctor.js --profile shared-orch-bootstrap --format text
-```
 
 ## 4) 注意点
 

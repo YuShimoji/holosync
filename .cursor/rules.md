@@ -11,8 +11,8 @@
 
 ## 参照先
 
-- 入口: `.shared-workflows/docs/windsurf_workflow/OPEN_HERE.md`（無ければ `docs/windsurf_workflow/OPEN_HERE.md`）
-- Orchestrator Driver: `.shared-workflows/prompts/every_time/ORCHESTRATOR_DRIVER.txt`（無ければ `prompts/every_time/ORCHESTRATOR_DRIVER.txt`）
+- プロジェクト指針: `CLAUDE.md`
+- ワークフロー状態: `docs/WORKFLOW_STATE_SSOT.md`
 
 ## 中間報告ルール（長大作業の安定化）
 

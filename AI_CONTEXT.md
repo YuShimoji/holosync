@@ -1,5 +1,7 @@
 # AI Context
 
+> **正の指針は `CLAUDE.md`**。本ファイルは開発履歴の記録用。
+
 ## Log: Phase3 sync buffering tolerance
 
 - ブランチ: `feat/phase3-buffer-tolerance`
@@ -166,3 +168,13 @@
   - `npm run lint` 通過
   - `.shared-workflows/scripts/sw-update-check.js` は `OK`
   - `sw-doctor` bootstrap は critical なし（rulesファイル警告は継続）
+
+## Log: ドキュメント整理 — submodule廃止・資産分離 (2026-03-07)
+
+- `.shared-workflows` submodule を廃止（`.gitmodules` 削除済み）
+- ワークフロー資産を `legacy/` に移動:
+  - `docs/windsurf_workflow/` -> `legacy/windsurf_workflow/`
+  - `prompts/` -> `legacy/prompts/`
+  - `docs/SHARED_WORKFLOW_DOCTRINE.md` -> `legacy/SHARED_WORKFLOW_DOCTRINE.md`
+- アクティブドキュメントから `.shared-workflows` 参照を除去 (WORKFLOW.md, SSOT.md, ISSUES.md, HANDOVER.md, .cursorrules, .cursor/rules.md)
+- `CLAUDE.md` をプロジェクト指針の正として明記
