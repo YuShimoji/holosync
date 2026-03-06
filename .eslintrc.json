@@ -39,7 +39,7 @@
       "env": { "node": true }
     },
     {
-      "files": ["scripts/main.js"],
+      "files": ["scripts/main.js", "scripts/state.js", "scripts/share.js", "scripts/search.js", "scripts/history.js"],
       "parserOptions": { "sourceType": "module" }
     }
   ]

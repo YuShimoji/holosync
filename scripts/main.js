@@ -3,6 +3,28 @@
  * @brief HoloSync Web App main script: add YouTube videos, batch controls,
  *        simple persistence when available.
  */
+import {
+  videos,
+  playerStates,
+  suspendedPlayers,
+  state,
+  MIN_TILE_WIDTH,
+  ASPECT_RATIO,
+  WATCH_HISTORY_CAPTURE_INTERVAL_MS,
+  WATCH_HISTORY_MIN_PLAYED_SECONDS,
+  EDGE_REVEAL_DISTANCE_PX,
+  ALLOWED_ORIGIN,
+  ALLOWED_COMMANDS,
+  SYNC_SETTINGS,
+  DEFAULT_EMBED_SETTINGS,
+  SYNC_GROUPS,
+  hasVideo,
+  findVideoByWindow,
+} from './state.js';
+import { initShare } from './share.js';
+import { initSearch, initializeApiKey, loadPresets } from './search.js';
+import { saveWatchHistoryEntry, loadWatchHistory, initHistory } from './history.js';
+
 const gridEl = document.getElementById('grid');
 const addForm = document.getElementById('addForm');
 const urlInput = document.getElementById('urlInput');
@@ -26,16 +48,7 @@ const loadDemoBtn = document.getElementById('loadDemoBtn');
 const showHelpBtn = document.getElementById('showHelpBtn');
 const helpModal = document.getElementById('helpModal');
 const closeHelpBtn = document.getElementById('closeHelpBtn');
-const shareModal = document.getElementById('shareModal');
-const closeShareBtn = document.getElementById('closeShareBtn');
-const shareUrlInput = document.getElementById('shareUrlInput');
-const copyShareBtn = document.getElementById('copyShareBtn');
-const openShareBtn = document.getElementById('openShareBtn');
-const importShareBtn = document.getElementById('importShareBtn');
-const shareQrBtn = document.getElementById('shareQrBtn');
-const shareQrBox = document.getElementById('shareQrBox');
-const shareQrImg = document.getElementById('shareQrImg');
-const shareStatus = document.getElementById('shareStatus');
+// Share modal DOM refs moved to share.js
 
 // Phase 1: Layout controls
 const sidebarToggle = document.getElementById('sidebarToggle');
@@ -47,7 +60,6 @@ const darkModeToggle = document.getElementById('darkModeToggle');
 // Phase 5: Cell mode and resize controls
 const gridGapInput = document.getElementById('gridGap');
 const gridGapVal = document.getElementById('gridGapVal');
-const shareBtn = document.getElementById('shareBtn');
 const toolbarToggleBtn = document.getElementById('toolbarToggleBtn');
 const immersiveToggleBtn = document.getElementById('immersiveToggleBtn');
 const windowFrameToggleBtn = document.getElementById('windowFrameToggleBtn');
@@ -60,23 +72,9 @@ const embedModestBrandingToggle = document.getElementById('embedModestBranding')
 const embedRelatedVideosToggle = document.getElementById('embedRelatedVideos');
 const embedPlaysInlineToggle = document.getElementById('embedPlaysInline');
 
-// Cell mode state
-let cellModeEnabled = false;
-let cellColumns = 2;
-let cellGap = 8;
-let cellOverlayContainer = null;
-const MIN_TILE_WIDTH = 200;
-const ASPECT_RATIO = 9 / 16;
+// Cell mode constants (mutable state in state.js)
 
-const searchForm = document.getElementById('searchForm');
-const searchInput = document.getElementById('searchInput');
-const searchResults = document.getElementById('searchResults');
-const searchError = document.getElementById('searchError');
-
-const apiKeyInput = document.getElementById('apiKeyInput');
-const deleteApiKeyBtn = document.getElementById('deleteApiKeyBtn');
-const checkQuotaBtn = document.getElementById('checkQuotaBtn');
-const quotaInfo = document.getElementById('quotaInfo');
+// Search / API key DOM refs moved to search.js
 
 const debugToggle = document.getElementById('debugToggle');
 const sidebarToolbarToggle = document.getElementById('sidebarToolbarToggle');
@@ -86,10 +84,7 @@ const debugPanel = document.getElementById('debugPanel');
 const debugClose = document.getElementById('debugClose');
 const debugContent = document.getElementById('debugContent');
 
-const savePresetBtn = document.getElementById('savePresetBtn');
-const presetNameInput = document.getElementById('presetNameInput');
-const presetList = document.getElementById('presetList');
-const watchHistoryList = document.getElementById('watchHistoryList');
+// Preset / history DOM refs moved to search.js / history.js
 
 const playAllBtn = document.getElementById('playAll');
 const pauseAllBtn = document.getElementById('pauseAll');
@@ -98,54 +93,7 @@ const unmuteAllBtn = document.getElementById('unmuteAll');
 const volumeAll = document.getElementById('volumeAll');
 const volumeVal = document.getElementById('volumeVal');
 
-/** @type {{iframe: HTMLIFrameElement, id: string}[]} */
-const videos = [];
-/** @type {Map<Window, {time?: number, state?: number, lastUpdate?: number}>} */
-const playerStates = new Map();
-/** @type {Map<Window, {since: number, reason: string}>} */
-const suspendedPlayers = new Map();
-let isRestoring = false;
-let immersiveModeEnabled = false;
-let framelessModeEnabled = false;
-let sidebarStateBeforeImmersive = null;
-let toolbarStateBeforeImmersive = null;
-
-const WATCH_HISTORY_MAX = 30;
-const WATCH_HISTORY_CAPTURE_INTERVAL_MS = 120000;
-const WATCH_HISTORY_MIN_PLAYED_SECONDS = 5;
-const EDGE_REVEAL_DISTANCE_PX = 28;
-
-// Security hardening for postMessage sender to YouTube IFrame API
-const ALLOWED_ORIGIN = 'https://www.youtube.com';
-const ALLOWED_COMMANDS = new Set([
-  'playVideo',
-  'pauseVideo',
-  'mute',
-  'unMute',
-  'setVolume',
-  'seekTo',
-  'setPlaybackRate',
-]);
-const SYNC_SETTINGS = {
-  toleranceMs: 300,
-  probeIntervalMs: 500,
-  stallThresholdMs: 2500,
-  rejoinSyncBufferMs: 500,
-  leaderMode: 'first', // 'first' | 'manual' | 'longest-playing' | 'least-buffered'
-  leaderId: null,
-  retryOnError: true,
-  fallbackMode: 'mute-continue', // 'mute-continue' | 'pause-catchup' | 'none'
-  driftingCorrectionEnabled: true,
-  maxDriftCorrectionMs: 1000, // Maximum correction per sync cycle
-  syncFrequencyHz: 2, // Sync attempts per second
-};
-const DEFAULT_EMBED_SETTINGS = {
-  controls: 1,
-  modestbranding: 1,
-  rel: 0,
-  playsinline: 1,
-};
-let embedSettings = { ...DEFAULT_EMBED_SETTINGS };
+// Core data, constants, and mutable state imported from state.js
 
 function sanitizeEmbedSettings(candidate) {
   if (!candidate || typeof candidate !== 'object') {
@@ -161,21 +109,21 @@ function sanitizeEmbedSettings(candidate) {
 
 function syncEmbedSettingsUI() {
   if (embedControlsToggle) {
-    embedControlsToggle.checked = embedSettings.controls === 1;
+    embedControlsToggle.checked = state.embedSettings.controls === 1;
   }
   if (embedModestBrandingToggle) {
-    embedModestBrandingToggle.checked = embedSettings.modestbranding === 1;
+    embedModestBrandingToggle.checked = state.embedSettings.modestbranding === 1;
   }
   if (embedRelatedVideosToggle) {
-    embedRelatedVideosToggle.checked = embedSettings.rel === 1;
+    embedRelatedVideosToggle.checked = state.embedSettings.rel === 1;
   }
   if (embedPlaysInlineToggle) {
-    embedPlaysInlineToggle.checked = embedSettings.playsinline === 1;
+    embedPlaysInlineToggle.checked = state.embedSettings.playsinline === 1;
   }
 }
 
 function persistEmbedSettings() {
-  window.storageAdapter.setItem('embedSettings', embedSettings);
+  window.storageAdapter.setItem('embedSettings', state.embedSettings);
 }
 
 function buildEmbedUrl(videoId, options = {}) {
@@ -185,18 +133,22 @@ function buildEmbedUrl(videoId, options = {}) {
   params.set('widget_referrer', window.location.href);
   params.set(
     'playsinline',
-    String(options.playsinline !== undefined ? options.playsinline : embedSettings.playsinline)
+    String(
+      options.playsinline !== undefined ? options.playsinline : state.embedSettings.playsinline
+    )
   );
   params.set(
     'modestbranding',
     String(
-      options.modestbranding !== undefined ? options.modestbranding : embedSettings.modestbranding
+      options.modestbranding !== undefined
+        ? options.modestbranding
+        : state.embedSettings.modestbranding
     )
   );
-  params.set('rel', String(options.rel !== undefined ? options.rel : embedSettings.rel));
+  params.set('rel', String(options.rel !== undefined ? options.rel : state.embedSettings.rel));
   params.set(
     'controls',
-    String(options.controls !== undefined ? options.controls : embedSettings.controls)
+    String(options.controls !== undefined ? options.controls : state.embedSettings.controls)
   );
   if (options.mute !== undefined) {
     params.set('mute', String(options.mute));
@@ -218,13 +170,7 @@ const zoomLoupeController = window.HoloSyncZoomLoupe?.createController({
   requestPlayerSnapshot,
 });
 
-function hasVideo(id) {
-  return videos.some((v) => v.id === id);
-}
-
-function findVideoByWindow(win) {
-  return videos.find((video) => video.iframe?.contentWindow === win) || null;
-}
+// hasVideo and findVideoByWindow imported from state.js
 
 function syncTileOrderDom() {
   videos.forEach((video) => {
@@ -240,7 +186,7 @@ function refreshTileStackOrder() {
     if (!video.tile) {
       return;
     }
-    if (cellModeEnabled) {
+    if (state.cellModeEnabled) {
       video.tile.style.setProperty('--tile-stack-index', String(5 + index));
     } else {
       video.tile.style.removeProperty('--tile-stack-index');
@@ -324,15 +270,15 @@ function setToolbarCollapsed(collapsed) {
 }
 
 async function setImmersiveMode(enabled) {
-  immersiveModeEnabled = enabled;
+  state.immersiveModeEnabled = enabled;
   document.body.classList.toggle('immersive-mode', enabled);
   if (immersiveToggleBtn) {
     immersiveToggleBtn.classList.toggle('success', enabled);
     immersiveToggleBtn.textContent = enabled ? 'Immersive On' : 'Immersive';
   }
   if (enabled) {
-    sidebarStateBeforeImmersive = document.body.classList.contains('sidebar-collapsed');
-    toolbarStateBeforeImmersive = document.body.classList.contains('toolbar-collapsed');
+    state.sidebarStateBeforeImmersive = document.body.classList.contains('sidebar-collapsed');
+    state.toolbarStateBeforeImmersive = document.body.classList.contains('toolbar-collapsed');
     setSidebarCollapsed(true);
     setToolbarCollapsed(true);
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -344,14 +290,14 @@ async function setImmersiveMode(enabled) {
     }
     return;
   }
-  if (typeof sidebarStateBeforeImmersive === 'boolean') {
-    setSidebarCollapsed(sidebarStateBeforeImmersive);
+  if (typeof state.sidebarStateBeforeImmersive === 'boolean') {
+    setSidebarCollapsed(state.sidebarStateBeforeImmersive);
   }
-  if (typeof toolbarStateBeforeImmersive === 'boolean') {
-    setToolbarCollapsed(toolbarStateBeforeImmersive);
+  if (typeof state.toolbarStateBeforeImmersive === 'boolean') {
+    setToolbarCollapsed(state.toolbarStateBeforeImmersive);
   }
-  sidebarStateBeforeImmersive = null;
-  toolbarStateBeforeImmersive = null;
+  state.sidebarStateBeforeImmersive = null;
+  state.toolbarStateBeforeImmersive = null;
   if (document.fullscreenElement) {
     await exitFullscreenSafe();
   }
@@ -364,15 +310,15 @@ function hasElectronWindowBridge() {
 }
 
 function applyFramelessState(enabled) {
-  framelessModeEnabled = Boolean(enabled);
-  document.body.classList.toggle('frameless-mode', framelessModeEnabled);
+  state.framelessModeEnabled = Boolean(enabled);
+  document.body.classList.toggle('frameless-mode', state.framelessModeEnabled);
   if (windowFrameToggleBtn) {
-    windowFrameToggleBtn.classList.toggle('success', framelessModeEnabled);
-    windowFrameToggleBtn.textContent = framelessModeEnabled ? 'Frameless On' : 'Frameless';
+    windowFrameToggleBtn.classList.toggle('success', state.framelessModeEnabled);
+    windowFrameToggleBtn.textContent = state.framelessModeEnabled ? 'Frameless On' : 'Frameless';
     windowFrameToggleBtn.hidden = !hasElectronWindowBridge();
   }
   if (windowControls) {
-    windowControls.hidden = !framelessModeEnabled || !hasElectronWindowBridge();
+    windowControls.hidden = !state.framelessModeEnabled || !hasElectronWindowBridge();
   }
 }
 
@@ -412,7 +358,7 @@ function persistVideos() {
 function persistLayoutSettings() {
   window.storageAdapter.setItem('layoutSettings', {
     layout: layoutSelect.value,
-    gap: cellGap,
+    gap: state.cellGap,
   });
 }
 
@@ -639,7 +585,7 @@ function createTile(videoId, options = {}) {
   syncTileOrderDom();
 
   // Only apply persisted tile size in free/cell mode.
-  if (cellModeEnabled && videoEntry.tileWidth && videoEntry.tileHeight) {
+  if (state.cellModeEnabled && videoEntry.tileWidth && videoEntry.tileHeight) {
     tile.style.width = videoEntry.tileWidth + 'px';
     tile.style.height = videoEntry.tileHeight + 'px';
   }
@@ -657,7 +603,7 @@ function createTile(videoId, options = {}) {
 
   initializeSyncForIframe(iframe);
   fetchVideoMeta(videoId, infoTitle, infoBody);
-  if (!isRestoring) {
+  if (!state.isRestoring) {
     persistVideos();
   }
 }
@@ -750,87 +696,7 @@ async function refreshDescriptionsForAllTiles() {
   );
 }
 
-async function saveWatchHistoryEntry(video, watchedSeconds) {
-  try {
-    const history = (await window.storageAdapter.getItem('watchHistory')) || [];
-    const now = Date.now();
-    const title = video.meta?.title || video.id;
-    const channel = video.meta?.author || '';
-    const next = history.filter((item) => item.id !== video.id);
-    next.unshift({
-      id: video.id,
-      title,
-      channel,
-      watchedAt: now,
-      watchedSeconds: Math.max(0, Math.floor(watchedSeconds || 0)),
-    });
-    if (next.length > WATCH_HISTORY_MAX) {
-      next.length = WATCH_HISTORY_MAX;
-    }
-    renderWatchHistory(next);
-    await window.storageAdapter.setItem('watchHistory', next);
-  } catch (_) {
-    // ignore
-  }
-}
-
-function formatWatchTime(seconds) {
-  const total = Math.max(0, Math.floor(seconds || 0));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function renderWatchHistory(history) {
-  if (!watchHistoryList) {
-    return;
-  }
-  watchHistoryList.innerHTML = '';
-  if (!history.length) {
-    const empty = document.createElement('li');
-    empty.className = 'watch-history-empty';
-    empty.textContent = 'No history yet.';
-    watchHistoryList.appendChild(empty);
-    return;
-  }
-  history.forEach((item) => {
-    const li = document.createElement('li');
-    li.className = 'watch-history-item';
-
-    const title = document.createElement('button');
-    title.className = 'watch-history-open';
-    title.type = 'button';
-    title.textContent = item.title || item.id;
-    title.addEventListener('click', () => {
-      if (!hasVideo(item.id)) {
-        createTile(item.id);
-      }
-    });
-
-    const meta = document.createElement('div');
-    meta.className = 'watch-history-meta';
-    const dateText = new Date(item.watchedAt).toLocaleString();
-    const channel = item.channel ? `${item.channel} • ` : '';
-    meta.textContent = `${channel}${formatWatchTime(item.watchedSeconds)} • ${dateText}`;
-
-    li.appendChild(title);
-    li.appendChild(meta);
-    watchHistoryList.appendChild(li);
-  });
-}
-
-async function loadWatchHistory() {
-  try {
-    const history = (await window.storageAdapter.getItem('watchHistory')) || [];
-    renderWatchHistory(history);
-  } catch (_) {
-    renderWatchHistory([]);
-  }
-}
+// Watch history functions moved to history.js
 
 function removeVideo(videoId, tile) {
   const idx = videos.findIndex((v) => v.id === videoId);
@@ -1491,107 +1357,7 @@ function hideHelp() {
   helpModal.classList.remove('active');
 }
 
-function setShareStatus(message, isError = false) {
-  if (!shareStatus) {
-    return;
-  }
-  shareStatus.textContent = message;
-  shareStatus.hidden = !message;
-  shareStatus.classList.toggle('error', isError);
-}
-
-function buildShareState() {
-  return {
-    videos: videos.map((v) => ({
-      id: v.id,
-      syncGroupId: v.syncGroupId,
-      offsetMs: v.offsetMs,
-      cellCol: v.cellCol ?? null,
-      cellRow: v.cellRow ?? null,
-      tileWidth: v.tileWidth ?? null,
-      tileHeight: v.tileHeight ?? null,
-      zoomDiameter: v.zoomDiameter ?? null,
-      zoomScale: v.zoomScale ?? null,
-      zoomOriginX: v.zoomOriginX ?? null,
-      zoomOriginY: v.zoomOriginY ?? null,
-      zoomPanelX: v.zoomPanelX ?? null,
-      zoomPanelY: v.zoomPanelY ?? null,
-      zoomShape: v.zoomShape ?? null,
-    })),
-    layout: layoutSelect.value,
-    volume: parseInt(volumeAll.value, 10),
-    speed: parseFloat(speedAllSelect.value),
-    gap: cellGap,
-    embedSettings,
-  };
-}
-
-function getShareUrl() {
-  const state = buildShareState();
-  return window.storageAdapter.generateShareUrl(state);
-}
-
-function normalizeShareUrl(input) {
-  const raw = input.trim();
-  if (!raw) {
-    return null;
-  }
-  try {
-    return new URL(raw).toString();
-  } catch (_) {
-    try {
-      return new URL(`https://${raw}`).toString();
-    } catch (e) {
-      return null;
-    }
-  }
-}
-
-async function copyToClipboard(text) {
-  if (!text) {
-    return false;
-  }
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch (_) {
-    // Fallback below
-  }
-  try {
-    const temp = document.createElement('textarea');
-    temp.value = text;
-    temp.setAttribute('readonly', '');
-    temp.style.position = 'absolute';
-    temp.style.left = '-9999px';
-    document.body.appendChild(temp);
-    temp.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(temp);
-    return ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-function showShareModal(url) {
-  if (!shareModal) {
-    return;
-  }
-  shareUrlInput.value = url;
-  shareQrBox.hidden = true;
-  shareQrImg.removeAttribute('src');
-  setShareStatus('');
-  shareModal.classList.add('active');
-}
-
-function hideShareModal() {
-  if (!shareModal) {
-    return;
-  }
-  shareModal.classList.remove('active');
-}
+// Share functions and listeners moved to share.js
 
 showHelpBtn.addEventListener('click', showHelp);
 closeHelpBtn.addEventListener('click', hideHelp);
@@ -1600,78 +1366,6 @@ helpModal.addEventListener('click', (e) => {
     hideHelp();
   }
 });
-
-shareBtn.addEventListener('click', async () => {
-  const url = getShareUrl();
-  showShareModal(url);
-  const copied = await copyToClipboard(url);
-  if (copied) {
-    shareBtn.classList.add('success');
-    setShareStatus('Copied to clipboard.');
-    setTimeout(() => shareBtn.classList.remove('success'), 1200);
-  } else {
-    setShareStatus('Copy failed. Please copy manually.', true);
-  }
-});
-
-if (closeShareBtn) {
-  closeShareBtn.addEventListener('click', hideShareModal);
-}
-if (shareModal) {
-  shareModal.addEventListener('click', (e) => {
-    if (e.target === shareModal) {
-      hideShareModal();
-    }
-  });
-}
-if (copyShareBtn) {
-  copyShareBtn.addEventListener('click', async () => {
-    const url = normalizeShareUrl(shareUrlInput.value);
-    if (!url) {
-      setShareStatus('Invalid URL.', true);
-      return;
-    }
-    const copied = await copyToClipboard(url);
-    setShareStatus(copied ? 'Copied to clipboard.' : 'Copy failed.', !copied);
-  });
-}
-if (openShareBtn) {
-  openShareBtn.addEventListener('click', () => {
-    const url = normalizeShareUrl(shareUrlInput.value);
-    if (!url) {
-      setShareStatus('Invalid URL.', true);
-      return;
-    }
-    const opened = window.open(url, '_blank', 'noopener');
-    if (!opened) {
-      window.location.href = url;
-    }
-  });
-}
-if (importShareBtn) {
-  importShareBtn.addEventListener('click', () => {
-    const url = normalizeShareUrl(shareUrlInput.value);
-    if (!url) {
-      setShareStatus('Invalid URL.', true);
-      return;
-    }
-    window.location.href = url;
-  });
-}
-if (shareQrBtn) {
-  shareQrBtn.addEventListener('click', () => {
-    const url = normalizeShareUrl(shareUrlInput.value);
-    if (!url) {
-      setShareStatus('Invalid URL.', true);
-      return;
-    }
-    shareQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-      url
-    )}`;
-    shareQrBox.hidden = false;
-    setShareStatus('QR generated.');
-  });
-}
 
 playAllBtn.addEventListener('click', playAll);
 pauseAllBtn.addEventListener('click', pauseAll);
@@ -1709,7 +1403,7 @@ function applyEmbedSettingsToExistingVideos() {
 }
 
 function handleEmbedSettingsChange() {
-  embedSettings = sanitizeEmbedSettings({
+  state.embedSettings = sanitizeEmbedSettings({
     controls: embedControlsToggle?.checked,
     modestbranding: embedModestBrandingToggle?.checked,
     rel: embedRelatedVideosToggle?.checked,
@@ -1735,17 +1429,17 @@ async function initializeApp() {
 
     const storedEmbedSettings = await window.storageAdapter.getItem('embedSettings');
     if (storedEmbedSettings) {
-      embedSettings = sanitizeEmbedSettings(storedEmbedSettings);
+      state.embedSettings = sanitizeEmbedSettings(storedEmbedSettings);
     }
     syncEmbedSettingsUI();
 
     // Priority 1: Check for Deep Link session (session param)
     const sharedSession = window.storageAdapter.parseShareUrl();
     if (sharedSession) {
-      isRestoring = true;
+      state.isRestoring = true;
 
       if (sharedSession.embedSettings) {
-        embedSettings = sanitizeEmbedSettings(sharedSession.embedSettings);
+        state.embedSettings = sanitizeEmbedSettings(sharedSession.embedSettings);
         syncEmbedSettingsUI();
       }
 
@@ -1777,7 +1471,7 @@ async function initializeApp() {
         if (Number.isFinite(gap)) {
           gridGapInput.value = String(gap);
           gridGapVal.textContent = String(gap);
-          cellGap = gap;
+          state.cellGap = gap;
           // grid gap update logic is usually in event listener, trigger it manually if needed
           // But layout update might handle it if we add gap to setLayout or update style directly
           gridEl.style.gap = `${gap}px`;
@@ -1791,7 +1485,7 @@ async function initializeApp() {
         }
       });
 
-      isRestoring = false;
+      state.isRestoring = false;
       return;
     }
 
@@ -1810,7 +1504,7 @@ async function initializeApp() {
       volumeAll.value = String(vol);
       volumeVal.textContent = String(vol);
     }
-    isRestoring = true;
+    state.isRestoring = true;
     (storedVideos || []).forEach((entry) => {
       // Support both old format (string) and new format (object)
       const vid = typeof entry === 'string' ? entry : entry?.id;
@@ -1845,7 +1539,7 @@ async function initializeApp() {
         });
       }
     });
-    isRestoring = false;
+    state.isRestoring = false;
     if (!Number.isNaN(vol)) {
       setVolumeAll(vol);
     }
@@ -1863,300 +1557,14 @@ async function initializeApp() {
   }
 }
 
-// Search functions
-async function searchYouTube(query) {
-  if (!window.YOUTUBE_API_KEY) {
-    throw new Error('YouTube API key not set. Please enter it in the search section.');
-  }
+// Search, preset, and API key functions moved to search.js
 
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${window.YOUTUBE_API_KEY}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.items.map((item) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      channel: item.snippet.channelTitle,
-      thumbnailUrl: item.snippet.thumbnails.default.url,
-      duration: 'Unknown', // Would need another API call for duration
-    }));
-  } catch (error) {
-    console.error('Search failed:', error);
-    throw error;
-  }
-}
-
-function displaySearchResults(results) {
-  searchResults.innerHTML = '';
-  results.forEach((result) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <img src="${result.thumbnailUrl}" alt="Thumbnail">
-      <div>
-        <div class="title">${result.title}</div>
-        <div class="channel">${result.channel}</div>
-      </div>
-    `;
-    li.addEventListener('click', () => {
-      if (!hasVideo(result.id)) {
-        createTile(result.id);
-        searchResults.hidden = true;
-        searchInput.value = '';
-      }
-    });
-    searchResults.appendChild(li);
-  });
-  searchResults.hidden = false;
-}
-
-// Preset functions
-async function saveCurrentPreset(name) {
-  if (!name.trim()) {
-    alert('プリセット名を入力してください。');
-    return;
-  }
-  const videoIds = videos.map((v) => v.id);
-  if (videoIds.length === 0) {
-    alert('保存する動画がありません。');
-    return;
-  }
-
-  try {
-    await window.storageAdapter.savePreset(name, videoIds);
-    presetNameInput.value = '';
-    loadPresets();
-    alert('プリセットを保存しました。');
-  } catch (error) {
-    console.error('Save preset failed:', error);
-    alert('プリセット保存に失敗しました。');
-  }
-}
-
-async function loadPresets() {
-  try {
-    const presets = await window.storageAdapter.loadPresets();
-    presetList.innerHTML = '';
-    presets.forEach((preset) => {
-      const li = document.createElement('li');
-      li.className = 'preset-item';
-
-      // Thumbnail row (up to 3 small thumbnails)
-      const thumbRow = document.createElement('div');
-      thumbRow.className = 'preset-thumbs';
-      (preset.videoIds || []).slice(0, 3).forEach((vid) => {
-        const img = document.createElement('img');
-        img.src = `https://img.youtube.com/vi/${vid}/default.jpg`;
-        img.alt = '';
-        img.className = 'preset-thumb';
-        thumbRow.appendChild(img);
-      });
-
-      const info = document.createElement('div');
-      info.className = 'preset-info';
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'preset-name';
-      nameSpan.textContent = preset.name;
-      const meta = document.createElement('span');
-      meta.className = 'preset-meta';
-      const count = (preset.videoIds || []).length;
-      const dateStr = preset.updatedAt ? new Date(preset.updatedAt).toLocaleDateString() : '';
-      meta.textContent = `${count}本 ${dateStr}`;
-      info.appendChild(nameSpan);
-      info.appendChild(meta);
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'preset-delete';
-      deleteBtn.textContent = '✕';
-      deleteBtn.title = 'プリセットを削除';
-      deleteBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (confirm(`プリセット "${preset.name}" を削除しますか？`)) {
-          await deletePreset(preset.name);
-        }
-      });
-
-      li.appendChild(thumbRow);
-      li.appendChild(info);
-      li.appendChild(deleteBtn);
-      li.addEventListener('click', () => loadPreset(preset.name));
-      presetList.appendChild(li);
-    });
-  } catch (error) {
-    console.error('Load presets failed:', error);
-  }
-}
-
-async function deletePreset(name) {
-  try {
-    const presets = (await window.storageAdapter.getItem('presets')) || [];
-    const filtered = presets.filter((p) => p.name !== name);
-    await window.storageAdapter.setItem('presets', filtered);
-    loadPresets();
-  } catch (error) {
-    console.error('Delete preset failed:', error);
-  }
-}
-
-async function loadPreset(name) {
-  try {
-    const preset = await window.storageAdapter.loadPreset(name);
-    if (!preset) {
-      return;
-    }
-
-    // Clear current videos properly
-    for (const v of videos) {
-      const win = v.iframe?.contentWindow;
-      if (win) {
-        playerStates.delete(win);
-        suspendedPlayers.delete(win);
-      }
-      v.iframe.src = '';
-      v.tile?.remove();
-    }
-    videos.length = 0;
-    gridEl.innerHTML = '';
-
-    // Load preset videos
-    preset.videoIds.forEach((id) => {
-      if (!hasVideo(id)) {
-        createTile(id);
-      }
-    });
-  } catch (error) {
-    console.error('Load preset failed:', error);
-  }
-}
-
-// Event listeners for search and presets
-let apiKeyRefreshTimer;
-apiKeyInput.addEventListener('input', () => {
-  window.YOUTUBE_API_KEY = apiKeyInput.value.trim() || null;
-  window.storageAdapter.setItem('youtubeApiKey', window.YOUTUBE_API_KEY);
-  updateApiKeyStatus();
-  if (apiKeyRefreshTimer) {
-    clearTimeout(apiKeyRefreshTimer);
-  }
-  apiKeyRefreshTimer = setTimeout(() => {
-    refreshDescriptionsForAllTiles();
-  }, 600);
-});
-
-deleteApiKeyBtn.addEventListener('click', () => {
-  if (confirm('APIキーを削除しますか？')) {
-    window.YOUTUBE_API_KEY = null;
-    apiKeyInput.value = '';
-    window.storageAdapter.setItem('youtubeApiKey', null);
-    updateApiKeyStatus();
-    refreshDescriptionsForAllTiles();
-  }
-});
-
-checkQuotaBtn.addEventListener('click', async () => {
-  await checkQuota();
-});
-
-// Initialize API key from storage
-async function initializeApiKey() {
-  const storedKey = await window.storageAdapter.getItem('youtubeApiKey');
-  if (storedKey) {
-    window.YOUTUBE_API_KEY = storedKey;
-    apiKeyInput.value = storedKey;
-  }
-  updateApiKeyStatus();
-  refreshDescriptionsForAllTiles();
-}
-
-function updateApiKeyStatus() {
-  const hasKey = !!window.YOUTUBE_API_KEY;
-  deleteApiKeyBtn.disabled = !hasKey;
-  checkQuotaBtn.disabled = !hasKey;
-  if (hasKey) {
-    quotaInfo.textContent = 'クオータ: 確認中...';
-  } else {
-    quotaInfo.textContent = 'クオータ: APIキーが設定されていません';
-  }
-}
-
-async function checkQuota() {
-  if (!window.YOUTUBE_API_KEY) {
-    quotaInfo.textContent = 'クオータ: APIキーが設定されていません';
-    return;
-  }
-
-  try {
-    // Check quota using YouTube Data API v3
-    const url = `https://www.googleapis.com/youtube/v3/search?part=id&q=test&type=video&maxResults=1&key=${window.YOUTUBE_API_KEY}`;
-    const response = await fetch(url);
-
-    if (response.status === 403) {
-      const data = await response.json();
-      if (data.error && data.error.errors) {
-        const error = data.error.errors[0];
-        if (error.reason === 'quotaExceeded') {
-          quotaInfo.textContent = 'クオータ: 超過';
-          quotaInfo.style.color = '#b00020';
-        } else if (error.reason === 'keyInvalid') {
-          quotaInfo.textContent = 'クオータ: 無効なAPIキー';
-          quotaInfo.style.color = '#b00020';
-        } else {
-          quotaInfo.textContent = `クオータ: エラー (${error.reason})`;
-          quotaInfo.style.color = '#b00020';
-        }
-      }
-    } else if (response.ok) {
-      // Get quota info from headers (limited info available)
-      const quotaUsed = response.headers.get('x-quota-used');
-      const quotaLimit = response.headers.get('x-quota-limit');
-      if (quotaUsed && quotaLimit) {
-        const remaining = quotaLimit - quotaUsed;
-        quotaInfo.textContent = `クオータ: ${remaining}/${quotaLimit} 残り`;
-        quotaInfo.style.color = remaining < 1000 ? '#ff6b35' : '#333';
-      } else {
-        quotaInfo.textContent = 'クオータ: 利用可能';
-        quotaInfo.style.color = '#333';
-      }
-    } else {
-      quotaInfo.textContent = `クオータ: 確認失敗 (${response.status})`;
-      quotaInfo.style.color = '#b00020';
-    }
-  } catch (error) {
-    console.error('Quota check failed:', error);
-    quotaInfo.textContent = 'クオータ: 確認失敗';
-    quotaInfo.style.color = '#b00020';
-  }
-}
-
-searchForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  searchError.hidden = true;
-  const query = searchInput.value.trim();
-  if (!query) {
-    return;
-  }
-
-  try {
-    const results = await searchYouTube(query);
-    displaySearchResults(results);
-    await window.storageAdapter.saveSearchHistory(query);
-  } catch (error) {
-    searchError.textContent = error.message;
-    searchError.hidden = false;
-  }
-});
-
-savePresetBtn.addEventListener('click', () => {
-  const name = presetNameInput.value.trim();
-  saveCurrentPreset(name);
-});
-
-// Initialize app
+// Initialize app and modules
+initShare();
+initSearch({ createTile, refreshDescriptions: refreshDescriptionsForAllTiles });
+initHistory({ createTile });
 initializeApp();
-initializeApiKey();
+initializeApiKey(refreshDescriptionsForAllTiles);
 loadPresets();
 loadWatchHistory();
 syncWindowModeFromMain();
@@ -2488,14 +1896,14 @@ if (sidebarToolbarToggle) {
 
 if (immersiveToggleBtn) {
   immersiveToggleBtn.addEventListener('click', async () => {
-    await setImmersiveMode(!immersiveModeEnabled);
+    await setImmersiveMode(!state.immersiveModeEnabled);
   });
 }
 
 if (windowFrameToggleBtn && hasElectronWindowBridge()) {
   windowFrameToggleBtn.addEventListener('click', async () => {
     try {
-      await window.electronWindow.setFramelessMode(!framelessModeEnabled);
+      await window.electronWindow.setFramelessMode(!state.framelessModeEnabled);
     } catch (_) {
       // ignore
     }
@@ -2523,17 +1931,17 @@ if (windowCloseBtn && hasElectronWindowBridge()) {
 document.addEventListener('fullscreenchange', () => {
   const isFullscreen = Boolean(document.fullscreenElement);
   document.body.classList.toggle('is-fullscreen', isFullscreen);
-  if (!isFullscreen && immersiveModeEnabled) {
-    immersiveModeEnabled = false;
+  if (!isFullscreen && state.immersiveModeEnabled) {
+    state.immersiveModeEnabled = false;
     document.body.classList.remove('immersive-mode');
-    if (typeof sidebarStateBeforeImmersive === 'boolean') {
-      setSidebarCollapsed(sidebarStateBeforeImmersive);
+    if (typeof state.sidebarStateBeforeImmersive === 'boolean') {
+      setSidebarCollapsed(state.sidebarStateBeforeImmersive);
     }
-    if (typeof toolbarStateBeforeImmersive === 'boolean') {
-      setToolbarCollapsed(toolbarStateBeforeImmersive);
+    if (typeof state.toolbarStateBeforeImmersive === 'boolean') {
+      setToolbarCollapsed(state.toolbarStateBeforeImmersive);
     }
-    sidebarStateBeforeImmersive = null;
-    toolbarStateBeforeImmersive = null;
+    state.sidebarStateBeforeImmersive = null;
+    state.toolbarStateBeforeImmersive = null;
     if (immersiveToggleBtn) {
       immersiveToggleBtn.classList.remove('success');
       immersiveToggleBtn.textContent = 'Immersive';
@@ -2668,7 +2076,6 @@ document.addEventListener('paste', (e) => {
 });
 
 // ========== Phase 3-1: Sync Groups ==========
-const SYNC_GROUPS = ['A', 'B', 'C'];
 
 function setSyncGroup(videoId, groupId) {
   const entry = videos.find((v) => v.id === videoId);
@@ -2880,7 +2287,7 @@ document.addEventListener('keydown', (e) => {
       break;
     case 'F11':
       e.preventDefault();
-      setImmersiveMode(!immersiveModeEnabled);
+      setImmersiveMode(!state.immersiveModeEnabled);
       break;
     case 's':
     case 'S':
@@ -2895,7 +2302,7 @@ document.addEventListener('keydown', (e) => {
       if (document.fullscreenElement) {
         e.preventDefault();
         exitFullscreenSafe();
-        if (immersiveModeEnabled) {
+        if (state.immersiveModeEnabled) {
           setImmersiveMode(false);
         }
         break;
@@ -2915,10 +2322,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ========== Phase 4-4: Audio focus ==========
-let audioFocusVideoId = null;
+// state.audioFocusVideoId in state.js
 
 function setAudioFocus(videoId) {
-  audioFocusVideoId = videoId;
+  state.audioFocusVideoId = videoId;
   for (const v of videos) {
     if (videoId === null) {
       // No focus = all unmuted (respect global volume)
@@ -2942,7 +2349,7 @@ gridEl.addEventListener('click', (e) => {
     return;
   }
   const videoId = tile.dataset.videoId;
-  if (audioFocusVideoId === videoId) {
+  if (state.audioFocusVideoId === videoId) {
     // Toggle off
     setAudioFocus(null);
   } else {
@@ -2956,7 +2363,7 @@ function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
   let startX, startW, lastW, lastH, rafId;
 
   resizeHandle.addEventListener('mousedown', (e) => {
-    if (!cellModeEnabled) {
+    if (!state.cellModeEnabled) {
       return;
     }
     e.preventDefault();
@@ -2977,7 +2384,10 @@ function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
       const deltaX = ev.clientX - startX;
       const tileRect = tile.getBoundingClientRect();
       const gridRect = gridEl.getBoundingClientRect();
-      const maxWidthByGrid = Math.max(MIN_TILE_WIDTH, gridRect.right - tileRect.left - cellGap);
+      const maxWidthByGrid = Math.max(
+        MIN_TILE_WIDTH,
+        gridRect.right - tileRect.left - state.cellGap
+      );
       const maxWidthByViewport = Math.max(MIN_TILE_WIDTH, window.innerWidth - tileRect.left - 12);
       const maxWidth = Math.min(maxWidthByGrid, maxWidthByViewport);
       const newW = Math.max(MIN_TILE_WIDTH, Math.min(startW + deltaX, maxWidth));
@@ -3026,7 +2436,7 @@ function setupTileDrag(tile, videoEntry, dragHandle) {
   let startX, startY, startLeft, startTop;
 
   dragHandle.addEventListener('mousedown', (e) => {
-    if (!cellModeEnabled) {
+    if (!state.cellModeEnabled) {
       return;
     }
     bringVideoToFront(videoEntry.id);
@@ -3082,33 +2492,33 @@ function setupTileDrag(tile, videoEntry, dragHandle) {
 // ========== Phase 5: Cell Mode Functions ==========
 function getCellDimensions() {
   const gridRect = gridEl.getBoundingClientRect();
-  const availableWidth = gridRect.width - cellGap * 2;
-  const cellWidth = (availableWidth - cellGap * (cellColumns - 1)) / cellColumns;
+  const availableWidth = gridRect.width - state.cellGap * 2;
+  const cellWidth = (availableWidth - state.cellGap * (state.cellColumns - 1)) / state.cellColumns;
   const cellHeight = cellWidth * ASPECT_RATIO;
   return { cellWidth, cellHeight, gridRect };
 }
 
 function getCellFromPoint(x, y) {
   const { cellWidth, cellHeight, gridRect } = getCellDimensions();
-  const relX = x - gridRect.left - cellGap + gridEl.scrollLeft;
-  const relY = y - gridRect.top - cellGap + gridEl.scrollTop;
-  const col = Math.floor(relX / (cellWidth + cellGap));
-  const row = Math.floor(relY / (cellHeight + cellGap));
+  const relX = x - gridRect.left - state.cellGap + gridEl.scrollLeft;
+  const relY = y - gridRect.top - state.cellGap + gridEl.scrollTop;
+  const col = Math.floor(relX / (cellWidth + state.cellGap));
+  const row = Math.floor(relY / (cellHeight + state.cellGap));
   return {
-    col: Math.max(0, Math.min(col, cellColumns - 1)),
+    col: Math.max(0, Math.min(col, state.cellColumns - 1)),
     row: Math.max(0, row),
   };
 }
 
 function positionTileInCell(tile, videoEntry) {
-  if (!cellModeEnabled) {
+  if (!state.cellModeEnabled) {
     return;
   }
   const { cellWidth, cellHeight } = getCellDimensions();
   const col = videoEntry.cellCol ?? 0;
   const row = videoEntry.cellRow ?? 0;
-  const left = cellGap + col * (cellWidth + cellGap);
-  const top = cellGap + row * (cellHeight + cellGap);
+  const left = state.cellGap + col * (cellWidth + state.cellGap);
+  const top = state.cellGap + row * (cellHeight + state.cellGap);
   tile.style.left = left + 'px';
   tile.style.top = top + 'px';
   tile.classList.add('cell-positioned');
@@ -3126,62 +2536,62 @@ function positionTileInCell(tile, videoEntry) {
 function updateDropTargetHighlight(x, y) {
   clearDropTargetHighlight();
   const cell = getCellFromPoint(x, y);
-  if (!cell || !cellOverlayContainer) {
+  if (!cell || !state.cellOverlayContainer) {
     return;
   }
-  const overlays = cellOverlayContainer.querySelectorAll('.cell-overlay');
-  const idx = cell.row * cellColumns + cell.col;
+  const overlays = state.cellOverlayContainer.querySelectorAll('.cell-overlay');
+  const idx = cell.row * state.cellColumns + cell.col;
   if (overlays[idx]) {
     overlays[idx].classList.add('drop-target');
   }
 }
 
 function clearDropTargetHighlight() {
-  if (!cellOverlayContainer) {
+  if (!state.cellOverlayContainer) {
     return;
   }
-  cellOverlayContainer.querySelectorAll('.drop-target').forEach((el) => {
+  state.cellOverlayContainer.querySelectorAll('.drop-target').forEach((el) => {
     el.classList.remove('drop-target');
   });
 }
 
 function createCellOverlays() {
-  if (cellOverlayContainer) {
-    cellOverlayContainer.remove();
+  if (state.cellOverlayContainer) {
+    state.cellOverlayContainer.remove();
   }
-  cellOverlayContainer = document.createElement('div');
-  cellOverlayContainer.className = 'cell-overlay-container';
+  state.cellOverlayContainer = document.createElement('div');
+  state.cellOverlayContainer.className = 'cell-overlay-container';
 
   const { cellWidth, cellHeight } = getCellDimensions();
-  const rows = Math.max(10, Math.ceil(videos.length / cellColumns) + 2);
+  const rows = Math.max(10, Math.ceil(videos.length / state.cellColumns) + 2);
 
   for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cellColumns; c++) {
+    for (let c = 0; c < state.cellColumns; c++) {
       const overlay = document.createElement('div');
       overlay.className = 'cell-overlay';
-      overlay.style.left = cellGap + c * (cellWidth + cellGap) + 'px';
-      overlay.style.top = cellGap + r * (cellHeight + cellGap) + 'px';
+      overlay.style.left = state.cellGap + c * (cellWidth + state.cellGap) + 'px';
+      overlay.style.top = state.cellGap + r * (cellHeight + state.cellGap) + 'px';
       overlay.style.width = cellWidth + 'px';
       overlay.style.height = cellHeight + 'px';
       overlay.dataset.col = c;
       overlay.dataset.row = r;
-      cellOverlayContainer.appendChild(overlay);
+      state.cellOverlayContainer.appendChild(overlay);
     }
   }
 
-  gridEl.insertBefore(cellOverlayContainer, gridEl.firstChild);
+  gridEl.insertBefore(state.cellOverlayContainer, gridEl.firstChild);
 }
 
 function enableCellMode() {
-  cellModeEnabled = true;
+  state.cellModeEnabled = true;
   gridEl.classList.add('cell-mode');
   createCellOverlays();
 
   // Position all tiles
   videos.forEach((v, idx) => {
     if (v.cellCol === null || v.cellRow === null) {
-      v.cellCol = idx % cellColumns;
-      v.cellRow = Math.floor(idx / cellColumns);
+      v.cellCol = idx % state.cellColumns;
+      v.cellRow = Math.floor(idx / state.cellColumns);
     }
     positionTileInCell(v.tile, v);
   });
@@ -3189,11 +2599,11 @@ function enableCellMode() {
 }
 
 function disableCellMode() {
-  cellModeEnabled = false;
+  state.cellModeEnabled = false;
   gridEl.classList.remove('cell-mode');
-  if (cellOverlayContainer) {
-    cellOverlayContainer.remove();
-    cellOverlayContainer = null;
+  if (state.cellOverlayContainer) {
+    state.cellOverlayContainer.remove();
+    state.cellOverlayContainer = null;
   }
 
   // Reset tile styles — always clear inline size so CSS grid controls layout
@@ -3208,11 +2618,11 @@ function disableCellMode() {
 }
 
 function updateGridGap(gap) {
-  cellGap = gap;
+  state.cellGap = gap;
   gridEl.style.gap = gap + 'px';
   gridEl.style.padding = gap + 'px';
 
-  if (cellModeEnabled) {
+  if (state.cellModeEnabled) {
     createCellOverlays();
     videos.forEach((v) => positionTileInCell(v.tile, v));
   }
@@ -3224,7 +2634,7 @@ function handleLayoutChange(layout) {
   gridEl.classList.remove('layout-1', 'layout-2', 'layout-3', 'layout-4', 'layout-theater');
 
   if (layout === 'free') {
-    cellColumns = 4; // Default for free mode
+    state.cellColumns = 4; // Default for free mode
     enableCellMode();
   } else {
     disableCellMode();
@@ -3232,15 +2642,15 @@ function handleLayoutChange(layout) {
       gridEl.classList.add('layout-' + layout);
     }
     if (layout === '1') {
-      cellColumns = 1;
+      state.cellColumns = 1;
     } else if (layout === '2') {
-      cellColumns = 2;
+      state.cellColumns = 2;
     } else if (layout === '3') {
-      cellColumns = 3;
+      state.cellColumns = 3;
     } else if (layout === '4') {
-      cellColumns = 4;
+      state.cellColumns = 4;
     } else {
-      cellColumns = 2;
+      state.cellColumns = 2;
     }
   }
 
@@ -3272,7 +2682,7 @@ async function loadLayoutSettings() {
         handleLayoutChange(settings.layout);
       }
       if (typeof settings.gap === 'number') {
-        cellGap = settings.gap;
+        state.cellGap = settings.gap;
         if (gridGapInput) {
           gridGapInput.value = settings.gap;
           gridGapVal.textContent = settings.gap;
@@ -3291,7 +2701,7 @@ loadLayoutSettings();
 // Handle window resize for cell mode
 let resizeTimeout;
 window.addEventListener('resize', () => {
-  if (!cellModeEnabled) {
+  if (!state.cellModeEnabled) {
     return;
   }
   clearTimeout(resizeTimeout);
