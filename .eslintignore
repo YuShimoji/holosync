@@ -4,5 +4,4 @@ public/
 artifacts/
 .husky/
 .gitlab/
-legacy/
 electron-main.js

@@ -22,7 +22,7 @@
 ## Non-Goals
 
 - No message event listener is used currently; receive-side validation is not applicable
-- `legacy/` is excluded from lint/CI and left unchanged for now
+- Legacy files have been removed from the repository
 
 ## Future Work
 

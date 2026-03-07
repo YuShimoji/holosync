@@ -46,6 +46,4 @@ npm run build
 ## 4) 注意点
 
 - `dist` はビルド成果物なので、ソース変更後は `npm run build` が必須。
-- GitHub API への Issue 自動起票は `GITHUB_TOKEN` または `GH_TOKEN` が必要。
-  - トークン未設定時は `scripts/create-issues.ps1` が `docs/tasks/ISSUE_DRAFT_*.md` を生成する。
-- `choices-driven-development.md`（ルート配置）の現役性が不明。要判定。
+- Issue起票は GitHub Web UI または `gh issue create` を使用。

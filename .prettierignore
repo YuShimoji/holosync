@@ -7,8 +7,6 @@ docs/**
 .gitlab-ci.yml
 .eslintrc.json
 
-legacy/
-
 # Large docs (temporarily excluded from Prettier check)
 README.md
 CONTRIBUTING.md

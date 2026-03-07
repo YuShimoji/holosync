@@ -150,6 +150,5 @@
 - `docs/TESTING.md` のケース1〜12（追加/再生/停止/同期/広告耐性/レスポンシブ 等）。
 - 追加予定: 検索導線、プリセット保存/読込、字幕装飾プレビュー、自動チャプター検証。
 
-## レガシー（参照用）
-- 旧Chrome拡張資産は `legacy/` ディレクトリに保管。現行Webアプリには直接利用しない。
-- `manifest.json`, `background.js`, `app.html`, `app.js`, `styles.css` は将来ブラウザ拡張へ再展開する際の参考資料。
+## レガシー
+- 旧Chrome拡張資産（manifest.json, background.js等）はリポジトリから削除済み。git履歴で参照可能。
