@@ -2,6 +2,7 @@
  * @file scripts/search.js
  * @brief YouTube search, preset management, and API key functions for HoloSync.
  */
+import { storageAdapter } from './storage.js';
 import { videos, playerStates, suspendedPlayers, hasVideo } from './state.js';
 
 // DOM references (search / preset / API key)
@@ -79,7 +80,7 @@ async function saveCurrentPreset(name) {
   }
 
   try {
-    await window.storageAdapter.savePreset(name, videoIds);
+    await storageAdapter.savePreset(name, videoIds);
     presetNameInput.value = '';
     loadPresets();
     alert('プリセットを保存しました。');
@@ -91,7 +92,7 @@ async function saveCurrentPreset(name) {
 
 async function loadPresets() {
   try {
-    const presets = await window.storageAdapter.loadPresets();
+    const presets = await storageAdapter.loadPresets();
     presetList.innerHTML = '';
     presets.forEach((preset) => {
       const li = document.createElement('li');
@@ -145,9 +146,9 @@ export { loadPresets };
 
 async function deletePreset(name) {
   try {
-    const presets = (await window.storageAdapter.getItem('presets')) || [];
+    const presets = (await storageAdapter.getItem('presets')) || [];
     const filtered = presets.filter((p) => p.name !== name);
-    await window.storageAdapter.setItem('presets', filtered);
+    await storageAdapter.setItem('presets', filtered);
     loadPresets();
   } catch (error) {
     console.error('Delete preset failed:', error);
@@ -158,7 +159,7 @@ let _createTile;
 
 async function loadPreset(name) {
   try {
-    const preset = await window.storageAdapter.loadPreset(name);
+    const preset = await storageAdapter.loadPreset(name);
     if (!preset) {
       return;
     }
@@ -244,7 +245,7 @@ async function checkQuota() {
 }
 
 async function initializeApiKey(refreshDescriptions) {
-  const storedKey = await window.storageAdapter.getItem('youtubeApiKey');
+  const storedKey = await storageAdapter.getItem('youtubeApiKey');
   if (storedKey) {
     window.YOUTUBE_API_KEY = storedKey;
     apiKeyInput.value = storedKey;
@@ -266,7 +267,7 @@ export function initSearch(deps) {
   let apiKeyRefreshTimer;
   apiKeyInput.addEventListener('input', () => {
     window.YOUTUBE_API_KEY = apiKeyInput.value.trim() || null;
-    window.storageAdapter.setItem('youtubeApiKey', window.YOUTUBE_API_KEY);
+    storageAdapter.setItem('youtubeApiKey', window.YOUTUBE_API_KEY);
     updateApiKeyStatus();
     if (apiKeyRefreshTimer) {
       clearTimeout(apiKeyRefreshTimer);
@@ -280,7 +281,7 @@ export function initSearch(deps) {
     if (confirm('APIキーを削除しますか？')) {
       window.YOUTUBE_API_KEY = null;
       apiKeyInput.value = '';
-      window.storageAdapter.setItem('youtubeApiKey', null);
+      storageAdapter.setItem('youtubeApiKey', null);
       updateApiKeyStatus();
       deps.refreshDescriptions();
     }
@@ -301,7 +302,7 @@ export function initSearch(deps) {
     try {
       const results = await searchYouTube(query);
       displaySearchResults(results, deps.createTile);
-      await window.storageAdapter.saveSearchHistory(query);
+      await storageAdapter.saveSearchHistory(query);
     } catch (error) {
       searchError.textContent = error.message;
       searchError.hidden = false;

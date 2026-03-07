@@ -2,6 +2,7 @@
  * @file scripts/player.js
  * @brief Player tile management, iframe communication, metadata, persistence.
  */
+import { storageAdapter } from './storage.js';
 import {
   videos,
   playerStates,
@@ -294,15 +295,15 @@ export function persistVideos() {
     zoomPanelY: v.zoomPanelY ?? null,
     zoomShape: v.zoomShape ?? null,
   }));
-  window.storageAdapter.setItem('videos', data);
+  storageAdapter.setItem('videos', data);
 }
 
 export function persistVolume(val) {
-  window.storageAdapter.setItem('volume', val);
+  storageAdapter.setItem('volume', val);
 }
 
 export function persistEmbedSettings() {
-  window.storageAdapter.setItem('embedSettings', state.embedSettings);
+  storageAdapter.setItem('embedSettings', state.embedSettings);
 }
 
 // ── Tile Management ────────────────────────────────────────

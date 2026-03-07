@@ -2,6 +2,7 @@
  * @file scripts/history.js
  * @brief Watch history functions for HoloSync.
  */
+import { storageAdapter } from './storage.js';
 import { WATCH_HISTORY_MAX, hasVideo } from './state.js';
 
 const watchHistoryList = document.getElementById('watchHistoryList');
@@ -59,7 +60,7 @@ export function renderWatchHistory(history) {
 
 export async function saveWatchHistoryEntry(video, watchedSeconds) {
   try {
-    const history = (await window.storageAdapter.getItem('watchHistory')) || [];
+    const history = (await storageAdapter.getItem('watchHistory')) || [];
     const now = Date.now();
     const title = video.meta?.title || video.id;
     const channel = video.meta?.author || '';
@@ -75,7 +76,7 @@ export async function saveWatchHistoryEntry(video, watchedSeconds) {
       next.length = WATCH_HISTORY_MAX;
     }
     renderWatchHistory(next);
-    await window.storageAdapter.setItem('watchHistory', next);
+    await storageAdapter.setItem('watchHistory', next);
   } catch (_) {
     // ignore
   }
@@ -83,7 +84,7 @@ export async function saveWatchHistoryEntry(video, watchedSeconds) {
 
 export async function loadWatchHistory() {
   try {
-    const history = (await window.storageAdapter.getItem('watchHistory')) || [];
+    const history = (await storageAdapter.getItem('watchHistory')) || [];
     renderWatchHistory(history);
   } catch (_) {
     renderWatchHistory([]);

@@ -2,6 +2,7 @@
  * @file scripts/main.js
  * @brief HoloSync Web App — UI orchestration, layout, event handling.
  */
+import { storageAdapter } from './storage.js';
 import {
   videos,
   playerStates,
@@ -240,7 +241,7 @@ function setToolbarCollapsed(collapsed) {
     sidebarToolbarToggle.textContent = collapsed ? 'Show Toolbar' : 'Hide Toolbar';
   }
   syncEdgeRevealState();
-  window.storageAdapter.setItem('toolbarCollapsed', collapsed);
+  storageAdapter.setItem('toolbarCollapsed', collapsed);
 }
 
 async function setImmersiveMode(enabled) {
@@ -310,7 +311,7 @@ async function syncWindowModeFromMain() {
 }
 
 function persistLayoutSettings() {
-  window.storageAdapter.setItem('layoutSettings', {
+  storageAdapter.setItem('layoutSettings', {
     layout: layoutSelect.value,
     gap: state.cellGap,
   });
@@ -642,19 +643,19 @@ function handleEmbedSettingsChange() {
 async function initializeApp() {
   try {
     // Restore dark mode preference
-    const darkModeEnabled = await window.storageAdapter.getItem('darkMode');
+    const darkModeEnabled = await storageAdapter.getItem('darkMode');
     if (darkModeEnabled === true) {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
 
-    const storedEmbedSettings = await window.storageAdapter.getItem('embedSettings');
+    const storedEmbedSettings = await storageAdapter.getItem('embedSettings');
     if (storedEmbedSettings) {
       state.embedSettings = sanitizeEmbedSettings(storedEmbedSettings);
     }
     syncEmbedSettingsUI();
 
     // Priority 1: Check for Deep Link session (session param)
-    const sharedSession = window.storageAdapter.parseShareUrl();
+    const sharedSession = storageAdapter.parseShareUrl();
     if (sharedSession) {
       state.isRestoring = true;
 
@@ -711,13 +712,13 @@ async function initializeApp() {
 
     // Priority 2: Legacy/Storage Fallback
     // First check URL parameters for shared data (legacy)
-    const urlVideos = await window.storageAdapter.getItem('videos');
-    const urlVolume = await window.storageAdapter.getItem('volume');
-    const urlPreset = await window.storageAdapter.getItem('preset');
+    const urlVideos = await storageAdapter.getItem('videos');
+    const urlVolume = await storageAdapter.getItem('volume');
+    const urlPreset = await storageAdapter.getItem('preset');
 
     // Fallback to stored data if URL doesn't have the data
-    const storedVideos = urlVideos || (await window.storageAdapter.getItem('videos'));
-    const storedVolume = urlVolume || (await window.storageAdapter.getItem('volume'));
+    const storedVideos = urlVideos || (await storageAdapter.getItem('videos'));
+    const storedVolume = urlVolume || (await storageAdapter.getItem('volume'));
 
     const vol = parseInt(storedVolume, 10);
     if (!Number.isNaN(vol)) {
@@ -1026,7 +1027,7 @@ function setSidebarCollapsed(collapsed) {
   document.body.classList.toggle('sidebar-collapsed', collapsed);
   sidebarOpen.hidden = !collapsed;
   syncEdgeRevealState();
-  window.storageAdapter.setItem('sidebarCollapsed', collapsed);
+  storageAdapter.setItem('sidebarCollapsed', collapsed);
 }
 
 sidebarToggle.addEventListener('click', () => {
@@ -1155,14 +1156,14 @@ if (darkModeToggle) {
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
-    window.storageAdapter.setItem('darkMode', isDark);
+    storageAdapter.setItem('darkMode', isDark);
   });
 }
 
 // Restore sidebar state
 (async () => {
-  const collapsed = await window.storageAdapter.getItem('sidebarCollapsed');
-  const toolbarCollapsed = await window.storageAdapter.getItem('toolbarCollapsed');
+  const collapsed = await storageAdapter.getItem('sidebarCollapsed');
+  const toolbarCollapsed = await storageAdapter.getItem('toolbarCollapsed');
   setSidebarCollapsed(collapsed === true);
 
   if (toolbarCollapsed === true) {
@@ -1182,7 +1183,7 @@ function setLayout(mode) {
   if (mode && mode !== 'auto') {
     gridEl.classList.add(`layout-${mode}`);
   }
-  window.storageAdapter.setItem('layoutMode', mode);
+  storageAdapter.setItem('layoutMode', mode);
 }
 
 layoutSelect.addEventListener('change', (e) => {
@@ -1191,7 +1192,7 @@ layoutSelect.addEventListener('change', (e) => {
 
 // Restore layout
 (async () => {
-  const mode = await window.storageAdapter.getItem('layoutMode');
+  const mode = await storageAdapter.getItem('layoutMode');
   if (mode && mode !== 'auto') {
     layoutSelect.value = mode;
     setLayout(mode);
@@ -1740,7 +1741,7 @@ if (gridGapInput) {
 // Load layout settings on init
 async function loadLayoutSettings() {
   try {
-    const settings = await window.storageAdapter.getItem('layoutSettings');
+    const settings = await storageAdapter.getItem('layoutSettings');
     if (settings) {
       if (settings.layout) {
         layoutSelect.value = settings.layout;

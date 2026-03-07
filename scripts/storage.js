@@ -370,5 +370,4 @@ class StorageAdapter {
   }
 }
 
-// Global instance
-window.storageAdapter = new StorageAdapter();
+export const storageAdapter = new StorageAdapter();

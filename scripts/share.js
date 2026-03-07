@@ -2,6 +2,7 @@
  * @file scripts/share.js
  * @brief Share URL / QR code functions for HoloSync.
  */
+import { storageAdapter } from './storage.js';
 import { videos, state } from './state.js';
 
 // DOM references (share-related)
@@ -57,7 +58,7 @@ export function buildShareState() {
 
 export function getShareUrl() {
   const shareState = buildShareState();
-  return window.storageAdapter.generateShareUrl(shareState);
+  return storageAdapter.generateShareUrl(shareState);
 }
 
 export function normalizeShareUrl(input) {
