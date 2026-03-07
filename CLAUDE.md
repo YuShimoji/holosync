@@ -23,7 +23,7 @@
 - [x] 同期アルゴリズムv2（3段階drift補正、グループ対応）
 - [x] ES Module Phase 1+2（state/share/search/history/player/sync抽出）
 - [x] ISSUES.md棚卸し + レガシー資産削除
-- [ ] spec-index.json作成
+- [x] spec-index.json作成
 - [ ] Playwright UI回帰テスト追加
 - [ ] `dist/HoloSync-win32-x64/HoloSync.exe` でホットフィックス挙動を手動確認
 

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "SP-001",
+    "title": "同期アルゴリズム仕様",
+    "status": "done",
+    "pct": 100,
+    "cat": "core",
+    "file": "docs/SYNC_ALGO.md",
+    "summary": "3段階drift補正、リーダー選出4モード、同期グループ、動画間オフセット"
+  },
+  {
+    "id": "SP-002",
+    "title": "検索導線とプリセット機能",
+    "status": "done",
+    "pct": 95,
+    "cat": "ui",
+    "file": "docs/specs/phase-alpha-search-preset.md",
+    "summary": "YouTube Data API検索UI、プリセット保存/読込、共有リンク生成"
+  },
+  {
+    "id": "SP-003",
+    "title": "永続化ストレージ",
+    "status": "done",
+    "pct": 100,
+    "cat": "data",
+    "file": "docs/PERSISTENCE.md",
+    "summary": "chrome.storage → localStorage → URLパラメータのフォールバック"
+  },
+  {
+    "id": "SP-004",
+    "title": "postMessageセキュリティ",
+    "status": "done",
+    "pct": 100,
+    "cat": "system",
+    "file": "docs/SECURITY_POSTMESSAGE.md",
+    "summary": "origin検証、コマンドホワイトリスト、引数サニタイズ"
+  }
+]
