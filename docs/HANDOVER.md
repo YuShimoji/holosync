@@ -2,15 +2,23 @@
 
 **Updated**: 2026-03-07
 **Branch**: `main`
-**Status**: ES Module Phase 2完了、レガシー資産削除完了、SSOT統合完了。
+**Status**: ES Module Phase 3完了（全13モジュール分割）。技術的負債B3/C2も処理済み。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-07（セッション4）
+- ES Module Phase 3: layout.js(492行), ui.js(457行), debug.js(158行), electron.js(75行)抽出
+  - main.js 1787→743行 (-58%)
+- storage.js/zoom-loupe.js ESM化（window.storageAdapter/window.HoloSyncZoomLoupe廃止）
+- window.YOUTUBE_API_KEY → state.js youtubeApiKey モジュール変数化
+- catch(_)エラーハンドリング改善（5箇所にconsole.warn追加）
 
 ### 2026-03-07（セッション3）
 - ES Module Phase 2: player.js(529行) + sync.js(470行)抽出、main.js 2300→1787行
 - レガシー資産削除: legacy/全削除、session-start.ps1/create-issues.ps1削除
 - 不要ファイル削除: PR_BODY.md, PR_SYNC_PHASE1.md, MR_DESCRIPTION.md, MISSION_LOG_TEMPLATE
 - WORKFLOW_STATE_SSOT.md をCLAUDE.mdに統合して廃止
+- spec-index.json作成（4仕様文書を登録）
 
 ### 2026-03-07（セッション2）
 - ISSUES.md棚卸し: 完了済み12件移動、重複5件統合
@@ -27,8 +35,7 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-1. spec-index.json作成 — CLAUDE.mdで必須だが未整備
-2. Playwright UI回帰テスト追加
+1. Playwright UI回帰テスト追加
 3. `dist/HoloSync.exe` での手動受け入れ確認
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。

@@ -6,7 +6,8 @@
 
 - Source: `scripts/`
 - Entry: `index.html`
-- Modules: state.js → player.js → sync.js → main.js（循環依存なし）
+- Modules: storage.js → state.js → player.js → sync.js → main.js
+- UI modules: layout.js, ui.js, debug.js, electron.js（全13モジュール、循環依存なし）
 
 ## Rules
 
@@ -21,7 +22,7 @@
 ## Done条件（当面の目標）
 
 - [x] 同期アルゴリズムv2（3段階drift補正、グループ対応）
-- [x] ES Module Phase 1+2（state/share/search/history/player/sync抽出）
+- [x] ES Module Phase 1-3（全13モジュール分割完了、main.js 743行）
 - [x] ISSUES.md棚卸し + レガシー資産削除
 - [x] spec-index.json作成
 - [ ] Playwright UI回帰テスト追加
