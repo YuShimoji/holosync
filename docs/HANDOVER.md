@@ -2,9 +2,13 @@
 
 **Updated**: 2026-03-07
 **Branch**: `main`
-**Status**: ES Module Phase 3完了（全13モジュール分割）。技術的負債B3/C2も処理済み。
+**Status**: ES Module Phase 3.5完了（全14モジュール分割、main.js 381行）。技術的負債B3/C2も処理済み。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-07（セッション5）
+- ES Module Phase 3.5: input.js(265行)抽出 + 「moved to」コメント66行削除
+  - main.js 743→381行 (-49%)、全14モジュール
 
 ### 2026-03-07（セッション4）
 - ES Module Phase 3: layout.js(492行), ui.js(457行), debug.js(158行), electron.js(75行)抽出
