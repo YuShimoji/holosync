@@ -47,6 +47,7 @@ GitLab 上の Issue は後段で移行予定のため、当面は本ファイル
     - バッファリング/広告発生時のフォールバック動作を定義し、同期崩れを自動復帰
     - 閾値・同期頻度を設定化（UI もしくは定数）
   - 実装: pickLeaderにlongest-playing/least-bufferedモード追加。SYNC_SETTINGSにtolerance/syncFrequency設定追加。UIに同期設定セクション追加。
+  - v2改善: least-bufferedモードのlastSeekAt追跡修復。未使用設定値(driftingCorrectionEnabled/maxDriftCorrectionMs/syncFrequencyHz)を削除しprobeIntervalMs直接制御に統一。syncAll()をグループ対応に修正。3段階drift補正(softTolerance/速度微調整/hardTolerance/seekTo)を実装。
 
 - [x] feat(P1): 自動回復/リトライ強化（ロード失敗/広告/バッファリング）
   - 受け入れ基準:

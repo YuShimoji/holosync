@@ -14,6 +14,9 @@ export const playerStates = new Map();
 /** @type {Map<Window, {since: number, reason: string}>} */
 export const suspendedPlayers = new Map();
 
+/** @type {Set<Window>} Players currently under speed-based drift correction */
+export const speedAdjustedPlayers = new Set();
+
 // --- Constants ---
 
 export const MIN_TILE_WIDTH = 200;
@@ -38,6 +41,8 @@ export const ALLOWED_COMMANDS = new Set([
 
 export const SYNC_SETTINGS = {
   toleranceMs: 300,
+  softToleranceMs: 150, // Below this: no correction
+  hardToleranceMs: 1000, // Above this: seekTo instead of speed adjust
   probeIntervalMs: 500,
   stallThresholdMs: 2500,
   rejoinSyncBufferMs: 500,
@@ -45,9 +50,7 @@ export const SYNC_SETTINGS = {
   leaderId: null,
   retryOnError: true,
   fallbackMode: 'mute-continue',
-  driftingCorrectionEnabled: true,
-  maxDriftCorrectionMs: 1000,
-  syncFrequencyHz: 2,
+  speedCorrectionFactor: 0.05, // +/-5% speed adjustment for soft drift
 };
 
 export const DEFAULT_EMBED_SETTINGS = {

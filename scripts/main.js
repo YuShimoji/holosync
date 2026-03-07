@@ -7,6 +7,7 @@ import {
   videos,
   playerStates,
   suspendedPlayers,
+  speedAdjustedPlayers,
   state,
   MIN_TILE_WIDTH,
   ASPECT_RATIO,
@@ -708,6 +709,7 @@ function removeVideo(videoId, tile) {
   if (win) {
     playerStates.delete(win);
     suspendedPlayers.delete(win);
+    speedAdjustedPlayers.delete(win);
   }
   video.iframe.src = '';
   tile.remove();
@@ -1057,6 +1059,13 @@ function sendCommand(iframe, func, args = []) {
   const safeArgs = sanitizeArgs(func, args);
   const message = JSON.stringify({ event: 'command', func, args: safeArgs });
   win.postMessage(message, ALLOWED_ORIGIN);
+  // Track seekTo for least-buffered leader mode
+  if (func === 'seekTo') {
+    const record = playerStates.get(win);
+    if (record) {
+      record.lastSeekAt = Date.now();
+    }
+  }
 }
 
 function requestPlayerSnapshot(win) {
@@ -1132,28 +1141,45 @@ function syncAll() {
     return;
   }
   const now = Date.now();
-  const activeEntries = [];
+
+  // Group videos by syncGroupId (null = independent, skip)
+  const groups = new Map();
   for (const v of videos) {
-    const win = v.iframe?.contentWindow;
-    if (!win) {
+    const gid = v.syncGroupId;
+    if (gid === null || gid === undefined) {
       continue;
     }
-    const rec = playerStates.get(win);
-    if (!getSuspensionReason(rec, now)) {
-      activeEntries.push({ v, rec, win });
+    if (!groups.has(gid)) {
+      groups.set(gid, []);
     }
+    groups.get(gid).push(v);
   }
-  const leader = pickLeader(activeEntries);
-  if (!leader || typeof leader.rec?.time !== 'number') {
-    return;
-  }
-  for (const v of videos) {
-    if (v === leader.v) {
+
+  for (const [, groupVideos] of groups) {
+    const activeEntries = [];
+    for (const v of groupVideos) {
+      const win = v.iframe?.contentWindow;
+      if (!win) {
+        continue;
+      }
+      const rec = playerStates.get(win);
+      if (!getSuspensionReason(rec, now)) {
+        activeEntries.push({ v, rec, win });
+      }
+    }
+    const leader = pickLeader(activeEntries);
+    if (!leader || typeof leader.rec?.time !== 'number') {
       continue;
     }
-    sendCommand(v.iframe, 'seekTo', [leader.rec.time, true]);
-    if (leader.rec.state === 1) {
-      sendCommand(v.iframe, 'playVideo');
+    for (const entry of activeEntries) {
+      if (entry.v === leader.v) {
+        continue;
+      }
+      const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      sendCommand(entry.v.iframe, 'seekTo', [leader.rec.time + offsetSec, true]);
+      if (leader.rec.state === 1) {
+        sendCommand(entry.v.iframe, 'playVideo');
+      }
     }
   }
 }
@@ -1642,10 +1668,10 @@ toleranceMsInput.addEventListener('input', (e) => {
 syncFrequencyInput.addEventListener('input', (e) => {
   const val = parseInt(e.target.value, 10);
   syncFrequencyValue.textContent = val;
-  SYNC_SETTINGS.syncFrequencyHz = val;
+  SYNC_SETTINGS.probeIntervalMs = Math.round(1000 / val);
   // Update the reconcile interval
   clearInterval(reconcileInterval);
-  reconcileInterval = setInterval(reconcile, 1000 / val);
+  reconcileInterval = setInterval(groupAwareReconcile, SYNC_SETTINGS.probeIntervalMs);
 });
 
 // Function to update leader ID options
@@ -2189,11 +2215,17 @@ function reconcileGroup(groupVideos, now) {
   if (!leaderRecord || typeof leaderRecord.time !== 'number') {
     return;
   }
-  const toleranceSeconds = SYNC_SETTINGS.toleranceMs / 1000;
+  const softToleranceSec = SYNC_SETTINGS.softToleranceMs / 1000;
+  const hardToleranceSec = SYNC_SETTINGS.hardToleranceMs / 1000;
   const leaderPlaying = leaderRecord.state === 1;
 
   for (const entry of activeEntries) {
     if (entry.v === leaderEntry.v) {
+      // Reset leader's speed if it was previously adjusted as a follower
+      if (speedAdjustedPlayers.has(entry.win)) {
+        sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
+        speedAdjustedPlayers.delete(entry.win);
+      }
       continue;
     }
     const record = entry.rec;
@@ -2204,9 +2236,27 @@ function reconcileGroup(groupVideos, now) {
     const offsetSec = (entry.v.offsetMs || 0) / 1000;
     const expectedTime = leaderRecord.time + offsetSec;
     const drift = record.time - expectedTime;
-    if (Math.abs(drift) > toleranceSeconds) {
+    const absDrift = Math.abs(drift);
+
+    if (absDrift > hardToleranceSec) {
+      // Hard correction: seekTo for large drift
       sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
+      if (speedAdjustedPlayers.has(entry.win)) {
+        sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
+        speedAdjustedPlayers.delete(entry.win);
+      }
+    } else if (absDrift > softToleranceSec) {
+      // Soft correction: adjust playback speed to converge
+      const factor = SYNC_SETTINGS.speedCorrectionFactor;
+      const rate = drift > 0 ? 1 - factor : 1 + factor;
+      sendCommand(entry.v.iframe, 'setPlaybackRate', [rate]);
+      speedAdjustedPlayers.add(entry.win);
+    } else if (speedAdjustedPlayers.has(entry.win)) {
+      // Within soft tolerance: restore normal speed
+      sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
+      speedAdjustedPlayers.delete(entry.win);
     }
+
     const isPlaying = record.state === 1;
     if (leaderPlaying && !isPlaying) {
       sendCommand(entry.v.iframe, 'playVideo');
@@ -2233,6 +2283,11 @@ function reconcileGroup(groupVideos, now) {
     const record = entry.rec;
     if (!record || typeof record.time !== 'number') {
       continue;
+    }
+    // Reset speed on rejoin
+    if (speedAdjustedPlayers.has(entry.win)) {
+      sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
+      speedAdjustedPlayers.delete(entry.win);
     }
     const offsetSec = (entry.v.offsetMs || 0) / 1000;
     const expectedTime = leaderRecord.time + offsetSec;
