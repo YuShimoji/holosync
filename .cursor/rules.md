@@ -1,4 +1,4 @@
-# Cursor Rules（shared-workflows / v2.x運用）
+# Cursor Rules
 
 目的: Cursor が `.cursorrules` を拾わない/弱い環境でも、ルールが適用される確率を上げる。
 
