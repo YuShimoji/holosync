@@ -77,8 +77,8 @@ export async function saveWatchHistoryEntry(video, watchedSeconds) {
     }
     renderWatchHistory(next);
     await storageAdapter.setItem('watchHistory', next);
-  } catch (_) {
-    // ignore
+  } catch (err) {
+    console.warn('removeWatchHistoryEntry failed:', err);
   }
 }
 
@@ -86,7 +86,8 @@ export async function loadWatchHistory() {
   try {
     const history = (await storageAdapter.getItem('watchHistory')) || [];
     renderWatchHistory(history);
-  } catch (_) {
+  } catch (err) {
+    console.warn('loadWatchHistory failed:', err);
     renderWatchHistory([]);
   }
 }

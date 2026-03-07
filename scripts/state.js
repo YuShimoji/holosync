@@ -84,6 +84,12 @@ export function hasVideo(id) {
   return videos.some((v) => v.id === id);
 }
 
+/** YouTube API key — shared across search.js and player.js */
+export let youtubeApiKey = null;
+export function setYoutubeApiKey(key) {
+  youtubeApiKey = key;
+}
+
 export function findVideoByWindow(win) {
   return videos.find((v) => v.iframe?.contentWindow === win);
 }

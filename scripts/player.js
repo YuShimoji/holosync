@@ -12,6 +12,7 @@ import {
   ALLOWED_ORIGIN,
   ALLOWED_COMMANDS,
   DEFAULT_EMBED_SETTINGS,
+  youtubeApiKey,
 } from './state.js';
 
 // Layout callbacks injected from main.js via initPlayer()
@@ -200,12 +201,12 @@ export function appendDescriptionHint(bodyEl, message) {
 export async function fetchVideoDescription(videoId, bodyEl) {
   bodyEl.querySelector('.info-description')?.remove();
   bodyEl.querySelector('.info-description-hint')?.remove();
-  if (!window.YOUTUBE_API_KEY) {
+  if (!youtubeApiKey) {
     appendDescriptionHint(bodyEl, '概要の表示には YouTube Data API Key が必要です。');
     return false;
   }
   try {
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${window.YOUTUBE_API_KEY}`;
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${youtubeApiKey}`;
     const resp = await fetch(url);
     if (!resp.ok) {
       appendDescriptionHint(bodyEl, '概要の取得に失敗しました。API Key を確認してください。');
@@ -226,7 +227,8 @@ export async function fetchVideoDescription(videoId, bodyEl) {
     }
     appendDescriptionHint(bodyEl, '概要情報が見つかりませんでした。');
     return false;
-  } catch (_) {
+  } catch (err) {
+    console.warn('fetchVideoDescription failed:', err);
     appendDescriptionHint(bodyEl, '概要の取得中にエラーが発生しました。');
     return false;
   }
@@ -253,12 +255,13 @@ export async function fetchVideoMeta(videoId, titleEl, bodyEl) {
     bodyEl.appendChild(channelDiv);
 
     // If Data API key is available, fetch description
-    if (window.YOUTUBE_API_KEY) {
+    if (youtubeApiKey) {
       await fetchVideoDescription(videoId, bodyEl);
     } else {
       appendDescriptionHint(bodyEl, '概要の表示には YouTube Data API Key が必要です。');
     }
-  } catch (_) {
+  } catch (err) {
+    console.warn('fetchVideoMeta failed:', err);
     bodyEl.textContent = 'メタデータ取得失敗';
   }
 }

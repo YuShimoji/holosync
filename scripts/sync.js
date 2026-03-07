@@ -378,8 +378,8 @@ function groupAwareReconcile() {
     for (const [, groupVideos] of groups) {
       reconcileGroup(groupVideos, now);
     }
-  } catch (_) {
-    // ignore
+  } catch (err) {
+    console.warn('groupAwareReconcile failed:', err);
   }
 }
 

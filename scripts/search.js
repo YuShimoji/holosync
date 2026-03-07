@@ -3,7 +3,14 @@
  * @brief YouTube search, preset management, and API key functions for HoloSync.
  */
 import { storageAdapter } from './storage.js';
-import { videos, playerStates, suspendedPlayers, hasVideo } from './state.js';
+import {
+  videos,
+  playerStates,
+  suspendedPlayers,
+  hasVideo,
+  youtubeApiKey,
+  setYoutubeApiKey,
+} from './state.js';
 
 // DOM references (search / preset / API key)
 const searchForm = document.getElementById('searchForm');
@@ -20,11 +27,11 @@ const presetList = document.getElementById('presetList');
 const gridEl = document.getElementById('grid');
 
 async function searchYouTube(query) {
-  if (!window.YOUTUBE_API_KEY) {
+  if (!youtubeApiKey) {
     throw new Error('YouTube API key not set. Please enter it in the search section.');
   }
 
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${window.YOUTUBE_API_KEY}`;
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${youtubeApiKey}`;
 
   try {
     const response = await fetch(url);
@@ -189,7 +196,7 @@ async function loadPreset(name) {
 }
 
 function updateApiKeyStatus() {
-  const hasKey = !!window.YOUTUBE_API_KEY;
+  const hasKey = !!youtubeApiKey;
   deleteApiKeyBtn.disabled = !hasKey;
   checkQuotaBtn.disabled = !hasKey;
   if (hasKey) {
@@ -200,13 +207,13 @@ function updateApiKeyStatus() {
 }
 
 async function checkQuota() {
-  if (!window.YOUTUBE_API_KEY) {
+  if (!youtubeApiKey) {
     quotaInfo.textContent = 'クオータ: APIキーが設定されていません';
     return;
   }
 
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=id&q=test&type=video&maxResults=1&key=${window.YOUTUBE_API_KEY}`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=id&q=test&type=video&maxResults=1&key=${youtubeApiKey}`;
     const response = await fetch(url);
 
     if (response.status === 403) {
@@ -247,7 +254,7 @@ async function checkQuota() {
 async function initializeApiKey(refreshDescriptions) {
   const storedKey = await storageAdapter.getItem('youtubeApiKey');
   if (storedKey) {
-    window.YOUTUBE_API_KEY = storedKey;
+    setYoutubeApiKey(storedKey);
     apiKeyInput.value = storedKey;
   }
   updateApiKeyStatus();
@@ -266,8 +273,8 @@ export function initSearch(deps) {
 
   let apiKeyRefreshTimer;
   apiKeyInput.addEventListener('input', () => {
-    window.YOUTUBE_API_KEY = apiKeyInput.value.trim() || null;
-    storageAdapter.setItem('youtubeApiKey', window.YOUTUBE_API_KEY);
+    setYoutubeApiKey(apiKeyInput.value.trim() || null);
+    storageAdapter.setItem('youtubeApiKey', youtubeApiKey);
     updateApiKeyStatus();
     if (apiKeyRefreshTimer) {
       clearTimeout(apiKeyRefreshTimer);
@@ -279,7 +286,7 @@ export function initSearch(deps) {
 
   deleteApiKeyBtn.addEventListener('click', () => {
     if (confirm('APIキーを削除しますか？')) {
-      window.YOUTUBE_API_KEY = null;
+      setYoutubeApiKey(null);
       apiKeyInput.value = '';
       storageAdapter.setItem('youtubeApiKey', null);
       updateApiKeyStatus();
