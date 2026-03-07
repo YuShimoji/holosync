@@ -3,6 +3,7 @@
  * @brief HoloSync Web App — UI orchestration, layout, event handling.
  */
 import { storageAdapter } from './storage.js';
+import { createController } from './zoom-loupe.js';
 import {
   videos,
   playerStates,
@@ -128,7 +129,7 @@ function syncEmbedSettingsUI() {
   }
 }
 
-const zoomLoupeController = window.HoloSyncZoomLoupe?.createController({
+const zoomLoupeController = createController({
   buildEmbedUrl,
   persistVideos,
   playerStates,
