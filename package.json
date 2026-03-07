@@ -10,7 +10,7 @@
     "lint": "eslint \"scripts/*.js\" \"scripts/**/*.js\" --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky install",
+    "prepare": "husky",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",

@@ -1,10 +1,20 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-07
+**Updated**: 2026-03-08
 **Branch**: `main`
-**Status**: ES Module Phase 3.5完了（全14モジュール分割、main.js 381行）。技術的負債B3/C2も処理済み。
+**Status**: Done条件6/6完了。Playwright UI回帰テスト9件追加、レガシー残存物9件+設定6件クリーンアップ済み。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-08（セッション6）
+- Playwright UI回帰テスト9件追加（e2e/ui-regression.spec.ts）
+  - レイアウト切替/サイドバー/没入表示/ツールバー/ダークモード/ヘルプ/URL検証/一括モード/履歴
+- レガシー残存物徹底整理: 9ファイル削除（-557行）
+  - .gitlab-ci.yml, push-and-mr.ps1, gen-docs.ps1, doxygen-pages.yml
+  - REPORT_CONFIG.yml, presentation.json, .cursorrules, .cursor/rules.md, detect-project-type.js
+- 設定ファイルクリーンアップ: .prettierignore/.eslintignore/.eslintrc.json/.gitignore/package.json
+- dist/HoloSync.exe 手動受け入れ確認完了
+- CLAUDE.md Done条件 6/6 完了
 
 ### 2026-03-07（セッション5）
 - ES Module Phase 3.5: input.js(265行)抽出 + 「moved to」コメント66行削除
@@ -43,7 +53,8 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-1. `dist/HoloSync.exe` での手動受け入れ確認
+1. feat(P1): パフォーマンス最適化（10+タイルの遅延ロード/仮想化）
+2. feat(P1): オーディオマスター固定（音声源の指定/切替）
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。
 

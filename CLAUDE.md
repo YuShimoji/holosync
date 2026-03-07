@@ -25,8 +25,8 @@
 - [x] ES Module Phase 1-3.5（全14モジュール分割完了、main.js 381行）
 - [x] ISSUES.md棚卸し + レガシー資産削除
 - [x] spec-index.json作成
-- [ ] Playwright UI回帰テスト追加
-- [ ] `dist/HoloSync-win32-x64/HoloSync.exe` でホットフィックス挙動を手動確認
+- [x] Playwright UI回帰テスト追加
+- [x] `dist/HoloSync-win32-x64/HoloSync.exe` でホットフィックス挙動を手動確認
 
 ## 選別規則
 
