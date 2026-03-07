@@ -9,14 +9,11 @@ import {
   playerStates,
   suspendedPlayers,
   state,
-  MIN_TILE_WIDTH,
-  ASPECT_RATIO,
   WATCH_HISTORY_CAPTURE_INTERVAL_MS,
   WATCH_HISTORY_MIN_PLAYED_SECONDS,
   EDGE_REVEAL_DISTANCE_PX,
   ALLOWED_ORIGIN,
   SYNC_SETTINGS,
-  SYNC_GROUPS,
   hasVideo,
   findVideoByWindow,
 } from './state.js';
@@ -45,6 +42,16 @@ import {
 import { initShare } from './share.js';
 import { initSearch, initializeApiKey, loadPresets } from './search.js';
 import { saveWatchHistoryEntry, loadWatchHistory, initHistory } from './history.js';
+import {
+  initLayout,
+  setupTileDrag,
+  setupTileResize,
+  moveVideoOrder,
+  syncTileOrderDom,
+  refreshTileStackOrder,
+  loadLayoutSettings,
+  setLayout,
+} from './layout.js';
 
 const gridEl = document.getElementById('grid');
 const addForm = document.getElementById('addForm');
@@ -74,13 +81,10 @@ const closeHelpBtn = document.getElementById('closeHelpBtn');
 // Phase 1: Layout controls
 const sidebarToggle = document.getElementById('sidebarToggle');
 const sidebarOpen = document.getElementById('sidebarOpen');
-const layoutSelect = document.getElementById('layoutSelect');
 const dropHint = document.getElementById('dropHint');
 const darkModeToggle = document.getElementById('darkModeToggle');
 
 // Phase 5: Cell mode and resize controls
-const gridGapInput = document.getElementById('gridGap');
-const gridGapVal = document.getElementById('gridGapVal');
 const toolbarToggleBtn = document.getElementById('toolbarToggleBtn');
 const immersiveToggleBtn = document.getElementById('immersiveToggleBtn');
 const windowFrameToggleBtn = document.getElementById('windowFrameToggleBtn');
@@ -147,55 +151,6 @@ initPlayer({
   toggleZoomPanel,
   refreshTileStackOrder,
 });
-
-function syncTileOrderDom() {
-  videos.forEach((video) => {
-    if (video.tile && video.tile.parentElement === gridEl) {
-      gridEl.appendChild(video.tile);
-    }
-  });
-  refreshTileStackOrder();
-}
-
-function refreshTileStackOrder() {
-  videos.forEach((video, index) => {
-    if (!video.tile) {
-      return;
-    }
-    if (state.cellModeEnabled) {
-      video.tile.style.setProperty('--tile-stack-index', String(5 + index));
-    } else {
-      video.tile.style.removeProperty('--tile-stack-index');
-    }
-  });
-}
-
-function moveVideoOrder(videoId, direction) {
-  const index = videos.findIndex((video) => video.id === videoId);
-  if (index === -1) {
-    return;
-  }
-  const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= videos.length) {
-    return;
-  }
-  const current = videos[index];
-  videos[index] = videos[nextIndex];
-  videos[nextIndex] = current;
-  syncTileOrderDom();
-  persistVideos();
-}
-
-function bringVideoToFront(videoId) {
-  const index = videos.findIndex((video) => video.id === videoId);
-  if (index === -1 || index === videos.length - 1) {
-    return;
-  }
-  const [video] = videos.splice(index, 1);
-  videos.push(video);
-  syncTileOrderDom();
-  persistVideos();
-}
 
 async function exitFullscreenSafe() {
   if (!document.fullscreenElement || !document.exitFullscreen) {
@@ -309,13 +264,6 @@ async function syncWindowModeFromMain() {
   } catch (_) {
     applyFramelessState(false);
   }
-}
-
-function persistLayoutSettings() {
-  storageAdapter.setItem('layoutSettings', {
-    layout: layoutSelect.value,
-    gap: state.cellGap,
-  });
 }
 
 function trackPlayerState(win, info) {
@@ -684,18 +632,13 @@ async function initializeApp() {
       }
 
       if (sharedSession.layout) {
-        layoutSelect.value = sharedSession.layout;
         setLayout(sharedSession.layout);
       }
 
       if (sharedSession.gap !== undefined) {
         const gap = parseInt(sharedSession.gap, 10);
         if (Number.isFinite(gap)) {
-          gridGapInput.value = String(gap);
-          gridGapVal.textContent = String(gap);
           state.cellGap = gap;
-          // grid gap update logic is usually in event listener, trigger it manually if needed
-          // But layout update might handle it if we add gap to setLayout or update style directly
           gridEl.style.gap = `${gap}px`;
         }
       }
@@ -1177,29 +1120,6 @@ if (darkModeToggle) {
   }
 })();
 
-// ========== Phase 1-2: Layout presets ==========
-function setLayout(mode) {
-  // Remove all layout classes
-  gridEl.className = 'grid';
-  if (mode && mode !== 'auto') {
-    gridEl.classList.add(`layout-${mode}`);
-  }
-  storageAdapter.setItem('layoutMode', mode);
-}
-
-layoutSelect.addEventListener('change', (e) => {
-  setLayout(e.target.value);
-});
-
-// Restore layout
-(async () => {
-  const mode = await storageAdapter.getItem('layoutMode');
-  if (mode && mode !== 'auto') {
-    layoutSelect.value = mode;
-    setLayout(mode);
-  }
-})();
-
 // ========== Phase 2-2: Drag & Drop + Clipboard ==========
 function handleDroppedText(text) {
   if (!text) {
@@ -1274,48 +1194,7 @@ document.addEventListener('paste', (e) => {
 });
 
 // ========== Phase 3-1: Sync Groups ==========
-
-function setSyncGroup(videoId, groupId) {
-  const entry = videos.find((v) => v.id === videoId);
-  if (!entry) {
-    return;
-  }
-  entry.syncGroupId = groupId;
-  // Update badge
-  const badge = entry.tile?.querySelector('.tile-sync-badge');
-  if (badge) {
-    if (groupId) {
-      badge.textContent = groupId;
-      badge.classList.remove('no-sync');
-    } else {
-      badge.textContent = '独立';
-      badge.classList.add('no-sync');
-    }
-  }
-  persistVideos();
-}
-
-// Context menu on sync badge to change group
-gridEl.addEventListener('click', (e) => {
-  const badge = e.target.closest('.tile-sync-badge');
-  if (!badge) {
-    return;
-  }
-  const tile = badge.closest('.tile');
-  if (!tile) {
-    return;
-  }
-  const videoId = tile.dataset.videoId;
-  const entry = videos.find((v) => v.id === videoId);
-  if (!entry) {
-    return;
-  }
-  // Cycle through groups: A -> B -> C -> null (independent) -> A
-  const options = [...SYNC_GROUPS, null];
-  const currentIdx = options.indexOf(entry.syncGroupId);
-  const nextIdx = (currentIdx + 1) % options.length;
-  setSyncGroup(videoId, options[nextIdx]);
-});
+// (Sync group logic moved to layout.js)
 
 // Start the sync loop
 startSyncLoop();
@@ -1424,359 +1303,9 @@ gridEl.addEventListener('click', (e) => {
   }
 });
 
-// ========== Phase 5: Tile Resize ==========
-function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
-  let isResizing = false;
-  let startX, startW, lastW, lastH, rafId;
-
-  resizeHandle.addEventListener('mousedown', (e) => {
-    if (!state.cellModeEnabled) {
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    isResizing = true;
-    startX = e.clientX;
-    startW = tile.offsetWidth;
-    lastW = startW;
-    lastH = Math.round(startW * ASPECT_RATIO);
-    tile.classList.add('resizing');
-    sizeBadge.style.display = 'block';
-    sizeBadge.textContent = `${lastW}×${lastH}`;
-
-    const onMove = (ev) => {
-      if (!isResizing) {
-        return;
-      }
-      const deltaX = ev.clientX - startX;
-      const tileRect = tile.getBoundingClientRect();
-      const gridRect = gridEl.getBoundingClientRect();
-      const maxWidthByGrid = Math.max(
-        MIN_TILE_WIDTH,
-        gridRect.right - tileRect.left - state.cellGap
-      );
-      const maxWidthByViewport = Math.max(MIN_TILE_WIDTH, window.innerWidth - tileRect.left - 12);
-      const maxWidth = Math.min(maxWidthByGrid, maxWidthByViewport);
-      const newW = Math.max(MIN_TILE_WIDTH, Math.min(startW + deltaX, maxWidth));
-      const newH = Math.round(newW * ASPECT_RATIO);
-      lastW = Math.round(newW);
-      lastH = newH;
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-      rafId = requestAnimationFrame(() => {
-        tile.style.width = lastW + 'px';
-        tile.style.height = lastH + 'px';
-        sizeBadge.textContent = `${lastW}×${lastH}`;
-      });
-    };
-
-    const onUp = () => {
-      if (!isResizing) {
-        return;
-      }
-      isResizing = false;
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      tile.classList.remove('resizing');
-      sizeBadge.style.display = 'none';
-
-      // Apply final size consistently (use tracked values, not offsetWidth)
-      tile.style.width = lastW + 'px';
-      tile.style.height = lastH + 'px';
-      videoEntry.tileWidth = lastW;
-      videoEntry.tileHeight = lastH;
-      persistVideos();
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
-}
-
-// ========== Phase 5: Tile Drag ==========
-function setupTileDrag(tile, videoEntry, dragHandle) {
-  let isDragging = false;
-  let startX, startY, startLeft, startTop;
-
-  dragHandle.addEventListener('mousedown', (e) => {
-    if (!state.cellModeEnabled) {
-      return;
-    }
-    bringVideoToFront(videoEntry.id);
-    e.preventDefault();
-    e.stopPropagation();
-    isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    startLeft = tile.offsetLeft;
-    startTop = tile.offsetTop;
-    tile.classList.add('dragging');
-    gridEl.classList.add('show-cells');
-
-    const onMove = (ev) => {
-      if (!isDragging) {
-        return;
-      }
-      const deltaX = ev.clientX - startX;
-      const deltaY = ev.clientY - startY;
-      tile.style.left = startLeft + deltaX + 'px';
-      tile.style.top = startTop + deltaY + 'px';
-
-      // Highlight drop target cell
-      updateDropTargetHighlight(ev.clientX, ev.clientY);
-    };
-
-    const onUp = (ev) => {
-      if (!isDragging) {
-        return;
-      }
-      isDragging = false;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      tile.classList.remove('dragging');
-      gridEl.classList.remove('show-cells');
-      clearDropTargetHighlight();
-
-      // Snap to cell
-      const cell = getCellFromPoint(ev.clientX, ev.clientY);
-      if (cell) {
-        videoEntry.cellCol = cell.col;
-        videoEntry.cellRow = cell.row;
-        positionTileInCell(tile, videoEntry);
-        persistVideos();
-      }
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
-}
-
-// ========== Phase 5: Cell Mode Functions ==========
-function getCellDimensions() {
-  const gridRect = gridEl.getBoundingClientRect();
-  const availableWidth = gridRect.width - state.cellGap * 2;
-  const cellWidth = (availableWidth - state.cellGap * (state.cellColumns - 1)) / state.cellColumns;
-  const cellHeight = cellWidth * ASPECT_RATIO;
-  return { cellWidth, cellHeight, gridRect };
-}
-
-function getCellFromPoint(x, y) {
-  const { cellWidth, cellHeight, gridRect } = getCellDimensions();
-  const relX = x - gridRect.left - state.cellGap + gridEl.scrollLeft;
-  const relY = y - gridRect.top - state.cellGap + gridEl.scrollTop;
-  const col = Math.floor(relX / (cellWidth + state.cellGap));
-  const row = Math.floor(relY / (cellHeight + state.cellGap));
-  return {
-    col: Math.max(0, Math.min(col, state.cellColumns - 1)),
-    row: Math.max(0, row),
-  };
-}
-
-function positionTileInCell(tile, videoEntry) {
-  if (!state.cellModeEnabled) {
-    return;
-  }
-  const { cellWidth, cellHeight } = getCellDimensions();
-  const col = videoEntry.cellCol ?? 0;
-  const row = videoEntry.cellRow ?? 0;
-  const left = state.cellGap + col * (cellWidth + state.cellGap);
-  const top = state.cellGap + row * (cellHeight + state.cellGap);
-  tile.style.left = left + 'px';
-  tile.style.top = top + 'px';
-  tile.classList.add('cell-positioned');
-
-  // Apply custom size or default cell size.
-  if (videoEntry.tileWidth && videoEntry.tileHeight) {
-    tile.style.width = videoEntry.tileWidth + 'px';
-    tile.style.height = videoEntry.tileHeight + 'px';
-  } else {
-    tile.style.width = cellWidth + 'px';
-    tile.style.height = cellHeight + 'px';
-  }
-}
-
-function updateDropTargetHighlight(x, y) {
-  clearDropTargetHighlight();
-  const cell = getCellFromPoint(x, y);
-  if (!cell || !state.cellOverlayContainer) {
-    return;
-  }
-  const overlays = state.cellOverlayContainer.querySelectorAll('.cell-overlay');
-  const idx = cell.row * state.cellColumns + cell.col;
-  if (overlays[idx]) {
-    overlays[idx].classList.add('drop-target');
-  }
-}
-
-function clearDropTargetHighlight() {
-  if (!state.cellOverlayContainer) {
-    return;
-  }
-  state.cellOverlayContainer.querySelectorAll('.drop-target').forEach((el) => {
-    el.classList.remove('drop-target');
-  });
-}
-
-function createCellOverlays() {
-  if (state.cellOverlayContainer) {
-    state.cellOverlayContainer.remove();
-  }
-  state.cellOverlayContainer = document.createElement('div');
-  state.cellOverlayContainer.className = 'cell-overlay-container';
-
-  const { cellWidth, cellHeight } = getCellDimensions();
-  const rows = Math.max(10, Math.ceil(videos.length / state.cellColumns) + 2);
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < state.cellColumns; c++) {
-      const overlay = document.createElement('div');
-      overlay.className = 'cell-overlay';
-      overlay.style.left = state.cellGap + c * (cellWidth + state.cellGap) + 'px';
-      overlay.style.top = state.cellGap + r * (cellHeight + state.cellGap) + 'px';
-      overlay.style.width = cellWidth + 'px';
-      overlay.style.height = cellHeight + 'px';
-      overlay.dataset.col = c;
-      overlay.dataset.row = r;
-      state.cellOverlayContainer.appendChild(overlay);
-    }
-  }
-
-  gridEl.insertBefore(state.cellOverlayContainer, gridEl.firstChild);
-}
-
-function enableCellMode() {
-  state.cellModeEnabled = true;
-  gridEl.classList.add('cell-mode');
-  createCellOverlays();
-
-  // Position all tiles
-  videos.forEach((v, idx) => {
-    if (v.cellCol === null || v.cellRow === null) {
-      v.cellCol = idx % state.cellColumns;
-      v.cellRow = Math.floor(idx / state.cellColumns);
-    }
-    positionTileInCell(v.tile, v);
-  });
-  refreshTileStackOrder();
-}
-
-function disableCellMode() {
-  state.cellModeEnabled = false;
-  gridEl.classList.remove('cell-mode');
-  if (state.cellOverlayContainer) {
-    state.cellOverlayContainer.remove();
-    state.cellOverlayContainer = null;
-  }
-
-  // Reset tile styles — always clear inline size so CSS grid controls layout
-  videos.forEach((v) => {
-    v.tile.classList.remove('cell-positioned');
-    v.tile.style.left = '';
-    v.tile.style.top = '';
-    v.tile.style.width = '';
-    v.tile.style.height = '';
-    v.tile.style.removeProperty('--tile-stack-index');
-  });
-}
-
-function updateGridGap(gap) {
-  state.cellGap = gap;
-  gridEl.style.gap = gap + 'px';
-  gridEl.style.padding = gap + 'px';
-
-  if (state.cellModeEnabled) {
-    createCellOverlays();
-    videos.forEach((v) => positionTileInCell(v.tile, v));
-  }
-}
-
-// ========== Phase 5: Layout Mode Handler ==========
-function handleLayoutChange(layout) {
-  // Remove all layout classes
-  gridEl.classList.remove('layout-1', 'layout-2', 'layout-3', 'layout-4', 'layout-theater');
-
-  if (layout === 'free') {
-    state.cellColumns = 4; // Default for free mode
-    enableCellMode();
-  } else {
-    disableCellMode();
-    if (layout !== 'auto') {
-      gridEl.classList.add('layout-' + layout);
-    }
-    if (layout === '1') {
-      state.cellColumns = 1;
-    } else if (layout === '2') {
-      state.cellColumns = 2;
-    } else if (layout === '3') {
-      state.cellColumns = 3;
-    } else if (layout === '4') {
-      state.cellColumns = 4;
-    } else {
-      state.cellColumns = 2;
-    }
-  }
-
-  persistLayoutSettings();
-}
-
-// Layout select event
-layoutSelect.addEventListener('change', (e) => {
-  handleLayoutChange(e.target.value);
-});
-
-// Gap slider event
-if (gridGapInput) {
-  gridGapInput.addEventListener('input', (e) => {
-    const gap = parseInt(e.target.value, 10);
-    gridGapVal.textContent = gap;
-    updateGridGap(gap);
-    persistLayoutSettings();
-  });
-}
-
-// Load layout settings on init
-async function loadLayoutSettings() {
-  try {
-    const settings = await storageAdapter.getItem('layoutSettings');
-    if (settings) {
-      if (settings.layout) {
-        layoutSelect.value = settings.layout;
-        handleLayoutChange(settings.layout);
-      }
-      if (typeof settings.gap === 'number') {
-        state.cellGap = settings.gap;
-        if (gridGapInput) {
-          gridGapInput.value = settings.gap;
-          gridGapVal.textContent = settings.gap;
-        }
-        updateGridGap(settings.gap);
-      }
-    }
-  } catch (_) {
-    // ignore
-  }
-}
-
 // Call after initializeApp
+initLayout();
 loadLayoutSettings();
-
-// Handle window resize for cell mode
-let resizeTimeout;
-window.addEventListener('resize', () => {
-  if (!state.cellModeEnabled) {
-    return;
-  }
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    createCellOverlays();
-    videos.forEach((v) => positionTileInCell(v.tile, v));
-  }, 100);
-});
 
 // ========== Zoom Loupe (Magnifying Glass) ==========
 function toggleZoomPanel(videoEntry) {
