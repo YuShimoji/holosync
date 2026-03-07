@@ -1,0 +1,75 @@
+/**
+ * @file scripts/electron.js
+ * @brief Electron frameless mode integration and window controls.
+ */
+import { state } from './state.js';
+
+const windowFrameToggleBtn = document.getElementById('windowFrameToggleBtn');
+const windowControls = document.getElementById('windowControls');
+const windowMinBtn = document.getElementById('windowMinBtn');
+const windowMaxBtn = document.getElementById('windowMaxBtn');
+const windowCloseBtn = document.getElementById('windowCloseBtn');
+
+export function hasElectronWindowBridge() {
+  return (
+    typeof window.electronWindow === 'object' &&
+    window.electronWindow !== null &&
+    typeof window.electronWindow.setFramelessMode === 'function'
+  );
+}
+
+function applyFramelessState(isFrameless) {
+  state.framelessModeEnabled = isFrameless;
+  document.body.classList.toggle('frameless-mode', isFrameless);
+  if (windowFrameToggleBtn) {
+    windowFrameToggleBtn.classList.toggle('success', isFrameless);
+    windowFrameToggleBtn.textContent = isFrameless ? 'Framed' : 'Frameless';
+  }
+  if (windowControls) {
+    windowControls.hidden = !isFrameless;
+  }
+}
+
+async function syncWindowModeFromMain() {
+  if (!hasElectronWindowBridge()) {
+    return;
+  }
+  try {
+    const prefs = await window.electronWindow.getPreferences();
+    applyFramelessState(Boolean(prefs?.framelessMode));
+  } catch (_) {
+    applyFramelessState(false);
+  }
+}
+
+export function initElectron() {
+  syncWindowModeFromMain();
+
+  if (windowFrameToggleBtn && hasElectronWindowBridge()) {
+    windowFrameToggleBtn.addEventListener('click', async () => {
+      try {
+        await window.electronWindow.setFramelessMode(!state.framelessModeEnabled);
+      } catch (_) {
+        // ignore
+      }
+    });
+  }
+
+  if (windowMinBtn && hasElectronWindowBridge()) {
+    windowMinBtn.addEventListener('click', () => {
+      window.electronWindow.minimize();
+    });
+  }
+
+  if (windowMaxBtn && hasElectronWindowBridge()) {
+    windowMaxBtn.addEventListener('click', () => {
+      window.electronWindow.toggleMaximize();
+    });
+  }
+
+  if (windowCloseBtn && hasElectronWindowBridge()) {
+    windowCloseBtn.addEventListener('click', () => {
+      window.electronWindow.close();
+    });
+  }
+}
