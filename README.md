@@ -95,10 +95,9 @@ npm run build
 
 ## 開発ワークフロー（要約）
 
-- ルール/フローの詳細は `docs/WORKFLOW.md` を参照。
+- 開発方針は `CLAUDE.md` を参照。
 - コミット規約: Conventional Commits（例: `feat(sync): ...`, `fix(player): ...`）。
-- ブランチ戦略: `feature/<issue-number>-<slug>` / `docs/<topic>` / `chore/<topic>`。
-- CI/CD: `lint`（Prettier/ESLint）→ `docs`（Doxygen）→ `deploy`（Pages）。
+- CI/CD: `lint`（Prettier/ESLint）。
 - タスク管理: `docs/ISSUES.md` をハブとして運用。
 
 ## 技術仕様
@@ -111,8 +110,7 @@ npm run build
 
 ## ドキュメント
 
-- Live Docs（GitLab Pages）: https://yushimoji.gitlab.io/holosync/
-- Doxygen 設定: `Doxyfile`（`README.md` ベース、`docs/html` 出力）
+- 仕様: `docs/` 内のMarkdownファイル（`docs/spec-index.json` で一覧管理）
 
 ## ライセンス
 

@@ -2,7 +2,7 @@
 
 最終更新: 2025-10-19 21:20 (JST)
 作成者: Cascade (AIアシスタント)
-関連ドキュメント: `choices-driven-development.md`, `docs/ISSUES.md`, `AI_CONTEXT.md`, `docs/TESTING.md`
+関連ドキュメント: `docs/ISSUES.md`, `docs/TESTING.md`
 
 ---
 
@@ -145,7 +145,7 @@ interface PresetEntry {
 
 ## 11. 次アクション
 - Issue作成: 検索UI実装、ストレージ抽象化、プリセットUI、共有リンク。
-- `AI_CONTEXT.md` に進捗ログを追加し、`docs/ISSUES.md` の進行中へリンク。
+- `docs/ISSUES.md` の進行中へリンク。
 - 主要選択肢のPoC期間と判定基準を定義（例: 2週間でレスポンス遅延 < 1s を達成）。
 
 ---

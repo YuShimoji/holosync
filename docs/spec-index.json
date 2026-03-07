@@ -24,7 +24,7 @@
     "pct": 100,
     "cat": "data",
     "file": "docs/PERSISTENCE.md",
-    "summary": "chrome.storage → localStorage → URLパラメータのフォールバック"
+    "summary": "StorageAdapter抽象化、chrome.storage/IndexedDB/localStorage/URLパラメータの4段階フォールバック、URL共有"
   },
   {
     "id": "SP-004",
@@ -33,6 +33,6 @@
     "pct": 100,
     "cat": "system",
     "file": "docs/SECURITY_POSTMESSAGE.md",
-    "summary": "origin検証、コマンドホワイトリスト、引数サニタイズ"
+    "summary": "origin検証、ALLOWED_COMMANDS 7種、sanitizeArgs引数バリデーション、受信側イベントタイプホワイトリスト"
   }
 ]

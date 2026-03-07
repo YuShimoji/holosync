@@ -50,12 +50,6 @@ if (exists('index.html')) {
 if (exists('docs/TESTING.md')) {
   result.flags.push('manual-tests-defined');
 }
-if (exists('docs/WORKFLOW.md')) {
-  result.flags.push('workflow-defined');
-}
-if (exists('Doxyfile')) {
-  result.flags.push('doxygen');
-}
 
 result.stack = Array.from(new Set(result.stack));
 result.flags = Array.from(new Set(result.flags));
