@@ -12,7 +12,7 @@
 ## 参照先
 
 - プロジェクト指針: `CLAUDE.md`
-- ワークフロー状態: `docs/WORKFLOW_STATE_SSOT.md`
+- バックログ: `docs/ISSUES.md`
 
 ## 中間報告ルール（長大作業の安定化）
 
