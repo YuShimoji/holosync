@@ -1,13 +1,11 @@
 /**
  * @file scripts/main.js
- * @brief HoloSync Web App main script: add YouTube videos, batch controls,
- *        simple persistence when available.
+ * @brief HoloSync Web App — UI orchestration, layout, event handling.
  */
 import {
   videos,
   playerStates,
   suspendedPlayers,
-  speedAdjustedPlayers,
   state,
   MIN_TILE_WIDTH,
   ASPECT_RATIO,
@@ -15,13 +13,33 @@ import {
   WATCH_HISTORY_MIN_PLAYED_SECONDS,
   EDGE_REVEAL_DISTANCE_PX,
   ALLOWED_ORIGIN,
-  ALLOWED_COMMANDS,
   SYNC_SETTINGS,
-  DEFAULT_EMBED_SETTINGS,
   SYNC_GROUPS,
   hasVideo,
   findVideoByWindow,
 } from './state.js';
+import {
+  initPlayer,
+  parseYouTubeId,
+  buildEmbedUrl,
+  sanitizeEmbedSettings,
+  sendCommand,
+  requestPlayerSnapshot,
+  refreshDescriptionsForAllTiles,
+  persistVideos,
+  persistVolume,
+  persistEmbedSettings,
+  createTile,
+} from './player.js';
+import {
+  getStateLabel,
+  normalizePlayerInfoMessage,
+  getSuspensionReason,
+  pickLeader,
+  syncAll,
+  startSyncLoop,
+  restartSyncLoop,
+} from './sync.js';
 import { initShare } from './share.js';
 import { initSearch, initializeApiKey, loadPresets } from './search.js';
 import { saveWatchHistoryEntry, loadWatchHistory, initHistory } from './history.js';
@@ -94,20 +112,6 @@ const unmuteAllBtn = document.getElementById('unmuteAll');
 const volumeAll = document.getElementById('volumeAll');
 const volumeVal = document.getElementById('volumeVal');
 
-// Core data, constants, and mutable state imported from state.js
-
-function sanitizeEmbedSettings(candidate) {
-  if (!candidate || typeof candidate !== 'object') {
-    return { ...DEFAULT_EMBED_SETTINGS };
-  }
-  return {
-    controls: candidate.controls ? 1 : 0,
-    modestbranding: candidate.modestbranding ? 1 : 0,
-    rel: candidate.rel ? 1 : 0,
-    playsinline: candidate.playsinline ? 1 : 0,
-  };
-}
-
 function syncEmbedSettingsUI() {
   if (embedControlsToggle) {
     embedControlsToggle.checked = state.embedSettings.controls === 1;
@@ -123,46 +127,6 @@ function syncEmbedSettingsUI() {
   }
 }
 
-function persistEmbedSettings() {
-  window.storageAdapter.setItem('embedSettings', state.embedSettings);
-}
-
-function buildEmbedUrl(videoId, options = {}) {
-  const params = new URLSearchParams();
-  params.set('enablejsapi', options.enablejsapi === 0 ? '0' : '1');
-  params.set('origin', window.location.origin);
-  params.set('widget_referrer', window.location.href);
-  params.set(
-    'playsinline',
-    String(
-      options.playsinline !== undefined ? options.playsinline : state.embedSettings.playsinline
-    )
-  );
-  params.set(
-    'modestbranding',
-    String(
-      options.modestbranding !== undefined
-        ? options.modestbranding
-        : state.embedSettings.modestbranding
-    )
-  );
-  params.set('rel', String(options.rel !== undefined ? options.rel : state.embedSettings.rel));
-  params.set(
-    'controls',
-    String(options.controls !== undefined ? options.controls : state.embedSettings.controls)
-  );
-  if (options.mute !== undefined) {
-    params.set('mute', String(options.mute));
-  }
-  if (options.autoplay !== undefined) {
-    params.set('autoplay', String(options.autoplay));
-  }
-  if (Number.isFinite(options.start)) {
-    params.set('start', String(Math.max(0, Math.floor(options.start))));
-  }
-  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
-}
-
 const zoomLoupeController = window.HoloSyncZoomLoupe?.createController({
   buildEmbedUrl,
   persistVideos,
@@ -171,7 +135,16 @@ const zoomLoupeController = window.HoloSyncZoomLoupe?.createController({
   requestPlayerSnapshot,
 });
 
-// hasVideo and findVideoByWindow imported from state.js
+// Inject layout callbacks into player.js (function declarations are hoisted)
+initPlayer({
+  gridEl,
+  moveVideoOrder,
+  syncTileOrderDom,
+  setupTileResize,
+  setupTileDrag,
+  toggleZoomPanel,
+  refreshTileStackOrder,
+});
 
 function syncTileOrderDom() {
   videos.forEach((video) => {
@@ -336,397 +309,11 @@ async function syncWindowModeFromMain() {
   }
 }
 
-function persistVideos() {
-  const data = videos.map((v) => ({
-    id: v.id,
-    syncGroupId: v.syncGroupId,
-    offsetMs: v.offsetMs,
-    cellCol: v.cellCol ?? null,
-    cellRow: v.cellRow ?? null,
-    tileWidth: v.tileWidth ?? null,
-    tileHeight: v.tileHeight ?? null,
-    zoomDiameter: v.zoomDiameter ?? null,
-    zoomScale: v.zoomScale ?? null,
-    zoomOriginX: v.zoomOriginX ?? null,
-    zoomOriginY: v.zoomOriginY ?? null,
-    zoomPanelX: v.zoomPanelX ?? null,
-    zoomPanelY: v.zoomPanelY ?? null,
-    zoomShape: v.zoomShape ?? null,
-  }));
-  window.storageAdapter.setItem('videos', data);
-}
-
 function persistLayoutSettings() {
   window.storageAdapter.setItem('layoutSettings', {
     layout: layoutSelect.value,
     gap: state.cellGap,
   });
-}
-
-function persistVolume(val) {
-  window.storageAdapter.setItem('volume', val);
-}
-
-function parseYouTubeId(input) {
-  if (!input) {
-    return null;
-  }
-  try {
-    // Accept raw ID
-    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
-      return input;
-    }
-
-    const url = new URL(input);
-    // youtu.be/<id>
-    if (url.hostname === 'youtu.be') {
-      const id = url.pathname.replace('/', '');
-      if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
-        return id;
-      }
-    }
-    // www.youtube.com/watch?v=<id>
-    if (url.hostname.endsWith('youtube.com')) {
-      const v = url.searchParams.get('v');
-      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
-        return v;
-      }
-      const parts = url.pathname.split('/').filter(Boolean);
-      const liveIdx = parts.indexOf('live');
-      if (liveIdx !== -1 && parts[liveIdx + 1] && /^[a-zA-Z0-9_-]{11}$/.test(parts[liveIdx + 1])) {
-        return parts[liveIdx + 1];
-      }
-      const embedIdx = parts.indexOf('embed');
-      if (
-        embedIdx !== -1 &&
-        parts[embedIdx + 1] &&
-        /^[a-zA-Z0-9_-]{11}$/.test(parts[embedIdx + 1])
-      ) {
-        return parts[embedIdx + 1];
-      }
-    }
-    return null;
-  } catch (_) {
-    return null;
-  }
-}
-
-function createTile(videoId, options = {}) {
-  const tile = document.createElement('div');
-  tile.className = 'tile';
-  tile.dataset.videoId = videoId;
-
-  const frameWrap = document.createElement('div');
-  frameWrap.className = 'frame-wrap';
-
-  const iframe = document.createElement('iframe');
-  iframe.src = buildEmbedUrl(videoId, { mute: 0 });
-  iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
-  iframe.loading = 'lazy';
-  iframe.setAttribute('referrerpolicy', 'origin');
-  iframe.setAttribute('allowfullscreen', '');
-  iframe.title = `YouTube video ${videoId}`;
-
-  const initialGroupId = options.syncGroupId ?? null;
-
-  // Sync group badge (Phase 3-1)
-  const syncBadge = document.createElement('div');
-  syncBadge.className = 'tile-sync-badge' + (initialGroupId ? '' : ' no-sync');
-  syncBadge.textContent = initialGroupId || '独立';
-  syncBadge.title = '同期グループ';
-
-  // Action buttons container (Phase 1-3 + existing remove)
-  const actions = document.createElement('div');
-  actions.className = 'tile-actions';
-
-  const popoutBtn = document.createElement('button');
-  popoutBtn.className = 'tile-action-btn';
-  popoutBtn.textContent = 'YT';
-  popoutBtn.title = 'YouTubeで開く';
-  popoutBtn.addEventListener('click', () => {
-    const embedUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    window.open(
-      embedUrl,
-      `holosync-${videoId}`,
-      'width=960,height=720,menubar=no,toolbar=no,location=no'
-    );
-  });
-
-  const movePrevBtn = document.createElement('button');
-  movePrevBtn.className = 'tile-action-btn';
-  movePrevBtn.textContent = '←';
-  movePrevBtn.title = '前へ移動';
-  movePrevBtn.addEventListener('click', () => moveVideoOrder(videoId, -1));
-
-  const moveNextBtn = document.createElement('button');
-  moveNextBtn.className = 'tile-action-btn';
-  moveNextBtn.textContent = '→';
-  moveNextBtn.title = '次へ移動';
-  moveNextBtn.addEventListener('click', () => moveVideoOrder(videoId, 1));
-
-  const zoomBtn = document.createElement('button');
-  zoomBtn.className = 'tile-action-btn';
-  zoomBtn.textContent = '🔍';
-  zoomBtn.title = 'ズームビュー';
-  zoomBtn.addEventListener('click', () => {
-    const entry = videos.find((v) => v.id === videoId);
-    if (entry) {
-      toggleZoomPanel(entry);
-    }
-  });
-
-  const removeBtn = document.createElement('button');
-  removeBtn.className = 'tile-action-btn tile-remove';
-  removeBtn.textContent = '✕';
-  removeBtn.title = 'この動画を削除';
-  removeBtn.addEventListener('click', () => removeVideo(videoId, tile));
-
-  actions.appendChild(zoomBtn);
-  actions.appendChild(movePrevBtn);
-  actions.appendChild(moveNextBtn);
-  actions.appendChild(popoutBtn);
-  actions.appendChild(removeBtn);
-
-  // Info header (collapsible, Phase 2-1)
-  const infoHeader = document.createElement('div');
-  infoHeader.className = 'tile-info-header';
-  const infoTitle = document.createElement('span');
-  infoTitle.className = 'tile-info-title';
-  infoTitle.textContent = videoId;
-  const infoToggleIcon = document.createElement('span');
-  infoToggleIcon.className = 'tile-info-toggle';
-  infoToggleIcon.textContent = '▼';
-  infoHeader.appendChild(infoTitle);
-  infoHeader.appendChild(infoToggleIcon);
-
-  // Info body (hidden by default)
-  const infoPanel = document.createElement('div');
-  infoPanel.className = 'tile-info';
-  const infoBody = document.createElement('div');
-  infoBody.className = 'tile-info-body';
-  infoBody.innerHTML = '<em>読み込み中...</em>';
-  infoPanel.appendChild(infoBody);
-
-  infoHeader.addEventListener('click', () => {
-    const isOpen = infoPanel.classList.toggle('open');
-    infoToggleIcon.textContent = isOpen ? '▲' : '▼';
-  });
-
-  // Offset control (Phase 3-3)
-  const offsetControl = document.createElement('div');
-  offsetControl.className = 'tile-offset-control';
-  const offsetInput = document.createElement('input');
-  offsetInput.type = 'number';
-  offsetInput.className = 'tile-offset-input';
-  offsetInput.value = String(options.offsetMs ?? 0);
-  offsetInput.step = '100';
-  offsetInput.placeholder = '0';
-  offsetInput.title = 'リーダーからのオフセット (ms)';
-  const offsetLabel = document.createElement('span');
-  offsetLabel.className = 'tile-offset-label';
-  offsetLabel.textContent = 'ms';
-  offsetControl.appendChild(offsetInput);
-  offsetControl.appendChild(offsetLabel);
-
-  // Phase 5: Resize handle
-  const resizeHandle = document.createElement('div');
-  resizeHandle.className = 'tile-resize-handle';
-  resizeHandle.textContent = '⤡';
-  resizeHandle.title = 'Resize (free layout only)';
-
-  // Phase 5: Drag handle
-  const dragHandle = document.createElement('div');
-  dragHandle.className = 'tile-drag-handle';
-  dragHandle.textContent = '⋮⋮';
-  dragHandle.title = 'ドラッグで移動';
-
-  // Size badge (shown during resize)
-  const sizeBadge = document.createElement('div');
-  sizeBadge.className = 'tile-size-badge';
-  sizeBadge.style.display = 'none';
-
-  frameWrap.appendChild(iframe);
-  tile.appendChild(syncBadge);
-  tile.appendChild(actions);
-  tile.appendChild(offsetControl);
-  tile.appendChild(dragHandle);
-  tile.appendChild(resizeHandle);
-  tile.appendChild(sizeBadge);
-  tile.appendChild(frameWrap);
-  tile.appendChild(infoHeader);
-  tile.appendChild(infoPanel);
-
-  gridEl.appendChild(tile);
-
-  const videoEntry = {
-    iframe,
-    id: videoId,
-    tile,
-    syncGroupId: initialGroupId,
-    offsetMs: options.offsetMs ?? 0,
-    meta: null,
-    cellCol: options.cellCol ?? null,
-    cellRow: options.cellRow ?? null,
-    tileWidth: options.tileWidth ?? null,
-    tileHeight: options.tileHeight ?? null,
-    infoTitleEl: infoTitle,
-    infoBodyEl: infoBody,
-    metaDescription: '',
-    lastHistorySavedAt: 0,
-    lastHistorySavedPosition: 0,
-    zoomDiameter: options.zoomDiameter ?? null,
-    zoomScale: options.zoomScale ?? null,
-    zoomOriginX: options.zoomOriginX ?? null,
-    zoomOriginY: options.zoomOriginY ?? null,
-    zoomPanelX: options.zoomPanelX ?? null,
-    zoomPanelY: options.zoomPanelY ?? null,
-    zoomShape: options.zoomShape ?? null,
-  };
-  videos.push(videoEntry);
-  syncTileOrderDom();
-
-  // Only apply persisted tile size in free/cell mode.
-  if (state.cellModeEnabled && videoEntry.tileWidth && videoEntry.tileHeight) {
-    tile.style.width = videoEntry.tileWidth + 'px';
-    tile.style.height = videoEntry.tileHeight + 'px';
-  }
-
-  // Resize logic
-  setupTileResize(tile, videoEntry, resizeHandle, sizeBadge);
-
-  // Drag logic
-  setupTileDrag(tile, videoEntry, dragHandle);
-
-  offsetInput.addEventListener('change', () => {
-    videoEntry.offsetMs = parseInt(offsetInput.value, 10) || 0;
-    persistVideos();
-  });
-
-  initializeSyncForIframe(iframe);
-  fetchVideoMeta(videoId, infoTitle, infoBody);
-  if (!state.isRestoring) {
-    persistVideos();
-  }
-}
-
-/** Fetch video metadata via oEmbed (no API key needed) */
-async function fetchVideoMeta(videoId, titleEl, bodyEl) {
-  try {
-    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      bodyEl.textContent = 'メタデータ取得失敗';
-      return;
-    }
-    const data = await resp.json();
-    const entry = videos.find((v) => v.id === videoId);
-    if (entry) {
-      entry.meta = { title: data.title, author: data.author_name };
-    }
-    titleEl.textContent = data.title || videoId;
-    bodyEl.innerHTML = '';
-    const channelDiv = document.createElement('div');
-    channelDiv.className = 'info-channel';
-    channelDiv.textContent = data.author_name || '';
-    bodyEl.appendChild(channelDiv);
-
-    // If Data API key is available, fetch description
-    if (window.YOUTUBE_API_KEY) {
-      await fetchVideoDescription(videoId, bodyEl);
-    } else {
-      appendDescriptionHint(bodyEl, '概要の表示には YouTube Data API Key が必要です。');
-    }
-  } catch (_) {
-    bodyEl.textContent = 'メタデータ取得失敗';
-  }
-}
-
-function appendDescriptionHint(bodyEl, message) {
-  const hint = document.createElement('div');
-  hint.className = 'info-description-hint';
-  hint.textContent = message;
-  bodyEl.appendChild(hint);
-}
-
-/** Fetch video description via YouTube Data API (optional) */
-async function fetchVideoDescription(videoId, bodyEl) {
-  bodyEl.querySelector('.info-description')?.remove();
-  bodyEl.querySelector('.info-description-hint')?.remove();
-  if (!window.YOUTUBE_API_KEY) {
-    appendDescriptionHint(bodyEl, '概要の表示には YouTube Data API Key が必要です。');
-    return false;
-  }
-  try {
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${window.YOUTUBE_API_KEY}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      appendDescriptionHint(bodyEl, '概要の取得に失敗しました。API Key を確認してください。');
-      return false;
-    }
-    const data = await resp.json();
-    if (data.items && data.items[0]) {
-      const desc = data.items[0].snippet.description || '';
-      const descDiv = document.createElement('div');
-      descDiv.className = 'info-description';
-      descDiv.textContent = desc;
-      bodyEl.appendChild(descDiv);
-      const entry = videos.find((v) => v.id === videoId);
-      if (entry) {
-        entry.metaDescription = desc;
-      }
-      return true;
-    }
-    appendDescriptionHint(bodyEl, '概要情報が見つかりませんでした。');
-    return false;
-  } catch (_) {
-    appendDescriptionHint(bodyEl, '概要の取得中にエラーが発生しました。');
-    return false;
-  }
-}
-
-async function refreshDescriptionsForAllTiles() {
-  if (!videos.length) {
-    return;
-  }
-  await Promise.all(
-    videos.map(async (video) => {
-      if (video.infoBodyEl) {
-        await fetchVideoDescription(video.id, video.infoBodyEl);
-      }
-    })
-  );
-}
-
-// Watch history functions moved to history.js
-
-function removeVideo(videoId, tile) {
-  const idx = videos.findIndex((v) => v.id === videoId);
-  if (idx === -1) {
-    return;
-  }
-  const video = videos[idx];
-  const win = video.iframe?.contentWindow;
-  if (win) {
-    playerStates.delete(win);
-    suspendedPlayers.delete(win);
-    speedAdjustedPlayers.delete(win);
-  }
-  video.iframe.src = '';
-  tile.remove();
-  videos.splice(idx, 1);
-  refreshTileStackOrder();
-  persistVideos();
-}
-
-function initializeSyncForIframe(iframe) {
-  const triggerSnapshot = () => {
-    const win = iframe.contentWindow;
-    if (win) {
-      requestPlayerSnapshot(win);
-    }
-  };
-  iframe.addEventListener('load', () => setTimeout(triggerSnapshot, 200), { once: true });
-  setTimeout(triggerSnapshot, 600);
 }
 
 function trackPlayerState(win, info) {
@@ -771,351 +358,6 @@ function trackPlayerState(win, info) {
   }
 }
 
-function getSuspensionReason(record, now) {
-  if (!record) {
-    return 'no-state';
-  }
-  if (typeof record.state === 'number') {
-    if (record.state === 3) {
-      return 'buffering';
-    }
-    if (record.state === 2) {
-      return 'paused';
-    }
-    if (record.state >= 100) {
-      return 'ad';
-    }
-  }
-  if (!record.lastUpdate || now - record.lastUpdate > SYNC_SETTINGS.stallThresholdMs) {
-    return 'stalled';
-  }
-  if (typeof record.time !== 'number') {
-    return 'no-time';
-  }
-  return null;
-}
-
-function pickLeader(activeEntries) {
-  if (SYNC_SETTINGS.leaderMode === 'manual' && SYNC_SETTINGS.leaderId) {
-    const manual = activeEntries.find((entry) => entry.v.id === SYNC_SETTINGS.leaderId);
-    if (manual && typeof manual.rec?.time === 'number' && manual.rec.state === 1) {
-      return manual;
-    }
-  }
-
-  if (SYNC_SETTINGS.leaderMode === 'longest-playing') {
-    // Choose the video that has been playing the longest
-    let longestPlaying = null;
-    let maxPlayTime = 0;
-    for (const entry of activeEntries) {
-      if (typeof entry.rec?.time === 'number' && entry.rec.state === 1) {
-        const playTime = entry.rec.time;
-        if (playTime > maxPlayTime) {
-          maxPlayTime = playTime;
-          longestPlaying = entry;
-        }
-      }
-    }
-    if (longestPlaying) {
-      return longestPlaying;
-    }
-  }
-
-  if (SYNC_SETTINGS.leaderMode === 'least-buffered') {
-    // Choose the video with least buffering time (most stable)
-    let leastBuffered = null;
-    let minBufferTime = Infinity;
-    for (const entry of activeEntries) {
-      if (typeof entry.rec?.time === 'number' && entry.rec.state === 1) {
-        // Calculate buffering ratio (would need buffering time tracking)
-        // For now, prefer videos that haven't been suspended recently
-        const bufferTime = entry.rec.lastSeekAt ? Date.now() - entry.rec.lastSeekAt : 0;
-        if (bufferTime < minBufferTime) {
-          minBufferTime = bufferTime;
-          leastBuffered = entry;
-        }
-      }
-    }
-    if (leastBuffered) {
-      return leastBuffered;
-    }
-  }
-
-  // Default 'first' mode
-  for (const entry of activeEntries) {
-    if (typeof entry.rec?.time === 'number' && entry.rec.state === 1) {
-      return entry;
-    }
-  }
-  return null;
-}
-
-/**
- * Attempt to recover a video player from a suspended/error state.
- * @param {object} video - Video object containing iframe and id
- * @param {string} reason - Suspension reason (buffering, stalled, ad, paused, no-state, no-time)
- * @param {object} leaderRecord - Current leader player's state record
- */
-function attemptRecovery(video, reason, leaderRecord) {
-  if (!SYNC_SETTINGS.retryOnError) {
-    return;
-  }
-
-  const iframe = video.iframe;
-  if (!iframe) {
-    return;
-  }
-
-  // Reason-based recovery strategy
-  switch (reason) {
-    case 'buffering':
-    case 'stalled':
-      if (SYNC_SETTINGS.fallbackMode === 'mute-continue') {
-        // Ensure muted and try to continue playback
-        sendCommand(iframe, 'mute');
-        sendCommand(iframe, 'playVideo');
-      } else if (SYNC_SETTINGS.fallbackMode === 'pause-catchup') {
-        // Pause and wait for buffer to recover
-        sendCommand(iframe, 'pauseVideo');
-        // Will be re-synced in next reconcile cycle
-      }
-      // 'none': do nothing
-      break;
-
-    case 'paused':
-      // Sync with leader's play state
-      if (leaderRecord && leaderRecord.state === 1) {
-        sendCommand(iframe, 'playVideo');
-      }
-      break;
-
-    case 'ad':
-      // Ads will resolve on their own, just maintain mute if needed
-      if (SYNC_SETTINGS.fallbackMode === 'mute-continue') {
-        sendCommand(iframe, 'mute');
-      }
-      break;
-
-    case 'no-state':
-    case 'no-time': {
-      // Request fresh snapshot
-      const win = iframe.contentWindow;
-      if (win) {
-        requestPlayerSnapshot(win);
-      }
-      break;
-    }
-
-    default: {
-      // Unknown reason, request snapshot
-      const w = iframe.contentWindow;
-      if (w) {
-        requestPlayerSnapshot(w);
-      }
-      break;
-    }
-  }
-}
-
-function reconcile() {
-  try {
-    if (!videos.length) {
-      return;
-    }
-    const now = Date.now();
-    const activeEntries = [];
-    const rejoinQueue = [];
-
-    for (const v of videos) {
-      const win = v.iframe?.contentWindow;
-      if (!win) {
-        continue;
-      }
-      const record = playerStates.get(win);
-      const suspension = getSuspensionReason(record, now);
-      if (suspension) {
-        const previous = suspendedPlayers.get(win);
-        if (!previous || previous.reason !== suspension) {
-          suspendedPlayers.set(win, { since: now, reason: suspension });
-        }
-        continue;
-      }
-      if (suspendedPlayers.has(win)) {
-        const previousSuspension = suspendedPlayers.get(win);
-        suspendedPlayers.delete(win);
-        rejoinQueue.push({
-          v,
-          rec: record,
-          win,
-          reason: previousSuspension?.reason || 'recovered',
-        });
-      }
-      activeEntries.push({ v, rec: record, win });
-    }
-
-    const leaderEntry = pickLeader(activeEntries);
-    if (!leaderEntry) {
-      return;
-    }
-    const leaderRecord = leaderEntry.rec;
-    if (!leaderRecord || typeof leaderRecord.time !== 'number') {
-      return;
-    }
-    const toleranceSeconds = SYNC_SETTINGS.toleranceMs / 1000;
-    const leaderPlaying = leaderRecord.state === 1;
-
-    for (const entry of activeEntries) {
-      if (entry.v === leaderEntry.v) {
-        continue;
-      }
-      const record = entry.rec;
-      if (!record || typeof record.time !== 'number') {
-        continue;
-      }
-      const drift = record.time - leaderRecord.time;
-      if (Math.abs(drift) > toleranceSeconds) {
-        sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
-      }
-      const isPlaying = record.state === 1;
-      if (leaderPlaying && !isPlaying) {
-        sendCommand(entry.v.iframe, 'playVideo');
-      } else if (!leaderPlaying && isPlaying) {
-        sendCommand(entry.v.iframe, 'pauseVideo');
-      }
-    }
-
-    // Attempt recovery for currently suspended players
-    for (const v of videos) {
-      const win = v.iframe?.contentWindow;
-      if (!win) {
-        continue;
-      }
-      const suspended = suspendedPlayers.get(win);
-      if (suspended) {
-        attemptRecovery(v, suspended.reason, leaderRecord);
-      }
-    }
-
-    const rejoinToleranceSeconds =
-      (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
-    for (const entry of rejoinQueue) {
-      const record = entry.rec;
-      if (!record || typeof record.time !== 'number') {
-        continue;
-      }
-      const drift = record.time - leaderRecord.time;
-      if (Math.abs(drift) > rejoinToleranceSeconds) {
-        sendCommand(entry.v.iframe, 'seekTo', [leaderRecord.time, true]);
-      }
-      if (leaderPlaying) {
-        sendCommand(entry.v.iframe, 'playVideo');
-      } else if (record.state === 1) {
-        sendCommand(entry.v.iframe, 'pauseVideo');
-      }
-
-      // Attempt recovery based on the reason
-      attemptRecovery(entry.v, entry.reason, leaderRecord);
-    }
-  } catch (_) {
-    // ignore
-  }
-}
-
-function sanitizeArgs(func, args) {
-  if (!Array.isArray(args)) {
-    return [];
-  }
-  if (func === 'setVolume') {
-    const v = parseInt(args[0], 10);
-    if (Number.isFinite(v)) {
-      const clamped = Math.max(0, Math.min(100, v));
-      return [clamped];
-    }
-    return [50];
-  }
-  if (func === 'seekTo') {
-    const t = Number(args?.[0]);
-    const seconds = Number.isFinite(t) ? Math.max(0, t) : 0;
-    return [seconds, true];
-  }
-  if (func === 'setPlaybackRate') {
-    const r = parseFloat(args[0]);
-    if (Number.isFinite(r) && r >= 0.25 && r <= 2) {
-      return [r];
-    }
-    return [1];
-  }
-  return [];
-}
-
-function sendCommand(iframe, func, args = []) {
-  if (!ALLOWED_COMMANDS.has(func)) {
-    return;
-  }
-  const win = iframe.contentWindow;
-  if (!win) {
-    return;
-  }
-  const safeArgs = sanitizeArgs(func, args);
-  const message = JSON.stringify({ event: 'command', func, args: safeArgs });
-  win.postMessage(message, ALLOWED_ORIGIN);
-  // Track seekTo for least-buffered leader mode
-  if (func === 'seekTo') {
-    const record = playerStates.get(win);
-    if (record) {
-      record.lastSeekAt = Date.now();
-    }
-  }
-}
-
-function requestPlayerSnapshot(win) {
-  try {
-    win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
-    const commands = [
-      { event: 'command', func: 'getPlayerState', args: [] },
-      { event: 'command', func: 'getCurrentTime', args: [] },
-    ];
-    commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), ALLOWED_ORIGIN));
-  } catch (_) {
-    // ignore
-  }
-}
-
-function normalizePlayerInfoMessage(payload) {
-  if (!payload || typeof payload !== 'object') {
-    return null;
-  }
-
-  const eventType = payload.event;
-  if (
-    eventType !== 'infoDelivery' &&
-    eventType !== 'initialDelivery' &&
-    eventType !== 'onStateChange'
-  ) {
-    return null;
-  }
-
-  const info = payload.info;
-  if (info && typeof info === 'object') {
-    const normalized = {};
-    const currentTime = Number(info.currentTime);
-    if (Number.isFinite(currentTime)) {
-      normalized.currentTime = currentTime;
-    }
-    const playerState = Number(info.playerState);
-    if (Number.isFinite(playerState)) {
-      normalized.playerState = playerState;
-    }
-    return Object.keys(normalized).length ? normalized : null;
-  }
-
-  const state = Number(info);
-  if (eventType === 'onStateChange' && Number.isFinite(state)) {
-    return { playerState: state };
-  }
-  return null;
-}
-
 function playAll() {
   videos.forEach((v) => sendCommand(v.iframe, 'playVideo'));
 }
@@ -1134,54 +376,6 @@ function unmuteAll() {
 
 function setSpeedAll(rate) {
   videos.forEach((v) => sendCommand(v.iframe, 'setPlaybackRate', [rate]));
-}
-
-function syncAll() {
-  if (!videos.length) {
-    return;
-  }
-  const now = Date.now();
-
-  // Group videos by syncGroupId (null = independent, skip)
-  const groups = new Map();
-  for (const v of videos) {
-    const gid = v.syncGroupId;
-    if (gid === null || gid === undefined) {
-      continue;
-    }
-    if (!groups.has(gid)) {
-      groups.set(gid, []);
-    }
-    groups.get(gid).push(v);
-  }
-
-  for (const [, groupVideos] of groups) {
-    const activeEntries = [];
-    for (const v of groupVideos) {
-      const win = v.iframe?.contentWindow;
-      if (!win) {
-        continue;
-      }
-      const rec = playerStates.get(win);
-      if (!getSuspensionReason(rec, now)) {
-        activeEntries.push({ v, rec, win });
-      }
-    }
-    const leader = pickLeader(activeEntries);
-    if (!leader || typeof leader.rec?.time !== 'number') {
-      continue;
-    }
-    for (const entry of activeEntries) {
-      if (entry.v === leader.v) {
-        continue;
-      }
-      const offsetSec = (entry.v.offsetMs || 0) / 1000;
-      sendCommand(entry.v.iframe, 'seekTo', [leader.rec.time + offsetSec, true]);
-      if (leader.rec.state === 1) {
-        sendCommand(entry.v.iframe, 'playVideo');
-      }
-    }
-  }
 }
 
 function setVolumeAll(val) {
@@ -1669,9 +863,7 @@ syncFrequencyInput.addEventListener('input', (e) => {
   const val = parseInt(e.target.value, 10);
   syncFrequencyValue.textContent = val;
   SYNC_SETTINGS.probeIntervalMs = Math.round(1000 / val);
-  // Update the reconcile interval
-  clearInterval(reconcileInterval);
-  reconcileInterval = setInterval(groupAwareReconcile, SYNC_SETTINGS.probeIntervalMs);
+  restartSyncLoop();
 });
 
 // Function to update leader ID options
@@ -1684,9 +876,6 @@ function updateLeaderIdOptions() {
     leaderIdSelect.appendChild(option);
   });
 }
-
-// Update leader options when videos change
-let reconcileInterval = setInterval(reconcile, SYNC_SETTINGS.probeIntervalMs);
 
 // Debug panel toggle - DOM読み込み完了後に設定
 if (document.readyState === 'loading') {
@@ -1830,25 +1019,6 @@ function updateDebugPanel() {
 
   html += '</tbody></table>';
   debugContent.innerHTML = html;
-}
-
-function getStateLabel(state) {
-  switch (state) {
-    case -1:
-      return '未開始';
-    case 0:
-      return '終了';
-    case 1:
-      return '再生中';
-    case 2:
-      return '一時停止';
-    case 3:
-      return 'バッファリング';
-    case 5:
-      return '動画キュー済';
-    default:
-      return state >= 100 ? '広告中' : `不明(${state})`;
-  }
 }
 
 // ========== Phase 1-1: Sidebar collapse ==========
@@ -2145,168 +1315,8 @@ gridEl.addEventListener('click', (e) => {
   setSyncGroup(videoId, options[nextIdx]);
 });
 
-// ========== Phase 3-1: Group-aware reconcile override ==========
-// Replace reconcile with group-aware version
-function groupAwareReconcile() {
-  try {
-    if (!videos.length) {
-      return;
-    }
-    const now = Date.now();
-
-    // Group videos by syncGroupId
-    const groups = new Map();
-    for (const v of videos) {
-      const gid = v.syncGroupId;
-      if (!gid) {
-        continue;
-      }
-      if (!groups.has(gid)) {
-        groups.set(gid, []);
-      }
-      groups.get(gid).push(v);
-    }
-
-    // Reconcile each group independently
-    for (const [, groupVideos] of groups) {
-      reconcileGroup(groupVideos, now);
-    }
-  } catch (_) {
-    // ignore
-  }
-}
-
-function reconcileGroup(groupVideos, now) {
-  const activeEntries = [];
-  const rejoinQueue = [];
-
-  for (const v of groupVideos) {
-    const win = v.iframe?.contentWindow;
-    if (!win) {
-      continue;
-    }
-    const record = playerStates.get(win);
-    const suspension = getSuspensionReason(record, now);
-    if (suspension) {
-      const previous = suspendedPlayers.get(win);
-      if (!previous || previous.reason !== suspension) {
-        suspendedPlayers.set(win, { since: now, reason: suspension });
-      }
-      continue;
-    }
-    if (suspendedPlayers.has(win)) {
-      const previousSuspension = suspendedPlayers.get(win);
-      suspendedPlayers.delete(win);
-      rejoinQueue.push({
-        v,
-        rec: record,
-        win,
-        reason: previousSuspension?.reason || 'recovered',
-      });
-    }
-    activeEntries.push({ v, rec: record, win });
-  }
-
-  const leaderEntry = pickLeader(activeEntries);
-  if (!leaderEntry) {
-    return;
-  }
-  const leaderRecord = leaderEntry.rec;
-  if (!leaderRecord || typeof leaderRecord.time !== 'number') {
-    return;
-  }
-  const softToleranceSec = SYNC_SETTINGS.softToleranceMs / 1000;
-  const hardToleranceSec = SYNC_SETTINGS.hardToleranceMs / 1000;
-  const leaderPlaying = leaderRecord.state === 1;
-
-  for (const entry of activeEntries) {
-    if (entry.v === leaderEntry.v) {
-      // Reset leader's speed if it was previously adjusted as a follower
-      if (speedAdjustedPlayers.has(entry.win)) {
-        sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
-        speedAdjustedPlayers.delete(entry.win);
-      }
-      continue;
-    }
-    const record = entry.rec;
-    if (!record || typeof record.time !== 'number') {
-      continue;
-    }
-    // Apply per-video offset
-    const offsetSec = (entry.v.offsetMs || 0) / 1000;
-    const expectedTime = leaderRecord.time + offsetSec;
-    const drift = record.time - expectedTime;
-    const absDrift = Math.abs(drift);
-
-    if (absDrift > hardToleranceSec) {
-      // Hard correction: seekTo for large drift
-      sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
-      if (speedAdjustedPlayers.has(entry.win)) {
-        sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
-        speedAdjustedPlayers.delete(entry.win);
-      }
-    } else if (absDrift > softToleranceSec) {
-      // Soft correction: adjust playback speed to converge
-      const factor = SYNC_SETTINGS.speedCorrectionFactor;
-      const rate = drift > 0 ? 1 - factor : 1 + factor;
-      sendCommand(entry.v.iframe, 'setPlaybackRate', [rate]);
-      speedAdjustedPlayers.add(entry.win);
-    } else if (speedAdjustedPlayers.has(entry.win)) {
-      // Within soft tolerance: restore normal speed
-      sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
-      speedAdjustedPlayers.delete(entry.win);
-    }
-
-    const isPlaying = record.state === 1;
-    if (leaderPlaying && !isPlaying) {
-      sendCommand(entry.v.iframe, 'playVideo');
-    } else if (!leaderPlaying && isPlaying) {
-      sendCommand(entry.v.iframe, 'pauseVideo');
-    }
-  }
-
-  // Attempt recovery for suspended players in this group
-  for (const v of groupVideos) {
-    const win = v.iframe?.contentWindow;
-    if (!win) {
-      continue;
-    }
-    const suspended = suspendedPlayers.get(win);
-    if (suspended) {
-      attemptRecovery(v, suspended.reason, leaderRecord);
-    }
-  }
-
-  const rejoinToleranceSeconds =
-    (SYNC_SETTINGS.toleranceMs + SYNC_SETTINGS.rejoinSyncBufferMs) / 1000;
-  for (const entry of rejoinQueue) {
-    const record = entry.rec;
-    if (!record || typeof record.time !== 'number') {
-      continue;
-    }
-    // Reset speed on rejoin
-    if (speedAdjustedPlayers.has(entry.win)) {
-      sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
-      speedAdjustedPlayers.delete(entry.win);
-    }
-    const offsetSec = (entry.v.offsetMs || 0) / 1000;
-    const expectedTime = leaderRecord.time + offsetSec;
-    const drift = record.time - expectedTime;
-    if (Math.abs(drift) > rejoinToleranceSeconds) {
-      sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
-    }
-    if (leaderPlaying) {
-      sendCommand(entry.v.iframe, 'playVideo');
-    } else if (record.state === 1) {
-      sendCommand(entry.v.iframe, 'pauseVideo');
-    }
-    attemptRecovery(entry.v, entry.reason, leaderRecord);
-  }
-}
-
-// Replace the reconcile interval with group-aware version
-clearInterval(reconcileInterval);
-reconcileInterval = setInterval(groupAwareReconcile, SYNC_SETTINGS.probeIntervalMs);
+// Start the sync loop
+startSyncLoop();
 
 // ========== Phase 4-1: Keyboard shortcuts ==========
 document.addEventListener('keydown', (e) => {
