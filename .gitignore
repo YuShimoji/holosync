@@ -27,6 +27,7 @@ artifacts/
 # Playwright
 playwright-report/
 test-results/
+test-artifacts/
 playwright/.cache/
 
 # Misc
