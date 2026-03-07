@@ -178,3 +178,29 @@
   - `docs/SHARED_WORKFLOW_DOCTRINE.md` -> `legacy/SHARED_WORKFLOW_DOCTRINE.md`
 - アクティブドキュメントから `.shared-workflows` 参照を除去 (WORKFLOW.md, SSOT.md, ISSUES.md, HANDOVER.md, .cursorrules, .cursor/rules.md)
 - `CLAUDE.md` をプロジェクト指針の正として明記
+
+## Log: ES Module化 Phase 0 + Phase 1 (2026-03-07)
+
+- Phase 0: main.js を ES Module に変換（97f36df）
+- Phase 1: state.js / share.js / search.js / history.js を main.js から抽出（e09a82c）
+- テストワークフロー簡素化: Chromiumのみに絞り、カスタムランナー削除（26898c1）
+- Phase 2（player.js / sync.js 抽出）は未着手
+
+## Log: 同期アルゴリズムv2 実装 (2026-03-07)
+
+- 3段階drift補正を reconcileGroup() に実装:
+  - |drift| <= 150ms: 補正なし
+  - 150ms < |drift| <= 1000ms: setPlaybackRate +-5%微調整
+  - |drift| > 1000ms: seekTo 強制補正
+- least-buffered リーダーモードを修復（lastSeekAt追跡）
+- syncAll() をグループ対応に改修
+- SYNC_SETTINGS から未使用値を削除し probeIntervalMs 直接制御に統一
+- SYNC_ALGO.md を v1→v2 に全面更新
+- コミット: 3b2347b（未push）
+
+## Log: ISSUES.md棚卸し + ドキュメント整理 (2026-03-07)
+
+- ISSUES.md 再構成: 完了済み12件を「完了」へ移動、重複5件統合、セクション簡素化
+- docs/tasks/ 3ファイル削除（TASK_013, TASK_014, ISSUE_DRAFT — 全て完了済み）
+- ルート ISSUE\_\*.md 3ファイル削除（GHA/POSTMESSAGE/PERSISTENCE）
+- HANDOVER.md / WORKFLOW_STATE_SSOT.md を現状に同期
