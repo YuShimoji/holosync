@@ -96,4 +96,4 @@
 - バグを見つけた場合は `.github/ISSUE_TEMPLATE/bug.md` を使ってIssueを作成してください
 
 ## E2E Test Runs
-- 2026-02-10: `npm run test:run` (Playwright) passed 30 tests (chromium/firefox/webkit + mobile emulations). Artifacts: `test-artifacts/2026-02/2026-02-10_004/`.
+- 2026-03-08: `npm run test` (Playwright) passed 15 tests (chromium only). 基本機能6件 + UI回帰9件。

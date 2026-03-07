@@ -6,7 +6,7 @@
   "main": "electron-main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . HoloSync --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(docs|e2e|test-artifacts|playwright-report|\\.git|\\.github|\\.gitlab|\\.husky)\"",
+    "build": "electron-packager . HoloSync --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(docs|e2e|test-artifacts|playwright-report|\\.git|\\.github|\\.husky)\"",
     "lint": "eslint \"scripts/*.js\" \"scripts/**/*.js\" --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

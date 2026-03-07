@@ -43,8 +43,7 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-1. Playwright UI回帰テスト追加
-3. `dist/HoloSync.exe` での手動受け入れ確認
+1. `dist/HoloSync.exe` での手動受け入れ確認
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。
 

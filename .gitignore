@@ -11,7 +11,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-.cursor/MISSION_LOG.md
 
 # Build outputs
 /dist/
@@ -33,7 +32,6 @@ playwright/.cache/
 # Misc
 *.zip
 *.tar.gz
-docs/tasks/ISSUE_DRAFT_*.md
 
 # Local / Build
 .serena/

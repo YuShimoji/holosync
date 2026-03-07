@@ -3,11 +3,4 @@ public/
 artifacts/
 docs/
 docs/**
-.gitlab/
-.gitlab-ci.yml
 .eslintrc.json
-
-# Large docs (temporarily excluded from Prettier check)
-README.md
-CONTRIBUTING.md
-choices-driven-development.md

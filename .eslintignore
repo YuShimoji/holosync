@@ -3,5 +3,4 @@ docs/
 public/
 artifacts/
 .husky/
-.gitlab/
 electron-main.js

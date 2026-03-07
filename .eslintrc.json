@@ -31,14 +31,6 @@
   },
   "overrides": [
     {
-      "files": ["**/*.test.js"],
-      "env": { "jest": true }
-    },
-    {
-      "files": ["scripts/detect-project-type.js"],
-      "env": { "node": true }
-    },
-    {
       "files": ["scripts/main.js", "scripts/state.js", "scripts/share.js", "scripts/search.js", "scripts/history.js", "scripts/player.js", "scripts/sync.js", "scripts/storage.js", "scripts/zoom-loupe.js", "scripts/layout.js", "scripts/ui.js", "scripts/debug.js", "scripts/electron.js", "scripts/input.js"],
       "parserOptions": { "sourceType": "module" }
     }
