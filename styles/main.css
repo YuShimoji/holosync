@@ -701,6 +701,11 @@ body.frameless-mode .content-toolbar .drop-zone-hint {
   contain-intrinsic-size: auto 320px auto 180px;
 }
 
+/* Audio master indicator */
+.tile.audio-master {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.6);
+}
+
 /* Thumbnail placeholder (shown until iframe loads) */
 .tile-thumbnail {
   position: absolute;

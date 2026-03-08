@@ -76,6 +76,7 @@ export const state = {
   toolbarStateBeforeImmersive: null,
   embedSettings: { ...DEFAULT_EMBED_SETTINGS },
   audioFocusVideoId: null,
+  audioMode: 'normal', // 'normal' | 'solo' | 'ducking'
 };
 
 // --- Utility ---

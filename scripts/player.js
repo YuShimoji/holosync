@@ -447,12 +447,19 @@ export function createTile(videoId, options = {}) {
     }
   });
 
+  const audioBtn = document.createElement('button');
+  audioBtn.className = 'tile-action-btn tile-audio-btn';
+  audioBtn.textContent = '\u{1F508}';
+  audioBtn.title = 'オーディオマスターに設定';
+  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoId));
+
   const removeBtn = document.createElement('button');
   removeBtn.className = 'tile-action-btn tile-remove';
   removeBtn.textContent = '✕';
   removeBtn.title = 'この動画を削除';
   removeBtn.addEventListener('click', () => removeVideo(videoId, tile));
 
+  actions.appendChild(audioBtn);
   actions.appendChild(zoomBtn);
   actions.appendChild(movePrevBtn);
   actions.appendChild(moveNextBtn);
