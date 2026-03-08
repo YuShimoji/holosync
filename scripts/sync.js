@@ -231,6 +231,9 @@ function reconcileGroup(groupVideos, now) {
   const rejoinQueue = [];
 
   for (const v of groupVideos) {
+    if (!v.iframeLoaded) {
+      continue;
+    }
     const win = v.iframe?.contentWindow;
     if (!win) {
       continue;
@@ -317,6 +320,9 @@ function reconcileGroup(groupVideos, now) {
 
   // Attempt recovery for suspended players in this group
   for (const v of groupVideos) {
+    if (!v.iframeLoaded) {
+      continue;
+    }
     const win = v.iframe?.contentWindow;
     if (!win) {
       continue;
@@ -405,6 +411,9 @@ function syncAll() {
   for (const [, groupVideos] of groups) {
     const activeEntries = [];
     for (const v of groupVideos) {
+      if (!v.iframeLoaded) {
+        continue;
+      }
       const win = v.iframe?.contentWindow;
       if (!win) {
         continue;

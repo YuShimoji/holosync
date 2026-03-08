@@ -18,8 +18,76 @@ import {
 // Layout callbacks injected from main.js via initPlayer()
 let _deps = {};
 
+// ── Lazy-load infrastructure ──────────────────────────────────
+const MAX_CONCURRENT_LOADS = 2;
+const LOAD_STAGGER_MS = 300;
+let _tileObserver = null;
+const _loadQueue = [];
+let _activeLoadCount = 0;
+
 export function initPlayer(deps) {
   _deps = deps;
+}
+
+// ── Tile lazy-load ─────────────────────────────────────────
+
+/**
+ * Initialise IntersectionObserver for staggered iframe loading.
+ * Call once at app startup before restoring videos.
+ */
+export function initTileObserver() {
+  if (_tileObserver) {
+    return;
+  }
+  _tileObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) {
+          continue;
+        }
+        const tile = entry.target;
+        const videoEntry = videos.find((v) => v.tile === tile);
+        if (!videoEntry || videoEntry.iframeLoaded || _loadQueue.includes(videoEntry)) {
+          continue;
+        }
+        _loadQueue.push(videoEntry);
+        _processLoadQueue();
+      }
+    },
+    { rootMargin: '50%' }
+  );
+}
+
+function _processLoadQueue() {
+  while (_loadQueue.length > 0 && _activeLoadCount < MAX_CONCURRENT_LOADS) {
+    const entry = _loadQueue.shift();
+    if (entry.iframeLoaded) {
+      continue;
+    }
+    _activeLoadCount++;
+    _loadTileIframe(entry);
+  }
+}
+
+function _loadTileIframe(videoEntry) {
+  const { iframe, id, tile } = videoEntry;
+  iframe.src = buildEmbedUrl(id, { mute: 0 });
+  initializeSyncForIframe(iframe);
+
+  iframe.addEventListener(
+    'load',
+    () => {
+      videoEntry.iframeLoaded = true;
+      _activeLoadCount--;
+      const thumb = tile.querySelector('.tile-thumbnail');
+      if (thumb) {
+        thumb.classList.add('loaded');
+      }
+      _tileObserver?.unobserve(tile);
+      setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
+    },
+    { once: true }
+  );
 }
 
 // ── URL / Embed ────────────────────────────────────────────
@@ -319,10 +387,14 @@ export function createTile(videoId, options = {}) {
   const frameWrap = document.createElement('div');
   frameWrap.className = 'frame-wrap';
 
+  // Thumbnail placeholder (visible until iframe loads)
+  const thumbnail = document.createElement('div');
+  thumbnail.className = 'tile-thumbnail';
+  thumbnail.style.backgroundImage = `url(https://img.youtube.com/vi/${videoId}/hqdefault.jpg)`;
+
   const iframe = document.createElement('iframe');
-  iframe.src = buildEmbedUrl(videoId, { mute: 0 });
+  // src is set later by IntersectionObserver (_loadTileIframe)
   iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
-  iframe.loading = 'lazy';
   iframe.setAttribute('referrerpolicy', 'origin');
   iframe.setAttribute('allowfullscreen', '');
   iframe.title = `YouTube video ${videoId}`;
@@ -445,6 +517,7 @@ export function createTile(videoId, options = {}) {
   sizeBadge.className = 'tile-size-badge';
   sizeBadge.style.display = 'none';
 
+  frameWrap.appendChild(thumbnail);
   frameWrap.appendChild(iframe);
   tile.appendChild(syncBadge);
   tile.appendChild(actions);
@@ -481,6 +554,7 @@ export function createTile(videoId, options = {}) {
     zoomPanelX: options.zoomPanelX ?? null,
     zoomPanelY: options.zoomPanelY ?? null,
     zoomShape: options.zoomShape ?? null,
+    iframeLoaded: false,
   };
   videos.push(videoEntry);
   _deps.syncTileOrderDom();
@@ -502,7 +576,13 @@ export function createTile(videoId, options = {}) {
     persistVideos();
   });
 
-  initializeSyncForIframe(iframe);
+  // iframe src is loaded lazily by the IntersectionObserver
+  if (_tileObserver) {
+    _tileObserver.observe(tile);
+  } else {
+    // Fallback: no observer (e.g. tests), load immediately
+    _loadTileIframe(videoEntry);
+  }
   fetchVideoMeta(videoId, infoTitle, infoBody);
   if (!state.isRestoring) {
     persistVideos();
@@ -515,6 +595,11 @@ export function removeVideo(videoId, tile) {
     return;
   }
   const video = videos[idx];
+  _tileObserver?.unobserve(tile);
+  const qIdx = _loadQueue.indexOf(video);
+  if (qIdx !== -1) {
+    _loadQueue.splice(qIdx, 1);
+  }
   const win = video.iframe?.contentWindow;
   if (win) {
     playerStates.delete(win);

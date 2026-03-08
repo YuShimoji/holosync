@@ -16,6 +16,7 @@ import {
 } from './state.js';
 import {
   initPlayer,
+  initTileObserver,
   sendCommand,
   requestPlayerSnapshot,
   refreshDescriptionsForAllTiles,
@@ -301,6 +302,7 @@ initInput();
 initUI({ playAll, pauseAll, muteAll, unmuteAll });
 initDebugPanel();
 initElectron();
+initTileObserver();
 initializeApp();
 initializeApiKey(refreshDescriptionsForAllTiles);
 loadPresets();

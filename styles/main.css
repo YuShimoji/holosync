@@ -697,6 +697,23 @@ body.frameless-mode .content-toolbar .drop-zone-hint {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px auto 180px;
+}
+
+/* Thumbnail placeholder (shown until iframe loads) */
+.tile-thumbnail {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #1a1a2e;
+  z-index: 2;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.tile-thumbnail.loaded {
+  opacity: 0;
 }
 
 /* Tile overlay buttons (shown on hover) */
