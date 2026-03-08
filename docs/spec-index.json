@@ -97,5 +97,14 @@
     "cat": "ui",
     "file": "docs/specs/playlist-queue-mode.md",
     "summary": "1タイルで順次再生、loadVideoById postMessage対応、playerState===0自動進行、次/前ボタン、キューインジケーター、永続化/URL共有"
+  },
+  {
+    "id": "SP-012",
+    "title": "チャンネルLive監視",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/channel-live-monitor.md",
+    "summary": "チャンネル登録、search.list eventType=live、15分間隔ポーリング(設定可能)、新規ライブ自動追加、Page Visibility API、クォータ管理"
   }
 ]

@@ -2,9 +2,26 @@
 
 **Updated**: 2026-03-09
 **Branch**: `main`
-**Status**: P2バックログ消化フェーズ完了。全P2実装済み。次はチャンネルLive監視（P2）またはプロジェクト全体見直し。
+**Status**: P2バックログ消化フェーズ完了。全P2機能実装済み（計15モジュール、ES Module構成）。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-09（セッション12）
+- チャンネルLive監視（SP-012）:
+  - scripts/channel.js 新規作成（15個目のES Module）
+  - parseChannelInput: /channel/UCxxx, /@handle対応
+  - YouTube API: channels.list（handle解決1unit、ID解決1unit）+ search.list eventType=live（100units）
+  - ポーリング: 15分間隔（UI設定可能1-60分）、Page Visibility API対応
+  - 新規ライブ自動追加: hasVideo重複チェック→createTile、通知トースト表示
+  - UI: サイドバーにチャンネル監視セクション（プリセットとWatch Historyの間）
+  - クォータ管理: 3件以上で警告表示（3ch×15min×8h = 9,600 units / 10,000 daily）
+  - input.js: URL入力でチャンネルURL検出→監視登録ボタン表示
+  - CSS: channel-panel, channel-list, channel-notification（スライドイン通知）
+- DECISION LOG 2件追記: ポーリング間隔設定可能、新規ライブ自動追加
+- spec-index.json: SP-012追加（計12件）
+- ISSUES.md: チャンネルLive監視をDoneに移動、P2バックログ空に
+- .eslintrc.json: scripts/channel.js をoverridesに追加
+- lint通過、全仕様書完了条件チェック済み
 
 ### 2026-03-09（セッション11）
 - 仕様振り返り:
