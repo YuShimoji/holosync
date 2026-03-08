@@ -12,6 +12,11 @@
   - タイル生成時はYouTubeサムネイルをプレースホルダ表示
   - 同期ループが未ロードタイルを自動スキップ
   - CSS content-visibility適用でオフスクリーン描画最適化
+- オーディオマスター固定機能（+113行）
+  - タイルごとの音声ボタン + 青枠の視覚インジケーター
+  - 3モード: 通常 / Solo（マスターのみ） / Ducking（他を20%減衰）
+  - audioFocusVideoId + audioModeをlocalStorageに永続化
+  - muteAll/unmuteAllがaudioFocusを自動解除
 
 ### 2026-03-08（セッション6）
 - Playwright UI回帰テスト9件追加（e2e/ui-regression.spec.ts）
@@ -60,7 +65,7 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-1. feat(P1): オーディオマスター固定（音声源の指定/切替）
+（P1バックログ完了。P2バックログは [docs/ISSUES.md](ISSUES.md) 参照）
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。
 
