@@ -2,6 +2,14 @@
 
 マルチ動画 YouTube 同期再生 Web アプリ + Electron ラッパー。JavaScript / HTML5 / CSS3。
 
+## PROJECT CONTEXT
+
+プロジェクト名: HoloSync
+環境: Node.js 20 / Electron / JavaScript ES Modules / Playwright (Chromium)
+ブランチ戦略: main (トランクベース)
+現フェーズ: P2バックログ消化フェーズ完了、次フェーズ検討中
+直近の状態: セッション12でP2バックログ全消化（チャンネルLive監視完了）、全12仕様完了、15モジュール構成確立。次フェーズ未定。
+
 ## Key Paths
 
 - Source: `scripts/`
