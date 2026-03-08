@@ -1,7 +1,12 @@
 /* eslint-env browser */
 export function createController(deps) {
-  const { buildEmbedUrl, persistVideos, playerStates, ALLOWED_ORIGIN, requestPlayerSnapshot } =
-    deps;
+  const {
+    buildEmbedUrl,
+    persistVideos,
+    playerStates,
+    getPostMessageOrigin,
+    requestPlayerSnapshot,
+  } = deps;
 
   function toggleZoomPanel(videoEntry) {
     if (videoEntry.zoomPanel) {
@@ -205,7 +210,7 @@ export function createController(deps) {
             return;
           }
           try {
-            zoomWin.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
+            zoomWin.postMessage(JSON.stringify({ event: 'listening' }), getPostMessageOrigin());
           } catch (_) {
             // ignore
           }
@@ -215,18 +220,18 @@ export function createController(deps) {
           if (mainRec && typeof mainRec.time === 'number') {
             zoomWin.postMessage(
               JSON.stringify({ event: 'command', func: 'seekTo', args: [mainRec.time, true] }),
-              ALLOWED_ORIGIN
+              getPostMessageOrigin()
             );
             if (mainRec.state === 1) {
               zoomWin.postMessage(
                 JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
-                ALLOWED_ORIGIN
+                getPostMessageOrigin()
               );
             }
           }
           zoomWin.postMessage(
             JSON.stringify({ event: 'command', func: 'mute', args: [] }),
-            ALLOWED_ORIGIN
+            getPostMessageOrigin()
           );
         }, 500);
       },
@@ -254,23 +259,23 @@ export function createController(deps) {
       if (drift > 0.25) {
         zoomWin.postMessage(
           JSON.stringify({ event: 'command', func: 'seekTo', args: [mainRec.time, true] }),
-          ALLOWED_ORIGIN
+          getPostMessageOrigin()
         );
       }
       if (mainRec.state === 1) {
         zoomWin.postMessage(
           JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
-          ALLOWED_ORIGIN
+          getPostMessageOrigin()
         );
       } else if (mainRec.state === 2) {
         zoomWin.postMessage(
           JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }),
-          ALLOWED_ORIGIN
+          getPostMessageOrigin()
         );
       }
       zoomWin.postMessage(
         JSON.stringify({ event: 'command', func: 'mute', args: [] }),
-        ALLOWED_ORIGIN
+        getPostMessageOrigin()
       );
       requestPlayerSnapshot(zoomWin);
     }, 1000);

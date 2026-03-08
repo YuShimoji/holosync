@@ -29,6 +29,7 @@ export const WATCH_HISTORY_MIN_PLAYED_SECONDS = 5;
 export const EDGE_REVEAL_DISTANCE_PX = 28;
 
 export const ALLOWED_ORIGIN = 'https://www.youtube.com';
+export const ALLOWED_ORIGIN_NOCOOKIE = 'https://www.youtube-nocookie.com';
 export const ALLOWED_COMMANDS = new Set([
   'playVideo',
   'pauseVideo',
@@ -37,6 +38,7 @@ export const ALLOWED_COMMANDS = new Set([
   'setVolume',
   'seekTo',
   'setPlaybackRate',
+  'loadVideoById',
 ]);
 
 export const SYNC_SETTINGS = {
@@ -58,6 +60,7 @@ export const DEFAULT_EMBED_SETTINGS = {
   modestbranding: 1,
   rel: 0,
   playsinline: 1,
+  noCookie: 0,
 };
 
 export const SYNC_GROUPS = ['A', 'B', 'C'];

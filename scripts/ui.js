@@ -28,6 +28,7 @@ const embedControlsToggle = document.getElementById('embedControls');
 const embedModestBrandingToggle = document.getElementById('embedModestBranding');
 const embedRelatedVideosToggle = document.getElementById('embedRelatedVideos');
 const embedPlaysInlineToggle = document.getElementById('embedPlaysInline');
+const embedNoCookieToggle = document.getElementById('embedNoCookie');
 
 // Sync settings
 const leaderModeSelect = document.getElementById('leaderMode');
@@ -162,6 +163,9 @@ function syncEmbedSettingsUI() {
   if (embedPlaysInlineToggle) {
     embedPlaysInlineToggle.checked = state.embedSettings.playsinline === 1;
   }
+  if (embedNoCookieToggle) {
+    embedNoCookieToggle.checked = state.embedSettings.noCookie === 1;
+  }
 }
 
 function applyEmbedSettingsToExistingVideos() {
@@ -185,6 +189,7 @@ function handleEmbedSettingsChange() {
     modestbranding: embedModestBrandingToggle?.checked,
     rel: embedRelatedVideosToggle?.checked,
     playsinline: embedPlaysInlineToggle?.checked,
+    noCookie: embedNoCookieToggle?.checked,
   });
   persistEmbedSettings();
   applyEmbedSettingsToExistingVideos();
@@ -344,7 +349,13 @@ export function initUI(deps) {
   });
 
   // Embed settings
-  [embedControlsToggle, embedModestBrandingToggle, embedRelatedVideosToggle, embedPlaysInlineToggle]
+  [
+    embedControlsToggle,
+    embedModestBrandingToggle,
+    embedRelatedVideosToggle,
+    embedPlaysInlineToggle,
+    embedNoCookieToggle,
+  ]
     .filter(Boolean)
     .forEach((input) => {
       input.addEventListener('change', handleEmbedSettingsChange);

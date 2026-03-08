@@ -1,10 +1,79 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-08
+**Updated**: 2026-03-09
 **Branch**: `main`
-**Status**: パフォーマンス最適化（iframe遅延ロード）実装済み。セッション7進行中。
+**Status**: P2バックログ消化フェーズ完了。全P2実装済み。次はチャンネルLive監視（P2）またはプロジェクト全体見直し。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-09（セッション11）
+- 仕様振り返り:
+  - spec-index.json 11件 vs 実コード整合性検証 → 全4仕様書がコードと一致
+  - DECISION LOG 11件の妥当性検証 → 10件OK、1件数値修正（#9: P2再編成の数値を正確化）
+  - プロジェクト全体の盲点チェック → 🔴未追跡仕様書6件検出（git add待ち）
+  - 暗黙仕様の棚卸し → 9カテゴリ・約40項目をカタログ化（Ducking減衰率0.2、検索履歴5件、視聴履歴30件等）
+- 盲点チェック結果:
+  - 循環依存なし、デッドインポートなし、未使用依存なし、リソース参照整合OK
+  - 🔴 未追跡の仕様書6件: audio-master-pinning, channel-live-monitor, playlist-batch-add, playlist-queue-mode, search-enhancements, timestamp-extraction
+  - 🔴 未追跡の実装1件: scripts/channel.js
+- DECISION LOG #9修正: 「16→7件」→「16件→P2: 4件、Done: 8件、P3降格: 7件」
+
+### 2026-03-08（セッション10）
+- youtube-nocookie ドメイン切替オプション:
+  - Embed Settingsにトグル追加（state.js noCookie、player.js buildEmbedUrl分岐）
+  - postMessage origin検証の両ドメイン対応（ALLOWED_ORIGIN_NOCOOKIE追加）
+  - sendCommand / requestPlayerSnapshot / zoom-loupe のorigin動的判定
+  - storage.js URL共有/永続化対応
+- プレイリストキューモード（SP-011）:
+  - loadVideoById を ALLOWED_COMMANDS に追加、sanitizeArgs検証追加
+  - advanceQueue/queuePrev/queueNext 関数（player.js）
+  - createTile に queue/queueIndex オプション、キューバーUI（次/前ボタン + インジケーター）
+  - main.js trackPlayerState で playerState===0 検知→自動進行
+  - input.js にキュー再生ボタン（プレイリストURL検出時）
+  - storage.js generateShareUrl/parseShareUrl にqueue永続化
+  - CSS: tile-queue-bar, queue-indicator, queue-play-btn スタイル
+- SP-011仕様書作成、spec-index.json同期（計11件）
+- DECISION LOG 2件追記（loadVideoById採用、youtube-nocookie実装）
+- ISSUES.md Done移動: youtube-nocookie + キューモード、P2残り1件に
+
+### 2026-03-08（セッション9）
+- P2バックログ再編成: 16件→P2: 4件 / Done移動: 8件 / P3降格: 7件
+- spec-index.json: SP-009(パフォーマンス最適化), SP-010(ES Moduleアーキテクチャ)追加 → 計10件
+- 共有・復元強化フェーズ実装:
+  - 共有URL時刻エンコード: buildShareState/generateShareUrl/parseShareUrlにcurrentTime追加、復元時seekTo
+  - 設定JSONエクスポート/インポート: 共有モーダルにExport/Importボタン追加
+  - プリセットUI: 調査の結果、既に実装済み（search.js savePreset/loadPresets/deletePreset）
+- マスターシークバー実装:
+  - サイドバー一括操作内にシークバー+時刻表示配置
+  - リーダー動画のduration基準、rAFベース更新
+  - ドラッグでオフセット考慮seekTo（全動画に適用）
+  - YouTube infoDeliveryからdurationキャプチャ追加（sync.js normalizePlayerInfoMessage）
+- CLAUDE.md: フェーズ更新3回、DECISION LOG 4件追記
+- 選別規則(A/B/C/D)は現フェーズに適合と判定
+- CLAUDE.md: 共有・復元強化フェーズDone条件3/3完了、DECISION LOG追記
+- 選別規則(A/B/C/D)は現フェーズに適合と判定
+
+### 2026-03-08（セッション8）
+- コンテンツ活用フェーズ: 全4機能実装（+466行、11ファイル変更）
+- DECISION LOG作成（過去7件の意思決定を記録）
+- オーディオマスター堅牢化:
+  - sync回復後のaudio focus復元（setSyncCallbacks）
+  - lazy-load完了時のaudio focus適用（onTileIframeLoaded）
+  - タイル削除時のaudioFocusVideoIdクリーンアップ
+- プレイリスト一括追加:
+  - parsePlaylistId() でプレイリストURL検出
+  - fetchPlaylistItems() でplaylistItems.list API呼び出し
+  - 単体/一括/D&D全入力経路でプレイリスト展開対応
+  - プレビュー表示（「プレイリストURLを検出」インジケーター）
+- 検索拡張:
+  - 検索履歴ドロップダウン（MRU 5件、クリアボタン付き）
+  - 長さフィルタ（short/medium/long）
+  - 並び順フィルタ（relevance/date/viewCount/rating）
+- タイムスタンプ抽出・ジャンプ:
+  - 説明文からM:SS / MM:SS / H:MM:SS形式を自動検出
+  - クリックでseekTo実行、XSSエスケープ付きHTML描画
+  - ts-linkスタイル（アクセントカラー、hover背景）
+- 仕様書4件追加（SP-005～SP-008）、spec-index.json同期
 
 ### 2026-03-08（セッション7）
 - パフォーマンス最適化: iframe遅延ロード実装（+116行）

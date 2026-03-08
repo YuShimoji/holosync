@@ -180,10 +180,13 @@ class StorageAdapter {
           i: v.id,
           g: v.syncGroupId || undefined, // undefined keys are stripped by JSON.stringify
           o: v.offsetMs || undefined,
+          t: v.currentTime || undefined,
           r: v.cellRow || undefined,
           c: v.cellCol || undefined,
           w: v.tileWidth || undefined,
           h: v.tileHeight || undefined,
+          q: v.queue || undefined,
+          qi: v.queue ? v.queueIndex : undefined,
         })),
         s: {
           // settings
@@ -198,6 +201,7 @@ class StorageAdapter {
           m: state.embedSettings?.modestbranding ?? 1,
           r: state.embedSettings?.rel ?? 0,
           p: state.embedSettings?.playsinline ?? 1,
+          n: state.embedSettings?.noCookie ?? 0,
         },
       };
 
@@ -240,10 +244,13 @@ class StorageAdapter {
           id: v.i,
           syncGroupId: v.g || null,
           offsetMs: v.o || 0,
+          currentTime: v.t || null,
           cellRow: v.r || null,
           cellCol: v.c || null,
           tileWidth: v.w || null,
           tileHeight: v.h || null,
+          queue: v.q || null,
+          queueIndex: v.qi || 0,
         })),
         layout: minified.s?.l || 'auto',
         volume: minified.s?.v ?? 50,
@@ -254,6 +261,7 @@ class StorageAdapter {
           modestbranding: minified.e?.m ?? 1,
           rel: minified.e?.r ?? 0,
           playsinline: minified.e?.p ?? 1,
+          noCookie: minified.e?.n ?? 0,
         },
       };
     } catch (e) {

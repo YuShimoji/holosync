@@ -3,7 +3,7 @@
  * @brief Share URL / QR code functions for HoloSync.
  */
 import { storageAdapter } from './storage.js';
-import { videos, state } from './state.js';
+import { videos, state, playerStates } from './state.js';
 
 // DOM references (share-related)
 const shareStatus = document.getElementById('shareStatus');
@@ -32,22 +32,27 @@ function setShareStatus(message, isError = false) {
 
 export function buildShareState() {
   return {
-    videos: videos.map((v) => ({
-      id: v.id,
-      syncGroupId: v.syncGroupId,
-      offsetMs: v.offsetMs,
-      cellCol: v.cellCol ?? null,
-      cellRow: v.cellRow ?? null,
-      tileWidth: v.tileWidth ?? null,
-      tileHeight: v.tileHeight ?? null,
-      zoomDiameter: v.zoomDiameter ?? null,
-      zoomScale: v.zoomScale ?? null,
-      zoomOriginX: v.zoomOriginX ?? null,
-      zoomOriginY: v.zoomOriginY ?? null,
-      zoomPanelX: v.zoomPanelX ?? null,
-      zoomPanelY: v.zoomPanelY ?? null,
-      zoomShape: v.zoomShape ?? null,
-    })),
+    videos: videos.map((v) => {
+      const win = v.iframe?.contentWindow;
+      const rec = win ? playerStates.get(win) : null;
+      return {
+        id: v.id,
+        syncGroupId: v.syncGroupId,
+        offsetMs: v.offsetMs,
+        currentTime: rec?.time ?? null,
+        cellCol: v.cellCol ?? null,
+        cellRow: v.cellRow ?? null,
+        tileWidth: v.tileWidth ?? null,
+        tileHeight: v.tileHeight ?? null,
+        zoomDiameter: v.zoomDiameter ?? null,
+        zoomScale: v.zoomScale ?? null,
+        zoomOriginX: v.zoomOriginX ?? null,
+        zoomOriginY: v.zoomOriginY ?? null,
+        zoomPanelX: v.zoomPanelX ?? null,
+        zoomPanelY: v.zoomPanelY ?? null,
+        zoomShape: v.zoomShape ?? null,
+      };
+    }),
     layout: layoutSelect.value,
     volume: parseInt(volumeAll.value, 10),
     speed: parseFloat(speedAllSelect.value),
@@ -193,6 +198,48 @@ export function initShare() {
       )}`;
       shareQrBox.hidden = false;
       setShareStatus('QR generated.');
+    });
+  }
+
+  const exportJsonBtn = document.getElementById('exportJsonBtn');
+  const importJsonBtn = document.getElementById('importJsonBtn');
+  const importJsonFile = document.getElementById('importJsonFile');
+
+  if (exportJsonBtn) {
+    exportJsonBtn.addEventListener('click', () => {
+      const shareState = buildShareState();
+      const json = JSON.stringify(shareState, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `holosync-session-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setShareStatus('Session exported.');
+    });
+  }
+
+  if (importJsonBtn && importJsonFile) {
+    importJsonBtn.addEventListener('click', () => importJsonFile.click());
+    importJsonFile.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(/** @type {string} */ (reader.result));
+          const shareUrl = storageAdapter.generateShareUrl(imported);
+          window.location.href = shareUrl;
+        } catch (err) {
+          setShareStatus('Invalid JSON file.', true);
+          console.warn('JSON import failed:', err);
+        }
+      };
+      reader.readAsText(file);
+      importJsonFile.value = '';
     });
   }
 }

@@ -72,9 +72,32 @@
           </div>
         </div>
         <form id="searchForm" class="search-form">
-          <input id="searchInput" type="text" placeholder="キーワードで検索" required />
+          <div class="search-input-wrapper">
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="キーワードで検索"
+              required
+              autocomplete="off"
+            />
+            <ul id="searchHistory" class="search-history" hidden></ul>
+          </div>
           <button type="submit" class="primary">検索</button>
         </form>
+        <div class="search-filters">
+          <select id="searchDuration" title="動画の長さ">
+            <option value="any">長さ: 全て</option>
+            <option value="short">短い (&lt;4分)</option>
+            <option value="medium">中 (4-20分)</option>
+            <option value="long">長い (&gt;20分)</option>
+          </select>
+          <select id="searchOrder" title="並び順">
+            <option value="relevance">関連度順</option>
+            <option value="date">新しい順</option>
+            <option value="viewCount">再生回数順</option>
+            <option value="rating">評価順</option>
+          </select>
+        </div>
         <ul id="searchResults" class="search-results" hidden></ul>
         <div id="searchError" class="error" hidden></div>
       </section>
@@ -84,6 +107,39 @@
         <button id="savePresetBtn">現在のセットを保存</button>
         <input id="presetNameInput" type="text" placeholder="プリセット名" />
         <ul id="presetList" class="preset-list"></ul>
+      </section>
+
+      <section class="section channel-panel">
+        <h2>チャンネルLive監視</h2>
+        <div class="channel-add-row">
+          <input
+            id="channelUrlInput"
+            type="text"
+            placeholder="チャンネルURL (@handle / /channel/UCxxx)"
+          />
+          <button id="channelAddBtn" class="primary">追加</button>
+        </div>
+        <ul id="channelList" class="channel-list"></ul>
+        <div class="channel-controls">
+          <button id="channelRefreshAllBtn">一括更新</button>
+          <span id="channelNextCheck" class="channel-next-check"></span>
+        </div>
+        <div class="channel-interval-row">
+          <label>
+            間隔:
+            <input
+              id="channelIntervalInput"
+              type="number"
+              min="1"
+              max="60"
+              value="15"
+              class="channel-interval-input"
+            />
+            分
+          </label>
+        </div>
+        <p id="channelQuotaHint" class="hint channel-quota-hint" hidden></p>
+        <p id="channelError" class="error" hidden></p>
       </section>
 
       <section class="section watch-history-panel">
@@ -107,6 +163,11 @@
             </select>
           </label>
           <button id="syncAll">同期</button>
+          <div class="master-seek">
+            <span id="masterSeekTime" class="seek-time">0:00</span>
+            <input id="masterSeekBar" type="range" min="0" max="100" step="0.1" value="0" />
+            <span id="masterSeekDuration" class="seek-time">0:00</span>
+          </div>
           <label class="speed">
             速度
             <select id="speedAll">
@@ -191,6 +252,10 @@
         <label>
           <input id="embedPlaysInline" type="checkbox" checked />
           Inline playback (playsinline=1)
+        </label>
+        <label>
+          <input id="embedNoCookie" type="checkbox" />
+          Privacy-enhanced mode (youtube-nocookie.com)
         </label>
         <p class="hint">Changes reload existing tiles to apply parameters.</p>
       </section>
@@ -300,6 +365,13 @@
             <button id="openShareBtn">Open</button>
             <button id="importShareBtn">Restore</button>
             <button id="shareQrBtn">QR</button>
+          </div>
+          <hr class="share-divider" />
+          <label class="share-label">Session File</label>
+          <div class="share-row share-actions">
+            <button id="exportJsonBtn">Export JSON</button>
+            <button id="importJsonBtn">Import JSON</button>
+            <input id="importJsonFile" type="file" accept=".json" hidden />
           </div>
           <div id="shareStatus" class="share-status" hidden></div>
           <div id="shareQrBox" class="share-qr" hidden>

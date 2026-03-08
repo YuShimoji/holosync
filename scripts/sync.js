@@ -15,6 +15,11 @@ import { sendCommand, requestPlayerSnapshot } from './player.js';
 // Internal state
 // ---------------------------------------------------------------------------
 let _reconcileInterval = null;
+let _onRecovery = null;
+
+export function setSyncCallbacks({ onRecovery } = {}) {
+  _onRecovery = onRecovery || null;
+}
 
 // ---------------------------------------------------------------------------
 // Utility
@@ -63,6 +68,10 @@ function normalizePlayerInfoMessage(payload) {
     const playerState = Number(info.playerState);
     if (Number.isFinite(playerState)) {
       normalized.playerState = playerState;
+    }
+    const duration = Number(info.duration);
+    if (Number.isFinite(duration) && duration > 0) {
+      normalized.duration = duration;
     }
     return Object.keys(normalized).length ? normalized : null;
   }
@@ -357,6 +366,9 @@ function reconcileGroup(groupVideos, now) {
       sendCommand(entry.v.iframe, 'pauseVideo');
     }
     attemptRecovery(entry.v, entry.reason, leaderRecord);
+  }
+  if (rejoinQueue.length > 0 && _onRecovery) {
+    _onRecovery();
   }
 }
 

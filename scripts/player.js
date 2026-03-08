@@ -10,6 +10,7 @@ import {
   speedAdjustedPlayers,
   state,
   ALLOWED_ORIGIN,
+  ALLOWED_ORIGIN_NOCOOKIE,
   ALLOWED_COMMANDS,
   DEFAULT_EMBED_SETTINGS,
   youtubeApiKey,
@@ -17,6 +18,18 @@ import {
 
 // Layout callbacks injected from main.js via initPlayer()
 let _deps = {};
+
+function getIframeOrigin(iframe) {
+  try {
+    const src = iframe?.src || iframe?.getAttribute('src') || '';
+    if (src.includes('youtube-nocookie.com')) {
+      return ALLOWED_ORIGIN_NOCOOKIE;
+    }
+  } catch (_) {
+    // ignore
+  }
+  return ALLOWED_ORIGIN;
+}
 
 // ── Lazy-load infrastructure ──────────────────────────────────
 const MAX_CONCURRENT_LOADS = 2;
@@ -84,6 +97,7 @@ function _loadTileIframe(videoEntry) {
         thumb.classList.add('loaded');
       }
       _tileObserver?.unobserve(tile);
+      _deps.onTileIframeLoaded?.(videoEntry);
       setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
     },
     { once: true }
@@ -136,6 +150,24 @@ export function parseYouTubeId(input) {
   }
 }
 
+export function parsePlaylistId(input) {
+  if (!input) {
+    return null;
+  }
+  try {
+    const url = new URL(input);
+    if (url.hostname.endsWith('youtube.com') || url.hostname === 'youtu.be') {
+      const list = url.searchParams.get('list');
+      if (list && /^[A-Za-z0-9_-]{10,}$/.test(list)) {
+        return list;
+      }
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
 export function buildEmbedUrl(videoId, options = {}) {
   const params = new URLSearchParams();
   params.set('enablejsapi', options.enablejsapi === 0 ? '0' : '1');
@@ -169,7 +201,8 @@ export function buildEmbedUrl(videoId, options = {}) {
   if (Number.isFinite(options.start)) {
     params.set('start', String(Math.max(0, Math.floor(options.start))));
   }
-  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  const domain = state.embedSettings.noCookie ? 'www.youtube-nocookie.com' : 'www.youtube.com';
+  return `https://${domain}/embed/${videoId}?${params.toString()}`;
 }
 
 export function sanitizeEmbedSettings(candidate) {
@@ -181,6 +214,7 @@ export function sanitizeEmbedSettings(candidate) {
     modestbranding: candidate.modestbranding ? 1 : 0,
     rel: candidate.rel ? 1 : 0,
     playsinline: candidate.playsinline ? 1 : 0,
+    noCookie: candidate.noCookie ? 1 : 0,
   };
 }
 
@@ -210,6 +244,13 @@ function sanitizeArgs(func, args) {
     }
     return [1];
   }
+  if (func === 'loadVideoById') {
+    const id = String(args?.[0] || '');
+    if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+      return [id];
+    }
+    return [];
+  }
   return [];
 }
 
@@ -223,7 +264,7 @@ export function sendCommand(iframe, func, args = []) {
   }
   const safeArgs = sanitizeArgs(func, args);
   const message = JSON.stringify({ event: 'command', func, args: safeArgs });
-  win.postMessage(message, ALLOWED_ORIGIN);
+  win.postMessage(message, getIframeOrigin(iframe));
   // Track seekTo for least-buffered leader mode
   if (func === 'seekTo') {
     const record = playerStates.get(win);
@@ -235,12 +276,14 @@ export function sendCommand(iframe, func, args = []) {
 
 export function requestPlayerSnapshot(win) {
   try {
-    win.postMessage(JSON.stringify({ event: 'listening' }), ALLOWED_ORIGIN);
+    const entry = videos.find((v) => v.iframe?.contentWindow === win);
+    const origin = entry ? getIframeOrigin(entry.iframe) : ALLOWED_ORIGIN;
+    win.postMessage(JSON.stringify({ event: 'listening' }), origin);
     const commands = [
       { event: 'command', func: 'getPlayerState', args: [] },
       { event: 'command', func: 'getCurrentTime', args: [] },
     ];
-    commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), ALLOWED_ORIGIN));
+    commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), origin));
   } catch (_) {
     // ignore
   }
@@ -255,6 +298,62 @@ export function initializeSyncForIframe(iframe) {
   };
   iframe.addEventListener('load', () => setTimeout(triggerSnapshot, 200), { once: true });
   setTimeout(triggerSnapshot, 600);
+}
+
+// ── Timestamp Extraction ──────────────────────────────────
+
+const TIMESTAMP_RE = /(?:^|(?<=\s))(\d{1,2}:\d{2}(?::\d{2})?)(?=\s|$|[)\]」』】])/gm;
+
+function parseTimestampToSeconds(str) {
+  const parts = str.split(':').map(Number);
+  if (parts.some((n) => !Number.isFinite(n))) {
+    return -1;
+  }
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return -1;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderDescriptionWithTimestamps(desc, videoId) {
+  const container = document.createElement('div');
+  container.className = 'info-description';
+
+  const escaped = escapeHtml(desc);
+  const html = escaped.replace(TIMESTAMP_RE, (match) => {
+    const seconds = parseTimestampToSeconds(match);
+    if (seconds < 0) {
+      return match;
+    }
+    return `<span class="ts-link" data-seconds="${seconds}" data-video-id="${videoId}" title="${match}\u306b\u30b8\u30e3\u30f3\u30d7">${match}</span>`;
+  });
+  container.innerHTML = html;
+
+  container.addEventListener('click', (e) => {
+    const link = e.target.closest('.ts-link');
+    if (!link) {
+      return;
+    }
+    const seconds = Number(link.dataset.seconds);
+    const vid = link.dataset.videoId;
+    const entry = videos.find((v) => v.id === vid);
+    if (entry?.iframe) {
+      sendCommand(entry.iframe, 'seekTo', [seconds]);
+    }
+  });
+
+  return container;
 }
 
 // ── Metadata ───────────────────────────────────────────────
@@ -283,10 +382,8 @@ export async function fetchVideoDescription(videoId, bodyEl) {
     const data = await resp.json();
     if (data.items && data.items[0]) {
       const desc = data.items[0].snippet.description || '';
-      const descDiv = document.createElement('div');
-      descDiv.className = 'info-description';
-      descDiv.textContent = desc;
-      bodyEl.appendChild(descDiv);
+      const descEl = renderDescriptionWithTimestamps(desc, videoId);
+      bodyEl.appendChild(descEl);
       const entry = videos.find((v) => v.id === videoId);
       if (entry) {
         entry.metaDescription = desc;
@@ -347,6 +444,61 @@ export async function refreshDescriptionsForAllTiles() {
   );
 }
 
+// ── Queue Navigation ──────────────────────────────────────
+
+function loadQueueItem(videoEntry) {
+  const newVideoId = videoEntry.queue[videoEntry.queueIndex];
+  videoEntry.id = newVideoId;
+  videoEntry.tile.dataset.videoId = newVideoId;
+
+  const thumb = videoEntry.tile.querySelector('.tile-thumbnail');
+  if (thumb) {
+    thumb.style.backgroundImage = `url(https://img.youtube.com/vi/${newVideoId}/hqdefault.jpg)`;
+  }
+
+  sendCommand(videoEntry.iframe, 'loadVideoById', [newVideoId]);
+  updateQueueUI(videoEntry);
+  fetchVideoMeta(newVideoId, videoEntry.infoTitleEl, videoEntry.infoBodyEl);
+  persistVideos();
+}
+
+function updateQueueUI(videoEntry) {
+  const indicator = videoEntry.tile.querySelector('.queue-indicator');
+  if (indicator && videoEntry.queue) {
+    indicator.textContent = `${videoEntry.queueIndex + 1} / ${videoEntry.queue.length}`;
+  }
+  const prevBtn = videoEntry.tile.querySelector('.queue-prev-btn');
+  const nextBtn = videoEntry.tile.querySelector('.queue-next-btn');
+  if (prevBtn) {
+    prevBtn.disabled = videoEntry.queueIndex <= 0;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = videoEntry.queueIndex >= videoEntry.queue.length - 1;
+  }
+}
+
+export function advanceQueue(videoEntry) {
+  if (!videoEntry.queue || videoEntry.queueIndex >= videoEntry.queue.length - 1) {
+    return false;
+  }
+  videoEntry.queueIndex++;
+  loadQueueItem(videoEntry);
+  return true;
+}
+
+export function queuePrev(videoEntry) {
+  if (!videoEntry.queue || videoEntry.queueIndex <= 0) {
+    return false;
+  }
+  videoEntry.queueIndex--;
+  loadQueueItem(videoEntry);
+  return true;
+}
+
+export function queueNext(videoEntry) {
+  return advanceQueue(videoEntry);
+}
+
 // ── Persistence ────────────────────────────────────────────
 
 export function persistVideos() {
@@ -365,6 +517,8 @@ export function persistVideos() {
     zoomPanelX: v.zoomPanelX ?? null,
     zoomPanelY: v.zoomPanelY ?? null,
     zoomShape: v.zoomShape ?? null,
+    queue: v.queue || null,
+    queueIndex: v.queue ? v.queueIndex : undefined,
   }));
   storageAdapter.setItem('videos', data);
 }
@@ -561,10 +715,42 @@ export function createTile(videoId, options = {}) {
     zoomPanelX: options.zoomPanelX ?? null,
     zoomPanelY: options.zoomPanelY ?? null,
     zoomShape: options.zoomShape ?? null,
+    pendingSeekTime: options.currentTime ?? null,
     iframeLoaded: false,
+    queue: options.queue || null,
+    queueIndex: options.queueIndex ?? 0,
   };
   videos.push(videoEntry);
   _deps.syncTileOrderDom();
+
+  // Queue navigation bar (only for queue-enabled tiles)
+  if (videoEntry.queue && videoEntry.queue.length > 1) {
+    const queueBar = document.createElement('div');
+    queueBar.className = 'tile-queue-bar';
+
+    const qPrevBtn = document.createElement('button');
+    qPrevBtn.className = 'tile-action-btn queue-prev-btn';
+    qPrevBtn.textContent = '\u25C0';
+    qPrevBtn.title = '\u524D\u306E\u52D5\u753B';
+    qPrevBtn.disabled = videoEntry.queueIndex <= 0;
+    qPrevBtn.addEventListener('click', () => queuePrev(videoEntry));
+
+    const qIndicator = document.createElement('span');
+    qIndicator.className = 'queue-indicator';
+    qIndicator.textContent = `${videoEntry.queueIndex + 1} / ${videoEntry.queue.length}`;
+
+    const qNextBtn = document.createElement('button');
+    qNextBtn.className = 'tile-action-btn queue-next-btn';
+    qNextBtn.textContent = '\u25B6';
+    qNextBtn.title = '\u6B21\u306E\u52D5\u753B';
+    qNextBtn.disabled = videoEntry.queueIndex >= videoEntry.queue.length - 1;
+    qNextBtn.addEventListener('click', () => queueNext(videoEntry));
+
+    queueBar.appendChild(qPrevBtn);
+    queueBar.appendChild(qIndicator);
+    queueBar.appendChild(qNextBtn);
+    tile.insertBefore(queueBar, frameWrap);
+  }
 
   // Only apply persisted tile size in free/cell mode.
   if (state.cellModeEnabled && videoEntry.tileWidth && videoEntry.tileHeight) {
@@ -612,6 +798,9 @@ export function removeVideo(videoId, tile) {
     playerStates.delete(win);
     suspendedPlayers.delete(win);
     speedAdjustedPlayers.delete(win);
+  }
+  if (state.audioFocusVideoId === videoId) {
+    _deps.clearAudioFocus?.(videoId);
   }
   video.iframe.src = '';
   tile.remove();

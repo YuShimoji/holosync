@@ -11,6 +11,7 @@ import {
   WATCH_HISTORY_CAPTURE_INTERVAL_MS,
   WATCH_HISTORY_MIN_PLAYED_SECONDS,
   ALLOWED_ORIGIN,
+  ALLOWED_ORIGIN_NOCOOKIE,
   hasVideo,
   findVideoByWindow,
 } from './state.js';
@@ -25,8 +26,9 @@ import {
   createTile,
   sanitizeEmbedSettings,
   buildEmbedUrl,
+  advanceQueue,
 } from './player.js';
-import { normalizePlayerInfoMessage, syncAll, startSyncLoop } from './sync.js';
+import { normalizePlayerInfoMessage, syncAll, startSyncLoop, setSyncCallbacks } from './sync.js';
 import { initShare } from './share.js';
 import { initSearch, initializeApiKey, loadPresets } from './search.js';
 import { saveWatchHistoryEntry, loadWatchHistory, initHistory } from './history.js';
@@ -44,6 +46,7 @@ import {
   setLayout,
 } from './layout.js';
 import { initInput } from './input.js';
+import { initChannel } from './channel.js';
 
 const gridEl = document.getElementById('grid');
 
@@ -53,12 +56,16 @@ const muteAllBtn = document.getElementById('muteAll');
 const unmuteAllBtn = document.getElementById('unmuteAll');
 const volumeAll = document.getElementById('volumeAll');
 const volumeVal = document.getElementById('volumeVal');
+const masterSeekBar = document.getElementById('masterSeekBar');
+const masterSeekTime = document.getElementById('masterSeekTime');
+const masterSeekDuration = document.getElementById('masterSeekDuration');
 
 const zoomLoupeController = createController({
   buildEmbedUrl,
   persistVideos,
   playerStates,
-  ALLOWED_ORIGIN,
+  getPostMessageOrigin: () =>
+    state.embedSettings.noCookie ? ALLOWED_ORIGIN_NOCOOKIE : ALLOWED_ORIGIN,
   requestPlayerSnapshot,
 });
 
@@ -72,6 +79,8 @@ initPlayer({
   toggleZoomPanel,
   refreshTileStackOrder,
   setAudioFocus,
+  onTileIframeLoaded: () => applyAudioFocus(),
+  clearAudioFocus: () => setAudioFocus(null),
 });
 
 function trackPlayerState(win, info) {
@@ -85,12 +94,23 @@ function trackPlayerState(win, info) {
   if (Number.isFinite(nextState)) {
     record.state = nextState;
   }
+  const nextDuration = Number(info?.duration);
+  if (Number.isFinite(nextDuration) && nextDuration > 0) {
+    record.duration = nextDuration;
+  }
   record.lastUpdate = Date.now();
   playerStates.set(win, record);
 
   const video = findVideoByWindow(win);
   if (!video) {
     return;
+  }
+
+  // Restore saved playback position from shared URL
+  if (video.pendingSeekTime !== null && video.pendingSeekTime !== undefined) {
+    const seekTime = video.pendingSeekTime;
+    video.pendingSeekTime = null;
+    sendCommand(video.iframe, 'seekTo', [seekTime, true]);
   }
   const now = Date.now();
   const currentTime = typeof record.time === 'number' ? record.time : 0;
@@ -113,6 +133,11 @@ function trackPlayerState(win, info) {
     video.lastHistorySavedAt = now;
     video.lastHistorySavedPosition = currentTime;
     saveWatchHistoryEntry(video, currentTime);
+  }
+
+  // Auto-advance queue on video end
+  if (previousState !== 0 && record.state === 0 && video.queue) {
+    advanceQueue(video);
   }
 }
 
@@ -285,6 +310,8 @@ async function initializeApp() {
       const zoomPanelX = typeof entry === 'object' ? (entry.zoomPanelX ?? null) : null;
       const zoomPanelY = typeof entry === 'object' ? (entry.zoomPanelY ?? null) : null;
       const zoomShape = typeof entry === 'object' ? (entry.zoomShape ?? null) : null;
+      const queue = typeof entry === 'object' ? (entry.queue ?? null) : null;
+      const queueIndex = typeof entry === 'object' ? (entry.queueIndex ?? 0) : 0;
       if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
         createTile(vid, {
           syncGroupId,
@@ -300,6 +327,8 @@ async function initializeApp() {
           zoomPanelX,
           zoomPanelY,
           zoomShape,
+          queue,
+          queueIndex,
         });
       }
     });
@@ -351,10 +380,11 @@ initializeApp();
 initializeApiKey(refreshDescriptionsForAllTiles);
 loadPresets();
 loadWatchHistory();
+initChannel();
 
 window.addEventListener('message', (event) => {
   try {
-    if (event.origin !== ALLOWED_ORIGIN) {
+    if (event.origin !== ALLOWED_ORIGIN && event.origin !== ALLOWED_ORIGIN_NOCOOKIE) {
       return;
     }
     let payload = event.data;
@@ -379,7 +409,81 @@ window.addEventListener('message', (event) => {
   }
 });
 
+setSyncCallbacks({ onRecovery: () => applyAudioFocus() });
 startSyncLoop();
+
+// ========== Master Seekbar ==========
+
+function formatTime(seconds) {
+  const s = Math.floor(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+let _seekDragging = false;
+
+function getLeaderRecord() {
+  for (const v of videos) {
+    if (!v.iframeLoaded) {
+      continue;
+    }
+    const win = v.iframe?.contentWindow;
+    if (win) {
+      const rec = playerStates.get(win);
+      if (rec && typeof rec.duration === 'number' && rec.duration > 0) {
+        return rec;
+      }
+    }
+  }
+  return null;
+}
+
+function updateMasterSeekbar() {
+  if (_seekDragging) {
+    requestAnimationFrame(updateMasterSeekbar);
+    return;
+  }
+  const rec = getLeaderRecord();
+  if (rec && typeof rec.time === 'number') {
+    masterSeekBar.max = String(rec.duration);
+    masterSeekBar.value = String(rec.time);
+    masterSeekTime.textContent = formatTime(rec.time);
+    masterSeekDuration.textContent = formatTime(rec.duration);
+  }
+  requestAnimationFrame(updateMasterSeekbar);
+}
+
+masterSeekBar.addEventListener('mousedown', () => {
+  _seekDragging = true;
+});
+masterSeekBar.addEventListener('touchstart', () => {
+  _seekDragging = true;
+});
+masterSeekBar.addEventListener('input', () => {
+  const time = parseFloat(masterSeekBar.value);
+  if (Number.isFinite(time)) {
+    masterSeekTime.textContent = formatTime(time);
+  }
+});
+masterSeekBar.addEventListener('change', () => {
+  _seekDragging = false;
+  const time = parseFloat(masterSeekBar.value);
+  if (Number.isFinite(time)) {
+    for (const v of videos) {
+      if (v.iframeLoaded) {
+        const offsetSec = (v.offsetMs || 0) / 1000;
+        sendCommand(v.iframe, 'seekTo', [time + offsetSec, true]);
+      }
+    }
+  }
+});
+
+requestAnimationFrame(updateMasterSeekbar);
 
 function setAudioFocus(videoId) {
   // Toggle off if same video

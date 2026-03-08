@@ -25,13 +25,52 @@ const savePresetBtn = document.getElementById('savePresetBtn');
 const presetNameInput = document.getElementById('presetNameInput');
 const presetList = document.getElementById('presetList');
 const gridEl = document.getElementById('grid');
+const searchHistoryEl = document.getElementById('searchHistory');
+const searchDurationEl = document.getElementById('searchDuration');
+const searchOrderEl = document.getElementById('searchOrder');
 
-async function searchYouTube(query) {
+export async function fetchPlaylistItems(playlistId, maxItems = 50) {
+  if (!youtubeApiKey) {
+    throw new Error('YouTube API キーが未設定です。検索セクションで設定してください。');
+  }
+  const items = [];
+  let pageToken = '';
+  while (items.length < maxItems) {
+    const remaining = Math.min(50, maxItems - items.length);
+    let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(playlistId)}&maxResults=${remaining}&key=${youtubeApiKey}`;
+    if (pageToken) {
+      url += `&pageToken=${pageToken}`;
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      const reason = errBody?.error?.message || `HTTP ${response.status}`;
+      throw new Error(`プレイリスト取得失敗: ${reason}`);
+    }
+    const data = await response.json();
+    for (const item of data.items) {
+      const videoId = item.contentDetails?.videoId;
+      if (videoId) {
+        items.push(videoId);
+      }
+    }
+    if (!data.nextPageToken || items.length >= maxItems) {
+      break;
+    }
+    pageToken = data.nextPageToken;
+  }
+  return items;
+}
+
+async function searchYouTube(query, { duration = 'any', order = 'relevance' } = {}) {
   if (!youtubeApiKey) {
     throw new Error('YouTube API key not set. Please enter it in the search section.');
   }
 
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${youtubeApiKey}`;
+  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=${order}&key=${youtubeApiKey}`;
+  if (duration !== 'any') {
+    url += `&videoDuration=${duration}`;
+  }
 
   try {
     const response = await fetch(url);
@@ -298,16 +337,70 @@ export function initSearch(deps) {
     await checkQuota();
   });
 
+  // Search history dropdown
+  async function showSearchHistory() {
+    const history = await storageAdapter.getSearchHistory();
+    if (history.length === 0) {
+      searchHistoryEl.hidden = true;
+      return;
+    }
+    searchHistoryEl.innerHTML = '';
+    history.forEach((q) => {
+      const li = document.createElement('li');
+      li.textContent = q;
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        searchInput.value = q;
+        searchHistoryEl.hidden = true;
+        searchForm.dispatchEvent(new Event('submit'));
+      });
+      searchHistoryEl.appendChild(li);
+    });
+    const clearLi = document.createElement('li');
+    clearLi.className = 'history-clear';
+    clearLi.textContent = '\u5c65\u6b74\u3092\u30af\u30ea\u30a2';
+    clearLi.addEventListener('mousedown', async (e) => {
+      e.preventDefault();
+      await storageAdapter.setItem('searchHistory', []);
+      searchHistoryEl.hidden = true;
+    });
+    searchHistoryEl.appendChild(clearLi);
+    searchHistoryEl.hidden = false;
+  }
+
+  searchInput.addEventListener('focus', () => {
+    if (!searchInput.value.trim()) {
+      showSearchHistory();
+    }
+  });
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      searchHistoryEl.hidden = true;
+    }, 150);
+  });
+  searchInput.addEventListener('input', () => {
+    if (!searchInput.value.trim()) {
+      showSearchHistory();
+    } else {
+      searchHistoryEl.hidden = true;
+    }
+  });
+
   searchForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     searchError.hidden = true;
+    searchHistoryEl.hidden = true;
     const query = searchInput.value.trim();
     if (!query) {
       return;
     }
 
     try {
-      const results = await searchYouTube(query);
+      const filters = {
+        duration: searchDurationEl.value,
+        order: searchOrderEl.value,
+      };
+      const results = await searchYouTube(query, filters);
       displaySearchResults(results, deps.createTile);
       await storageAdapter.saveSearchHistory(query);
     } catch (error) {

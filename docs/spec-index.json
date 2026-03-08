@@ -33,6 +33,69 @@
     "pct": 100,
     "cat": "system",
     "file": "docs/SECURITY_POSTMESSAGE.md",
-    "summary": "origin検証、ALLOWED_COMMANDS 7種、sanitizeArgs引数バリデーション、受信側イベントタイプホワイトリスト"
+    "summary": "origin検証(youtube-nocookie対応)、ALLOWED_COMMANDS 8種、sanitizeArgs引数バリデーション、受信側イベントタイプホワイトリスト"
+  },
+  {
+    "id": "SP-005",
+    "title": "オーディオマスター固定",
+    "status": "done",
+    "pct": 100,
+    "cat": "core",
+    "file": "docs/specs/audio-master-pinning.md",
+    "summary": "Audio Focus堅牢化: sync回復後の音声状態復元、lazy-load時のfocus適用、タイル削除時のクリーンアップ"
+  },
+  {
+    "id": "SP-006",
+    "title": "プレイリスト一括追加",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/playlist-batch-add.md",
+    "summary": "プレイリストURL検出・playlistItems.list API呼び出し・単体/一括/D&D対応（チャンネル対応は別機能として分離）"
+  },
+  {
+    "id": "SP-007",
+    "title": "検索拡張（履歴/フィルタ）",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/search-enhancements.md",
+    "summary": "検索履歴ドロップダウン、長さ/並び順フィルタ、MRU 5件保持"
+  },
+  {
+    "id": "SP-008",
+    "title": "タイムスタンプ抽出・ジャンプ",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/timestamp-extraction.md",
+    "summary": "説明文からタイムスタンプ自動検出、クリックでseekTo、XSSエスケープ付きHTML描画"
+  },
+  {
+    "id": "SP-009",
+    "title": "パフォーマンス最適化（iframe遅延ロード）",
+    "status": "done",
+    "pct": 100,
+    "cat": "infra",
+    "file": null,
+    "summary": "IntersectionObserver + staggered loading（最大2並列）、サムネイルプレースホルダ、CSS content-visibility、同期ループの未ロードタイル自動スキップ"
+  },
+  {
+    "id": "SP-010",
+    "title": "ES Module アーキテクチャ",
+    "status": "done",
+    "pct": 100,
+    "cat": "infra",
+    "file": null,
+    "summary": "全14モジュール分割（storage→state→player→sync→main + layout/ui/debug/electron/input等）、循環依存なし、main.js 381行"
+  },
+  {
+    "id": "SP-011",
+    "title": "プレイリストキューモード",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/playlist-queue-mode.md",
+    "summary": "1タイルで順次再生、loadVideoById postMessage対応、playerState===0自動進行、次/前ボタン、キューインジケーター、永続化/URL共有"
   }
 ]
