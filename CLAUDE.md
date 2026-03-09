@@ -72,3 +72,17 @@
   - 豎ｺ螳夂炊逕ｱ: 譌｢蟄倥い繝ｼ繧ｭ繝・け繝√Ε繧貞ｴｩ縺輔★縲・夂衍譛ｪ驟咲ｷ壽凾縺ｮ蜿悶ｊ縺薙⊂縺励ｒ菴弱Μ繧ｹ繧ｯ縺ｧ蝗樣∩縺吶ｋ縺溘ａ縲・
 ### 譛ｪ險倬鹸莉墓ｧ倥・險倬鹸蜈・- 莉雁屓縺ｮ莉墓ｧ伜､画峩縺ｯ `docs/specs/layout-fit-relayout.md` 縺ｫ譁ｰ隕剰ｨ倬鹸縲・- 邏｢蠑輔・ `docs/spec-index.json` 縺ｫ `SP-013` 縺ｨ縺励※霑ｽ蜉縲・
 
+
+## SESSION END UPDATE (2026-03-10 / Worker C)
+
+### PROJECT CONTEXT 追記案
+- 直近の状態: Worker C完了。frameless dragの安全側方針を確定（専用dragハンドル方式）。
+- 既存機能棚卸し(4/5/6): 新規大機能追加は行わず、改善余地と優先度のみ整理。
+
+### DECISION LOG 追記案
+- 2026-03-10 | frameless dragは専用ハンドル方式を採用 | toolbar全面drag / 専用ハンドル / 広域drag | iframe衝突と誤操作を最小化し、安定性優先。
+- 2026-03-10 | 4/5/6は棚卸しに限定し別PR分割を採用 | 同PRで機能追加 / 棚卸し限定 | 既存実装前提を守り、回帰リスクを抑制。
+
+### 仕様記録先
+- 追加: `docs/specs/frameless-drag-stabilization.md` (SP-014)
+- 追記: `docs/spec-index.json` に `SP-013`, `SP-014`

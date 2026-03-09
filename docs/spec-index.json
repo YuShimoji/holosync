@@ -106,5 +106,23 @@
     "cat": "ui",
     "file": "docs/specs/channel-live-monitor.md",
     "summary": "チャンネル登録、search.list eventType=live、15分間隔ポーリング(設定可能)、新規ライブ自動追加、Page Visibility API、クォータ管理"
+  },
+  {
+    "id": "SP-013",
+    "title": "Layout fit relayout",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/layout-fit-relayout.md",
+    "summary": "UI chrome changes trigger safe relayout for fit mode without architecture changes."
+  },
+  {
+    "id": "SP-014",
+    "title": "Frameless drag stabilization and inventory",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/frameless-drag-stabilization.md",
+    "summary": "Adopt explicit drag handle and record inventory-only improvements for channel/playlist/history."
   }
 ]
