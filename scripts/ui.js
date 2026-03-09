@@ -23,6 +23,15 @@ const showHelpBtn = document.getElementById('showHelpBtn');
 const closeHelpBtn = document.getElementById('closeHelpBtn');
 const debugPanel = document.getElementById('debugPanel');
 
+const UI_LABELS = {
+  toolbarShow: '\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u8868\u793a',
+  toolbarHide: '\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u96a0\u3059',
+  sidebarOpen: '\u30b5\u30a4\u30c9\u30d0\u30fc\u3092\u958b\u304f',
+  sidebarClose: '\u30b5\u30a4\u30c9\u30d0\u30fc\u3092\u9589\u3058\u308b',
+  immersiveEnter: '\u6ca1\u5165\u8868\u793a',
+  immersiveExit: '\u6ca1\u5165\u8868\u793a\u3092\u7d42\u4e86',
+};
+
 // Embed settings toggles
 const embedControlsToggle = document.getElementById('embedControls');
 const embedModestBrandingToggle = document.getElementById('embedModestBranding');
@@ -79,6 +88,14 @@ function syncEdgeRevealState() {
   if (!sidebarHidden || document.body.classList.contains('immersive-mode')) {
     document.body.classList.remove('edge-near-left');
   }
+}
+
+function notifyUiChromeLayoutChange(source) {
+  window.dispatchEvent(
+    new CustomEvent('holosync:ui-chrome-changed', {
+      detail: { source },
+    })
+  );
 }
 
 // ── Sidebar / Toolbar / Immersive ──────────────────────────

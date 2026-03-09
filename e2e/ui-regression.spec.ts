@@ -137,7 +137,7 @@ test.describe('UI Regression', () => {
 
     // 初期状態: ツールバーはデフォルトで非表示（toolbarCollapsed=null→true）
     await expect(body).toHaveClass(/toolbar-collapsed/);
-    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u96a0\u3059');
+    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u8868\u793a');
 
     // サイドバー内のトグルボタンで表示
     await page.click('#sidebarToolbarToggle');
@@ -147,7 +147,7 @@ test.describe('UI Regression', () => {
     // ツールバー内のボタンで再非表示
     await page.click('#toolbarToggleBtn');
     await expect(body).toHaveClass(/toolbar-collapsed/);
-    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u96a0\u3059');
+    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u8868\u793a');
   });
 
   // ── 5. ダークモードトグル ────────────────────────────────

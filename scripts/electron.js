@@ -60,6 +60,7 @@ function ensureFramelessDragHandle() {
   content.insertBefore(dragHandle, content.firstChild);
 }
 
+
 export function initElectron() {
   ensureFramelessDragHandle();
   syncWindowModeFromMain();
