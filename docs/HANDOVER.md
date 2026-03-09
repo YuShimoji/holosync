@@ -116,7 +116,7 @@
 
 ### 2026-03-07（セッション5）
 - ES Module Phase 3.5: input.js(265行)抽出 + 「moved to」コメント66行削除
-  - main.js 743→381行 (-49%)、全14モジュール
+  - main.js 743→381行 (-49%)、全15モジュール
 - docs/棚卸し: Doxygen生成物103件+レガシー資産18件削除（-7248行）
   - PERSISTENCE.md全面書き直し、SECURITY_POSTMESSAGE.md更新
   - WORKFLOW.md/AI_CONTEXT.md/CONTRIBUTING.md/.gitlab/削除

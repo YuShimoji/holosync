@@ -39,7 +39,7 @@ function loadWatchList() {
   try {
     const interval = localStorage.getItem(POLL_INTERVAL_KEY);
     if (interval) {
-      pollIntervalMs = Math.max(60000, Number(interval));
+      pollIntervalMs = Math.min(60 * 60000, Math.max(1 * 60000, Number(interval)));
     }
   } catch (_) {
     /* use default */
@@ -250,13 +250,18 @@ async function checkChannelLive(entry) {
  * Check all channels.
  */
 async function checkAllChannels() {
-  if (!youtubeApiKey) {
+  if (!youtubeApiKey || checkAllChannels._inProgress === true) {
     return;
   }
-  for (const entry of watchList) {
-    await checkChannelLive(entry);
+  checkAllChannels._inProgress = true;
+  try {
+    for (const entry of watchList) {
+      await checkChannelLive(entry);
+    }
+    updateNextCheckDisplay();
+  } finally {
+    checkAllChannels._inProgress = false;
   }
-  updateNextCheckDisplay();
 }
 
 // ── Polling ───────────────────────────────────────────────
@@ -426,7 +431,9 @@ function updateIntervalFromInput() {
   if (!channelIntervalInput) {
     return;
   }
-  const minutes = Math.max(1, parseInt(channelIntervalInput.value, 10) || 15);
+  const rawMinutes = parseInt(channelIntervalInput.value, 10);
+  const minutes = Math.min(60, Math.max(1, Number.isFinite(rawMinutes) ? rawMinutes : 15));
+  channelIntervalInput.value = String(minutes);
   pollIntervalMs = minutes * 60 * 1000;
   savePollInterval();
   restartPolling();

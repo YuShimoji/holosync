@@ -7,6 +7,8 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-packager . HoloSync --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(docs|e2e|test-artifacts|playwright-report|\\.git|\\.github|\\.husky)\"",
+    "build:offline-check": "node tools/build-offline-check.mjs",
+    "build:checked": "npm run build:offline-check && npm run build",
     "lint": "eslint \"scripts/*.js\" \"scripts/**/*.js\" --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

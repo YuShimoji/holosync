@@ -87,7 +87,7 @@
     "pct": 100,
     "cat": "infra",
     "file": null,
-    "summary": "全14モジュール分割（storage→state→player→sync→main + layout/ui/debug/electron/input等）、循環依存なし、main.js 381行"
+    "summary": "全15モジュール構成（storage→state→player→sync→main + layout/ui/debug/electron/input/channel/search/share/history/zoom-loupe等）、循環依存なし、main.js 381行"
   },
   {
     "id": "SP-011",

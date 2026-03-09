@@ -610,7 +610,7 @@ body.immersive-mode .edge-reveal {
 }
 
 body.frameless-mode .content-toolbar {
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;
 }
 
 body.frameless-mode .content-toolbar button,
@@ -620,6 +620,34 @@ body.frameless-mode .content-toolbar .layout-controls,
 body.frameless-mode .content-toolbar .gap-controls,
 body.frameless-mode .content-toolbar .drop-zone-hint {
   -webkit-app-region: no-drag;
+}
+
+.frameless-drag-handle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 180;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  cursor: move;
+  user-select: none;
+  pointer-events: none;
+}
+
+body.frameless-mode .frameless-drag-handle {
+  display: inline-flex;
+  -webkit-app-region: drag;
+  pointer-events: auto;
 }
 @keyframes pulse-border {
   0%,
@@ -1857,4 +1885,53 @@ button:active {
   padding: 8px;
   background: #fef3c7;
   border-radius: 4px;
+}
+
+
+@media (max-width: 960px) {
+  #sidebarOpen {
+    order: 0;
+  }
+
+  #toolbarToggleBtn {
+    order: 1;
+  }
+
+  #immersiveToggleBtn {
+    order: 2;
+  }
+
+  .layout-controls {
+    order: 3;
+  }
+
+  .gap-controls {
+    order: 4;
+  }
+
+  #shareBtn {
+    order: 5;
+  }
+
+  #windowFrameToggleBtn {
+    order: 6;
+  }
+
+  #windowControls {
+    order: 7;
+  }
+
+  .drop-zone-hint {
+    order: 8;
+  }
+}
+
+.footer {
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: 12px 0 4px;
 }

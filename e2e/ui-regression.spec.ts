@@ -83,12 +83,12 @@ test.describe('UI Regression', () => {
 
     // 初期状態
     await expect(body).not.toHaveClass(/immersive-mode/);
-    await expect(btn).toHaveText('Immersive');
+    await expect(btn).toHaveText('\u6ca1\u5165\u8868\u793a');
 
     // 没入モードON
     await page.click('#immersiveToggleBtn');
     await expect(body).toHaveClass(/immersive-mode/);
-    await expect(btn).toHaveText('Immersive On');
+    await expect(btn).toHaveText('\u6ca1\u5165\u8868\u793a\u3092\u7d42\u4e86');
 
     // サイドバーとツールバーも自動的に非表示になる
     await expect(body).toHaveClass(/sidebar-collapsed/);
@@ -99,10 +99,37 @@ test.describe('UI Regression', () => {
       document.getElementById('immersiveToggleBtn')!.click();
     });
     await expect(body).not.toHaveClass(/immersive-mode/);
-    await expect(btn).toHaveText('Immersive');
+    await expect(btn).toHaveText('\u6ca1\u5165\u8868\u793a');
   });
 
   // ── 4. ツールバー表示切替 ────────────────────────────────
+
+  test('immersive mode does not overwrite persisted chrome state', async ({ page }) => {
+    const body = page.locator('body');
+
+    await page.click('#sidebarToolbarToggle');
+    await expect(body).not.toHaveClass(/toolbar-collapsed/);
+
+    await page.click('#sidebarToggle');
+    await expect(body).toHaveClass(/sidebar-collapsed/);
+    await page.click('#sidebarOpen');
+    await expect(body).not.toHaveClass(/sidebar-collapsed/);
+
+    await page.evaluate(() => {
+      document.documentElement.requestFullscreen = async () => {};
+    });
+
+    await page.click('#immersiveToggleBtn');
+    await expect(body).toHaveClass(/immersive-mode/);
+
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForFunction(() => document.querySelector('#grid') !== null);
+    await page.waitForTimeout(500);
+
+    await expect(body).not.toHaveClass(/immersive-mode/);
+    await expect(body).not.toHaveClass(/sidebar-collapsed/);
+    await expect(body).not.toHaveClass(/toolbar-collapsed/);
+  });
 
   test('toolbar toggle collapses and expands', async ({ page }) => {
     const body = page.locator('body');
@@ -110,17 +137,17 @@ test.describe('UI Regression', () => {
 
     // 初期状態: ツールバーはデフォルトで非表示（toolbarCollapsed=null→true）
     await expect(body).toHaveClass(/toolbar-collapsed/);
-    await expect(sidebarToggleBtn).toHaveText('Show Toolbar');
+    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u96a0\u3059');
 
     // サイドバー内のトグルボタンで表示
     await page.click('#sidebarToolbarToggle');
     await expect(body).not.toHaveClass(/toolbar-collapsed/);
-    await expect(sidebarToggleBtn).toHaveText('Hide Toolbar');
+    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u96a0\u3059');
 
     // ツールバー内のボタンで再非表示
     await page.click('#toolbarToggleBtn');
     await expect(body).toHaveClass(/toolbar-collapsed/);
-    await expect(sidebarToggleBtn).toHaveText('Show Toolbar');
+    await expect(sidebarToggleBtn).toHaveText('\u30c4\u30fc\u30eb\u30d0\u30fc\u3092\u96a0\u3059');
   });
 
   // ── 5. ダークモードトグル ────────────────────────────────

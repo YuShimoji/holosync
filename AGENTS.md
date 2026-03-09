@@ -34,7 +34,7 @@
 | 2026-03-07 | 同期アルゴリズムv2: 3段階drift補正                           | softTolerance段階方式 / 即seekTo方式                        | 視聴体験の滑らかさと同期精度の両立                                                                   |
 | 2026-03-07 | ES Module 14モジュール分割（現況: 15モジュール）             | 14モジュール / より細かく / monolith維持                    | main.js肥大化解消、循環依存なしを維持できる粒度                                                      |
 | 2026-03-07 | shared-workflows submodule廃止                               | 廃止 / 維持                                                 | 単一プロジェクトでのsubmodule管理コストが利点を上回る                                                |
-| 2026-03-07 | WORKFLOW_STATE_SSOT.md廃止→CLAUDE.md統合                     | 統合 / 併存                                                 | SSOTの二重管理を排除                                                                                 |
+| 2026-03-07 | WORKFLOW_STATE_SSOT.md廃止→AGENTS.md統合                     | 統合 / 併存                                                 | SSOTの二重管理を排除                                                                                 |
 | 2026-03-08 | テスト基盤: Playwright Chromiumのみ                          | 全ブラウザ / Chromiumのみ                                   | Electronターゲット+CI速度重視                                                                        |
 | 2026-03-08 | パフォーマンス最適化: IntersectionObserver+staggered loading | lazy-load方式 / eager-load維持                              | 多タイル時のページ負荷軽減                                                                           |
 | 2026-03-08 | 次フェーズ方針: コンテンツ活用フェーズ(C)                    | 体験深化(A) / 公開準備(B) / コンテンツ活用(C)               | YouTube APIを活かした機能拡張を優先                                                                  |
@@ -87,20 +87,3 @@
 - B. 制作/開発速度の向上・互換設定
 - C. 失敗からの復旧しやすさ
 - D. テスト拡充、過度なレポート、当面に直結しないリファクタリング → **凍結**
-
-## SESSION UPDATE (2026-03-10)
-
-### 直近の状態（更新）
-- Worker B（動画プレイヤーのウィンドウフィット / レイアウト調整）で、`scripts/layout.js` の最小改修を実施。
-- `setLayout` と `handleLayoutChange` の責務重複を縮小し、UI開閉時の再レイアウト不足を補うため、cellモード再配置処理を共通化。
-- `holosync:ui-chrome-changed` 受信に加え、`body.class` 監視（MutationObserver）で `sidebar/toolbar/immersive` 変化をフォールバック検知。
-- Deep Link 復元（share URL）に `layout/gap` がある場合は `loadLayoutSettings` の上書きを抑止。
-
-### DECISION LOG 追記案（適用）
-- 2026-03-10: レイアウト追従トリガーは「UIイベント通知 + body.class監視のフォールバック」を併用。
-  - 選択肢: UI側のみ通知 / layout側でDOM監視 / 併用
-  - 決定理由: 既存アーキテクチャを崩さず、通知未配線時の取りこぼしを低リスクで回避するため。
-
-### 未記録仕様の記録先
-- 今回の仕様変更は `docs/specs/layout-fit-relayout.md` に新規記録。
-- 索引は `docs/spec-index.json` に `SP-013` として追加。

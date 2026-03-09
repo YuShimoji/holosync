@@ -65,12 +65,12 @@ function bringVideoToFront(videoId) {
 // ── Layout / Grid ──────────────────────────────────────────
 
 function setLayout(mode) {
-  // Remove all layout classes
-  gridEl.className = 'grid';
-  if (mode && mode !== 'auto') {
-    gridEl.classList.add(`layout-${mode}`);
+  const normalizedMode = mode || 'auto';
+  if (layoutSelect && layoutSelect.value !== normalizedMode) {
+    layoutSelect.value = normalizedMode;
   }
-  storageAdapter.setItem('layoutMode', mode);
+  handleLayoutChange(normalizedMode);
+  storageAdapter.setItem('layoutMode', normalizedMode);
 }
 
 function persistLayoutSettings() {
@@ -174,6 +174,14 @@ function createCellOverlays() {
   gridEl.insertBefore(state.cellOverlayContainer, gridEl.firstChild);
 }
 
+function relayoutCellModeTiles() {
+  if (!state.cellModeEnabled) {
+    return;
+  }
+  createCellOverlays();
+  videos.forEach((v) => positionTileInCell(v.tile, v));
+}
+
 function enableCellMode() {
   state.cellModeEnabled = true;
   gridEl.classList.add('cell-mode');
@@ -213,11 +221,7 @@ function updateGridGap(gap) {
   state.cellGap = gap;
   gridEl.style.gap = gap + 'px';
   gridEl.style.padding = gap + 'px';
-
-  if (state.cellModeEnabled) {
-    createCellOverlays();
-    videos.forEach((v) => positionTileInCell(v.tile, v));
-  }
+  relayoutCellModeTiles();
 }
 
 function handleLayoutChange(layout) {
@@ -406,11 +410,15 @@ function setSyncGroup(videoId, groupId) {
 
 async function loadLayoutSettings() {
   try {
+    const sharedSession = storageAdapter.parseShareUrl();
+    if (sharedSession?.layout || typeof sharedSession?.gap === 'number') {
+      return;
+    }
+
     const settings = await storageAdapter.getItem('layoutSettings');
     if (settings) {
       if (settings.layout) {
-        layoutSelect.value = settings.layout;
-        handleLayoutChange(settings.layout);
+        setLayout(settings.layout);
       }
       if (typeof settings.gap === 'number') {
         state.cellGap = settings.gap;
@@ -431,7 +439,7 @@ async function loadLayoutSettings() {
 export function initLayout() {
   // Layout select
   layoutSelect.addEventListener('change', (e) => {
-    handleLayoutChange(e.target.value);
+    setLayout(e.target.value);
   });
 
   // Gap slider
@@ -466,18 +474,53 @@ export function initLayout() {
     setSyncGroup(videoId, options[nextIdx]);
   });
 
+  const scheduleCellRelayout = (() => {
+    let timeoutId;
+    return (delayMs) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        relayoutCellModeTiles();
+      }, delayMs);
+    };
+  })();
+
   // Window resize for cell mode
-  let resizeTimeout;
   window.addEventListener('resize', () => {
-    if (!state.cellModeEnabled) {
-      return;
-    }
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-      createCellOverlays();
-      videos.forEach((v) => positionTileInCell(v.tile, v));
-    }, 100);
+    scheduleCellRelayout(100);
   });
+
+  // UI chrome change event (if emitted by UI module)
+  window.addEventListener('holosync:ui-chrome-changed', () => {
+    relayoutCellModeTiles();
+    scheduleCellRelayout(280);
+  });
+
+  // Fallback: observe body class changes for sidebar/toolbar/immersive toggles.
+  const bodyEl = document.body;
+  if (bodyEl) {
+    let prevKey = [
+      bodyEl.classList.contains('sidebar-collapsed'),
+      bodyEl.classList.contains('toolbar-collapsed'),
+      bodyEl.classList.contains('immersive-mode'),
+    ].join('|');
+
+    const observer = new MutationObserver(() => {
+      const nextKey = [
+        bodyEl.classList.contains('sidebar-collapsed'),
+        bodyEl.classList.contains('toolbar-collapsed'),
+        bodyEl.classList.contains('immersive-mode'),
+      ].join('|');
+
+      if (nextKey === prevKey) {
+        return;
+      }
+      prevKey = nextKey;
+      relayoutCellModeTiles();
+      scheduleCellRelayout(280);
+    });
+
+    observer.observe(bodyEl, { attributes: true, attributeFilter: ['class'] });
+  }
 }
 
 export {

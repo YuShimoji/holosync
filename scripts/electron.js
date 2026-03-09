@@ -42,7 +42,26 @@ async function syncWindowModeFromMain() {
   }
 }
 
+function ensureFramelessDragHandle() {
+  if (document.getElementById('framelessDragHandle')) {
+    return;
+  }
+  const content = document.getElementById('content');
+  if (!content) {
+    return;
+  }
+  const dragHandle = document.createElement('button');
+  dragHandle.id = 'framelessDragHandle';
+  dragHandle.className = 'frameless-drag-handle';
+  dragHandle.type = 'button';
+  dragHandle.textContent = 'Drag';
+  dragHandle.title = 'Window drag';
+  dragHandle.setAttribute('aria-label', 'Window drag');
+  content.insertBefore(dragHandle, content.firstChild);
+}
+
 export function initElectron() {
+  ensureFramelessDragHandle();
   syncWindowModeFromMain();
 
   if (windowFrameToggleBtn && hasElectronWindowBridge()) {

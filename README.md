@@ -50,7 +50,13 @@
 npm run build
 ```
 
-ビルド後、`dist/HoloSync-win32-x64/HoloSync.exe` をダブルクリックするだけで起動できます。
+ビルド後、dist/HoloSync-win32-x64/HoloSync.exe をダブルクリックするだけで起動できます。
+
+### ビルドが失敗する場合（ネットワーク制限時）
+
+通常は `npm run build:checked` を使うと、外部アセット到達性チェック後にビルドまで一括実行できます。単体確認のみ行う場合は `npm run build:offline-check` を使ってください。
+`npm run build` は `electron-packager` が Electron 本体を GitHub Releases から取得するため、外部ネットワークに接続できない環境では `EACCES` / 接続エラーで失敗します。  
+この場合はコード不良とは限らないため、先に `npm run lint` と `npm run test` でローカル品質を確認してください。
 
 詳細な確認項目は `docs/TESTING.md` を参照してください。
 

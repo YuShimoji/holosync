@@ -83,39 +83,87 @@ function syncEdgeRevealState() {
 
 // ── Sidebar / Toolbar / Immersive ──────────────────────────
 
-function setToolbarCollapsed(collapsed) {
+function setButtonLabel(button, text, title = text) {
+  if (!button) {
+    return;
+  }
+  button.textContent = text;
+  button.title = title;
+  button.setAttribute('aria-label', title);
+}
+
+function updateToolbarButtonState(collapsed) {
+  const label = collapsed ? UI_LABELS.toolbarShow : UI_LABELS.toolbarHide;
+  setButtonLabel(toolbarToggleBtn, label);
+  setButtonLabel(sidebarToolbarToggle, label);
+  setButtonLabel(edgeToolbarReveal, UI_LABELS.toolbarShow);
+}
+
+function updateSidebarButtonState(collapsed) {
+  if (sidebarToggle) {
+    sidebarToggle.title = UI_LABELS.sidebarClose;
+    sidebarToggle.setAttribute('aria-label', UI_LABELS.sidebarClose);
+  }
+  if (sidebarOpen) {
+    sidebarOpen.hidden = !collapsed;
+    sidebarOpen.title = UI_LABELS.sidebarOpen;
+    sidebarOpen.setAttribute('aria-label', UI_LABELS.sidebarOpen);
+  }
+  setButtonLabel(edgeSidebarReveal, UI_LABELS.sidebarOpen);
+}
+
+function updateImmersiveButtonState(enabled) {
+  const label = enabled ? UI_LABELS.immersiveExit : UI_LABELS.immersiveEnter;
+  if (immersiveToggleBtn) {
+    immersiveToggleBtn.classList.toggle('success', enabled);
+    setButtonLabel(immersiveToggleBtn, label);
+  }
+}
+
+function setToolbarCollapsed(collapsed, options = {}) {
+  const { persist = true, source = 'toolbar' } = options;
+  const previous = document.body.classList.contains('toolbar-collapsed');
   document.body.classList.toggle('toolbar-collapsed', collapsed);
   if (toolbarToggleBtn) {
     toolbarToggleBtn.classList.toggle('success', collapsed);
-    toolbarToggleBtn.textContent = collapsed ? 'Show Toolbar' : 'Hide Toolbar';
   }
   if (sidebarToolbarToggle) {
     sidebarToolbarToggle.classList.toggle('success', collapsed);
-    sidebarToolbarToggle.textContent = collapsed ? 'Show Toolbar' : 'Hide Toolbar';
   }
+  updateToolbarButtonState(collapsed);
   syncEdgeRevealState();
-  storageAdapter.setItem('toolbarCollapsed', collapsed);
+  if (persist) {
+    storageAdapter.setItem('toolbarCollapsed', collapsed);
+  }
+  if (previous !== collapsed) {
+    notifyUiChromeLayoutChange(source);
+  }
 }
 
-function setSidebarCollapsed(collapsed) {
+function setSidebarCollapsed(collapsed, options = {}) {
+  const { persist = true, source = 'sidebar' } = options;
+  const previous = document.body.classList.contains('sidebar-collapsed');
   document.body.classList.toggle('sidebar-collapsed', collapsed);
-  sidebarOpen.hidden = !collapsed;
+  updateSidebarButtonState(collapsed);
   syncEdgeRevealState();
-  storageAdapter.setItem('sidebarCollapsed', collapsed);
+  if (persist) {
+    storageAdapter.setItem('sidebarCollapsed', collapsed);
+  }
+  if (previous !== collapsed) {
+    notifyUiChromeLayoutChange(source);
+  }
 }
 
 async function setImmersiveMode(enabled) {
   state.immersiveModeEnabled = enabled;
   document.body.classList.toggle('immersive-mode', enabled);
-  if (immersiveToggleBtn) {
-    immersiveToggleBtn.classList.toggle('success', enabled);
-    immersiveToggleBtn.textContent = enabled ? 'Immersive On' : 'Immersive';
-  }
+  updateImmersiveButtonState(enabled);
+  notifyUiChromeLayoutChange('immersive');
   if (enabled) {
     state.sidebarStateBeforeImmersive = document.body.classList.contains('sidebar-collapsed');
     state.toolbarStateBeforeImmersive = document.body.classList.contains('toolbar-collapsed');
-    setSidebarCollapsed(true);
-    setToolbarCollapsed(true);
+    setSidebarCollapsed(true, { persist: false, source: 'immersive' });
+    setToolbarCollapsed(true, { persist: false, source: 'immersive' });
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
       try {
         await document.documentElement.requestFullscreen();
@@ -126,10 +174,16 @@ async function setImmersiveMode(enabled) {
     return;
   }
   if (typeof state.sidebarStateBeforeImmersive === 'boolean') {
-    setSidebarCollapsed(state.sidebarStateBeforeImmersive);
+    setSidebarCollapsed(state.sidebarStateBeforeImmersive, {
+      persist: false,
+      source: 'immersive',
+    });
   }
   if (typeof state.toolbarStateBeforeImmersive === 'boolean') {
-    setToolbarCollapsed(state.toolbarStateBeforeImmersive);
+    setToolbarCollapsed(state.toolbarStateBeforeImmersive, {
+      persist: false,
+      source: 'immersive',
+    });
   }
   state.sidebarStateBeforeImmersive = null;
   state.toolbarStateBeforeImmersive = null;
@@ -296,17 +350,20 @@ export function initUI(deps) {
       state.immersiveModeEnabled = false;
       document.body.classList.remove('immersive-mode');
       if (typeof state.sidebarStateBeforeImmersive === 'boolean') {
-        setSidebarCollapsed(state.sidebarStateBeforeImmersive);
+        setSidebarCollapsed(state.sidebarStateBeforeImmersive, {
+          persist: false,
+          source: 'immersive',
+        });
       }
       if (typeof state.toolbarStateBeforeImmersive === 'boolean') {
-        setToolbarCollapsed(state.toolbarStateBeforeImmersive);
+        setToolbarCollapsed(state.toolbarStateBeforeImmersive, {
+          persist: false,
+          source: 'immersive',
+        });
       }
       state.sidebarStateBeforeImmersive = null;
       state.toolbarStateBeforeImmersive = null;
-      if (immersiveToggleBtn) {
-        immersiveToggleBtn.classList.remove('success');
-        immersiveToggleBtn.textContent = 'Immersive';
-      }
+      updateImmersiveButtonState(false);
     }
   });
 
@@ -328,14 +385,14 @@ export function initUI(deps) {
   (async () => {
     const collapsed = await storageAdapter.getItem('sidebarCollapsed');
     const toolbarCollapsed = await storageAdapter.getItem('toolbarCollapsed');
-    setSidebarCollapsed(collapsed === true);
+    setSidebarCollapsed(collapsed === true, { persist: false, source: 'restore' });
 
     if (toolbarCollapsed === true) {
-      setToolbarCollapsed(true);
+      setToolbarCollapsed(true, { persist: false, source: 'restore' });
     } else if (toolbarCollapsed === null || toolbarCollapsed === undefined) {
-      setToolbarCollapsed(true);
+      setToolbarCollapsed(true, { persist: false, source: 'restore' });
     } else {
-      setToolbarCollapsed(false);
+      setToolbarCollapsed(false, { persist: false, source: 'restore' });
     }
   })();
 
