@@ -124,5 +124,14 @@
     "cat": "ui",
     "file": "docs/specs/frameless-drag-stabilization.md",
     "summary": "Adopt explicit drag handle and record inventory-only improvements for channel/playlist/history."
+  },
+  {
+    "id": "SP-015",
+    "title": "Sidebar / toolbar cleanup stabilization",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/sidebar-toolbar-cleanup.md",
+    "summary": "Stabilize immersive/sidebar/toolbar state persistence, recovery paths, and narrow-width control priority."
   }
 ]
