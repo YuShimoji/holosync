@@ -32,7 +32,13 @@ import {
 import { normalizePlayerInfoMessage, syncAll, startSyncLoop, setSyncCallbacks } from './sync.js';
 import { initShare } from './share.js';
 import { initSearch, initializeApiKey, loadPresets } from './search.js';
-import { saveWatchHistoryEntry, loadWatchHistory, initHistory, getLastSession } from './history.js';
+import {
+  saveWatchHistoryEntry,
+  loadWatchHistory,
+  initHistory,
+  getLastSession,
+  loadSuggestions,
+} from './history.js';
 import { initUI, syncEmbedSettingsUI } from './ui.js';
 import { initDebugPanel } from './debug.js';
 import { initElectron } from './electron.js';
@@ -441,6 +447,7 @@ initializeApp();
 initializeApiKey(refreshDescriptionsForAllTiles);
 loadPresets();
 loadWatchHistory();
+loadSuggestions();
 initChannel();
 initFitMode();
 initSearchBrowser({ createTile, parseYouTubeId });

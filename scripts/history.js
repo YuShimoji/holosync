@@ -1,13 +1,15 @@
 /**
  * @file scripts/history.js
- * @brief Watch history functions for HoloSync.
+ * @brief Watch history, top channels, session restore, and smart suggestions.
  */
 import { storageAdapter } from './storage.js';
-import { WATCH_HISTORY_MAX, hasVideo } from './state.js';
+import { WATCH_HISTORY_MAX, hasVideo, youtubeApiKey } from './state.js';
 import { showToast } from './ui.js';
 
 const watchHistoryList = document.getElementById('watchHistoryList');
 const topChannelsList = document.getElementById('topChannelsList');
+const suggestionBar = document.getElementById('suggestionBar');
+const suggestionScroll = document.getElementById('suggestionScroll');
 
 export function formatWatchTime(seconds) {
   const total = Math.max(0, Math.floor(seconds || 0));
@@ -182,6 +184,211 @@ export async function getLastSession() {
 
 export async function clearLastSession() {
   await storageAdapter.setItem('lastSession', []);
+}
+
+// ── Phase 3: Smart Suggestions ───────────────────────────────
+
+const SESSION_GAP_MS = 60 * 60 * 1000; // 1 hour gap = new session
+
+/**
+ * Phase 3-B: Find videos that were co-viewed (watched in the same session).
+ * Groups history by session (entries within 1 hour of each other).
+ */
+function getCoViewedSuggestions(history, maxCount = 6) {
+  if (history.length < 2) {
+    return [];
+  }
+
+  // Sort by watchedAt descending
+  const sorted = [...history].sort((a, b) => b.watchedAt - a.watchedAt);
+
+  // Group into sessions
+  const sessions = [];
+  let currentSession = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = currentSession[currentSession.length - 1].watchedAt - sorted[i].watchedAt;
+    if (gap < SESSION_GAP_MS) {
+      currentSession.push(sorted[i]);
+    } else {
+      if (currentSession.length >= 2) {
+        sessions.push(currentSession);
+      }
+      currentSession = [sorted[i]];
+    }
+  }
+  if (currentSession.length >= 2) {
+    sessions.push(currentSession);
+  }
+
+  // Count co-occurrence pairs
+  const pairCount = new Map();
+  for (const session of sessions) {
+    const ids = session.map((s) => s.id);
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const pair = [ids[i], ids[j]].sort().join(':');
+        pairCount.set(pair, (pairCount.get(pair) || 0) + 1);
+      }
+    }
+  }
+
+  // Build suggestion list: videos from frequent co-viewing pairs, not currently added
+  const seen = new Set();
+  const suggestions = [];
+  const sortedPairs = [...pairCount.entries()].sort((a, b) => b[1] - a[1]);
+  for (const [pair] of sortedPairs) {
+    const [id1, id2] = pair.split(':');
+    for (const id of [id1, id2]) {
+      if (!seen.has(id) && !hasVideo(id)) {
+        const histItem = history.find((h) => h.id === id);
+        if (histItem) {
+          suggestions.push({
+            id: histItem.id,
+            title: histItem.title || histItem.id,
+            channel: histItem.channel || '',
+            source: 'coviewed',
+          });
+          seen.add(id);
+        }
+      }
+      if (suggestions.length >= maxCount) {
+        break;
+      }
+    }
+    if (suggestions.length >= maxCount) {
+      break;
+    }
+  }
+  return suggestions;
+}
+
+/**
+ * Phase 3-A: Fetch latest videos from registered channels.
+ * Uses playlistItems.list with uploads playlist (1 unit per channel).
+ */
+async function fetchChannelLatestVideos(maxChannels = 3, videosPerChannel = 3) {
+  if (!youtubeApiKey) {
+    return [];
+  }
+
+  try {
+    const channels = (await storageAdapter.getItem('channelWatchList')) || [];
+    if (channels.length === 0) {
+      return [];
+    }
+
+    const results = [];
+    const targetChannels = channels.slice(0, maxChannels);
+
+    for (const ch of targetChannels) {
+      // Derive uploads playlist ID: UC... -> UU...
+      const uploadsPlaylistId = 'UU' + ch.channelId.slice(2);
+      const url =
+        `https://www.googleapis.com/youtube/v3/playlistItems` +
+        `?part=snippet&maxResults=${videosPerChannel}` +
+        `&playlistId=${uploadsPlaylistId}` +
+        `&key=${youtubeApiKey}`;
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          continue;
+        }
+        const data = await resp.json();
+        (data.items || []).forEach((item) => {
+          const videoId = item.snippet?.resourceId?.videoId;
+          if (videoId && !hasVideo(videoId)) {
+            results.push({
+              id: videoId,
+              title: item.snippet.title || videoId,
+              channel: ch.name || item.snippet.channelTitle || '',
+              thumbnail:
+                item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '',
+              source: 'channel',
+            });
+          }
+        });
+      } catch (_) {
+        // Skip this channel on error
+      }
+    }
+
+    return results;
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Phase 3-C: Load and render the quick suggestion bar.
+ * Merges channel latest videos + co-viewed suggestions.
+ */
+export async function loadSuggestions() {
+  if (!suggestionBar || !suggestionScroll) {
+    return;
+  }
+
+  const history = (await storageAdapter.getItem('watchHistory')) || [];
+
+  // Gather suggestions from both sources
+  const [channelVideos, coViewed] = await Promise.all([
+    fetchChannelLatestVideos(),
+    Promise.resolve(getCoViewedSuggestions(history)),
+  ]);
+
+  // Merge and deduplicate
+  const seen = new Set();
+  const suggestions = [];
+  const addUnique = (items) => {
+    for (const item of items) {
+      if (!seen.has(item.id) && !hasVideo(item.id)) {
+        seen.add(item.id);
+        suggestions.push(item);
+      }
+    }
+  };
+  addUnique(channelVideos);
+  addUnique(coViewed);
+
+  if (suggestions.length === 0) {
+    suggestionBar.hidden = true;
+    return;
+  }
+
+  suggestionBar.hidden = false;
+  suggestionScroll.innerHTML = '';
+
+  suggestions.forEach((s) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'suggestion-card';
+    card.title = `${s.title}\n${s.channel}`;
+
+    const thumbUrl = s.thumbnail || `https://i.ytimg.com/vi/${s.id}/mqdefault.jpg`;
+    card.innerHTML = `
+      <img class="suggestion-thumb" src="${thumbUrl}" alt="" loading="lazy" />
+      <div class="suggestion-title">${escapeHtml(s.title)}</div>
+      <span class="suggestion-source">${s.source === 'channel' ? '\u30c1\u30e3\u30f3\u30cd\u30eb' : '\u5c65\u6b74'}</span>
+    `;
+
+    card.addEventListener('click', () => {
+      if (!hasVideo(s.id) && _createTile) {
+        _createTile(s.id);
+        card.classList.add('added');
+        showToast(`${s.title} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f`);
+      }
+    });
+
+    suggestionScroll.appendChild(card);
+  });
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ── Core ──────────────────────────────────────────────────────

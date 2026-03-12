@@ -1506,6 +1506,68 @@ button:active {
   border-color: var(--color-primary);
 }
 
+/* Phase 3-C: Quick suggestion bar */
+.suggestion-bar {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+.suggestion-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.suggestion-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.suggestion-card {
+  flex-shrink: 0;
+  width: 100px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  overflow: hidden;
+  transition: border-color 0.15s;
+  position: relative;
+}
+.suggestion-card:hover {
+  border-color: var(--color-primary);
+}
+.suggestion-card.added {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.suggestion-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+.suggestion-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding: 3px 4px 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suggestion-source {
+  font-size: 9px;
+  color: var(--color-text-secondary);
+  padding: 0 4px 3px;
+  display: block;
+}
+
 /* Toast notification */
 .toast-container {
   position: fixed;
