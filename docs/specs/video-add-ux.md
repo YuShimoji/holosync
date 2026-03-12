@@ -75,10 +75,20 @@
 - ライブ配信のカードには赤い「LIVE」バッジを表示（既存の `.sb-live-badge` を活用）
 
 ### 完了条件
-- [ ] 検索結果カードが複数選択可能
-- [ ] フローティングバーで一括追加が機能する
-- [ ] 検索履歴ドロップダウンが表示・再検索可能
-- [ ] カードに duration / viewCount が表示される
+
+- [x] 検索結果カードが複数選択可能
+- [x] フローティングバーで一括追加が機能する
+- [x] 検索履歴ドロップダウンが表示・再検索可能
+- [x] カードに duration / viewCount が表示される
+
+### 実装詳細（Phase 2 完了）
+
+- searchbrowser.js: チェックボックス追加、selectedVideoIds Set管理、セレクションバー動的生成
+- searchbrowser.js: doSearch後にvideos.list API呼び出しでcontentDetails+statistics取得（1 unit/12件）
+- searchbrowser.js: 検索入力フォーカス時に履歴ドロップダウン表示、クリックで再検索
+- searchbrowser.js: showToast連携（個別追加・一括追加）
+- styles/main.css: チェックボックス、セレクションバー、履歴ドロップダウン、再生時間バッジのCSS
+- 仕様変更: サムネイルホバー拡大は見送り（サイドバー幅の制約で効果が薄い）。代わりにサムネイル上に再生時間バッジを追加
 
 ---
 

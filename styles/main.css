@@ -2137,6 +2137,7 @@ button:active {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
 }
 .sb-search-input {
   width: 100%;
@@ -2305,4 +2306,106 @@ button:active {
   font-size: 11px;
   color: var(--color-text-secondary);
   line-height: 1.5;
+}
+
+/* Phase 2-A: Multi-select checkbox & selection bar */
+.sb-result-check {
+  flex-shrink: 0;
+  margin: 4px 0 0;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+.sb-result-card.selected {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.06);
+}
+.sb-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  background: var(--color-surface, #f0f4f8);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.sb-sel-count {
+  flex: 1;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.sb-sel-add-all,
+.sb-sel-clear {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+.sb-sel-add-all.primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* Phase 2-B: Search history dropdown */
+.sb-history-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.sb-history-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+}
+.sb-history-item:last-child {
+  border-bottom: none;
+}
+.sb-history-item:hover {
+  background: var(--color-hover-bg);
+}
+
+/* Phase 2-C: Duration badge on thumbnail */
+.sb-thumb-duration {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.sb-result-duration {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+.sb-result-views {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+.sb-result-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
