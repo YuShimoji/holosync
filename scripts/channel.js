@@ -399,15 +399,17 @@ function updateNextCheckDisplay() {
 }
 
 function showChannelNotification(channelName, videoTitle) {
-  if (!channelListEl) {
-    return;
-  }
-  // Brief toast-style notification in the channel section
+  // Toast notification visible regardless of sidebar/immersive state
   const toast = document.createElement('div');
   toast.className = 'channel-notification';
   toast.textContent = `${channelName} がライブ配信中: ${videoTitle}`;
-  channelListEl.parentElement.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
+  document.body.appendChild(toast);
+  // Slide in, then auto-remove
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 400);
+  }, 6000);
 }
 
 function showChannelError(msg) {

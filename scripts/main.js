@@ -513,6 +513,16 @@ function getLeaderRecord() {
   return null;
 }
 
+function isLikelyLive(rec) {
+  if (!rec || typeof rec.duration !== 'number') {
+    return false;
+  }
+  // Live streams typically have very large duration (DVR buffer) and
+  // currentTime stays near the duration (live edge).
+  const edgeGap = rec.duration - (rec.time || 0);
+  return rec.duration > 43200 || (rec.duration > 3600 && edgeGap < 30);
+}
+
 function updateMasterSeekbar() {
   if (_seekDragging) {
     requestAnimationFrame(updateMasterSeekbar);
@@ -520,10 +530,19 @@ function updateMasterSeekbar() {
   }
   const rec = getLeaderRecord();
   if (rec && typeof rec.time === 'number') {
-    masterSeekBar.max = String(rec.duration);
-    masterSeekBar.value = String(rec.time);
-    masterSeekTime.textContent = formatTime(rec.time);
-    masterSeekDuration.textContent = formatTime(rec.duration);
+    if (isLikelyLive(rec)) {
+      masterSeekBar.max = '1';
+      masterSeekBar.value = '1';
+      masterSeekBar.disabled = true;
+      masterSeekTime.textContent = 'LIVE';
+      masterSeekDuration.textContent = '';
+    } else {
+      masterSeekBar.disabled = false;
+      masterSeekBar.max = String(rec.duration);
+      masterSeekBar.value = String(rec.time);
+      masterSeekTime.textContent = formatTime(rec.time);
+      masterSeekDuration.textContent = formatTime(rec.duration);
+    }
   }
   requestAnimationFrame(updateMasterSeekbar);
 }

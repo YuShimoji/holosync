@@ -2471,3 +2471,29 @@ button:active {
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* ── Channel live notification toast ────────────────────── */
+.channel-notification {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10000;
+  max-width: 360px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: translateX(120%);
+  opacity: 0;
+  transition:
+    transform 0.35s ease,
+    opacity 0.35s ease;
+  pointer-events: none;
+}
+.channel-notification.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
