@@ -1,10 +1,28 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-09
+**Updated**: 2026-03-12
 **Branch**: `main`
-**Status**: P2バックログ消化フェーズ完了。全P2機能実装済み（計15モジュール、ES Module構成）。
+**Status**: P2バックログ消化フェーズ完了、UI安定化作業完了（SP-013～015）。全15仕様完了、15モジュール ES Module構成。次フェーズ未定。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-10（Worker A/B/C — UI安定化）
+- Worker B: レイアウト追従改善（SP-013）
+  - `scripts/layout.js` の最小改修: `setLayout` と `handleLayoutChange` の責務重複を縮小
+  - cellモード再配置処理を `relayoutCellModeTiles()` に共通化
+  - `holosync:ui-chrome-changed` 受信 + `body.class` MutationObserver フォールバックで sidebar/toolbar/immersive 変化を検知
+  - Deep Link（share URL）に layout/gap がある場合は `loadLayoutSettings` の上書きを抑止
+- Worker C: frameless drag安定化 + 機能棚卸し（SP-014）
+  - frameless modeでの専用dragハンドル方式を確定（`scripts/electron.js` + CSS `app-region`）
+  - toolbar全面dragやiframe衝突を回避する安全側方針
+  - channel/playlist/watch historyの棚卸し（新規機能追加なし、安定性改善のみ）
+- Worker A: sidebar/toolbar cleanup（SP-015）
+  - sidebar / toolbar / immersive の状態永続化と操作ルール整理
+  - immersive解除時のsidebar/toolbar直前状態復元
+  - UI chrome操作: content toolbar常時表示、sidebar footer toggle、edge reveal復帰
+  - Playwright UI回帰テスト 10/10 通過確認
+- 仕様追加: SP-013, SP-014, SP-015（spec-index.json同期済み）
+- CLAUDE.md文字化け発生（Worker A/Bのセッションでエンコーディング破壊、2026-03-12に修復）
 
 ### 2026-03-09（セッション12）
 - チャンネルLive監視（SP-012）:
