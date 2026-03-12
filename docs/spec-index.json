@@ -77,7 +77,7 @@
     "status": "done",
     "pct": 100,
     "cat": "infra",
-    "file": null,
+    "file": "docs/specs/performance-optimization.md",
     "summary": "IntersectionObserver + staggered loading（最大2並列）、サムネイルプレースホルダ、CSS content-visibility、同期ループの未ロードタイル自動スキップ"
   },
   {
@@ -86,8 +86,8 @@
     "status": "done",
     "pct": 100,
     "cat": "infra",
-    "file": null,
-    "summary": "全15モジュール構成（storage→state→player→sync→main + layout/ui/debug/electron/input/channel/search/share/history/zoom-loupe等）、循環依存なし、main.js 381行"
+    "file": "docs/specs/es-module-architecture.md",
+    "summary": "全17モジュール構成（storage→state→player→sync→main + layout/ui/debug/electron/input/channel/search/share/history/zoom-loupe/fitmode/searchbrowser）、循環依存なし"
   },
   {
     "id": "SP-011",
