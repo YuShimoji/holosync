@@ -133,5 +133,23 @@
     "cat": "ui",
     "file": "docs/specs/sidebar-toolbar-cleanup.md",
     "summary": "Stabilize immersive/sidebar/toolbar state persistence, recovery paths, and narrow-width control priority."
+  },
+  {
+    "id": "SP-016",
+    "title": "Fit Mode Controller",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/fitmode.md",
+    "summary": "動的列数計算(auto dynamic)、Cover Mode(余白なし)、Full-Fit Mode(1動画最大化)の3機能。ツールバーに2ボタン配置。"
+  },
+  {
+    "id": "SP-017",
+    "title": "Search Browser Panel",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/searchbrowser.md",
+    "summary": "サイドバーにYouTube風リッチ検索ブラウザ追加。カード結果UI、フィルタ(長さ/並び/ライブ)、ページング、Quick-add。"
   }
 ]

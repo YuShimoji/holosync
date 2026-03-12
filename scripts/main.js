@@ -27,6 +27,7 @@ import {
   sanitizeEmbedSettings,
   buildEmbedUrl,
   advanceQueue,
+  parseYouTubeId,
 } from './player.js';
 import { normalizePlayerInfoMessage, syncAll, startSyncLoop, setSyncCallbacks } from './sync.js';
 import { initShare } from './share.js';
@@ -47,6 +48,8 @@ import {
 } from './layout.js';
 import { initInput } from './input.js';
 import { initChannel } from './channel.js';
+import { initFitMode } from './fitmode.js';
+import { initSearchBrowser } from './searchbrowser.js';
 
 const gridEl = document.getElementById('grid');
 
@@ -381,6 +384,8 @@ initializeApiKey(refreshDescriptionsForAllTiles);
 loadPresets();
 loadWatchHistory();
 initChannel();
+initFitMode();
+initSearchBrowser({ createTile, parseYouTubeId });
 
 window.addEventListener('message', (event) => {
   try {

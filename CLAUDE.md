@@ -11,8 +11,9 @@
 直近の状態:
 
 - セッション12でP2バックログ全消化（チャンネルLive監視完了）
-- 全15仕様完了（SP-001〜SP-015）、15モジュール構成確立
+- 全17仕様完了（SP-001〜SP-017）、17モジュール構成確立
 - Worker A/B/C（2026-03-10）: layout fit relayout / frameless drag安定化 / sidebar-toolbar cleanup の3仕様を追加実装
+- SP-016 Fit Mode / SP-017 Search Browser 統合（2026-03-12）
 - 次フェーズ未定
 
 ## Key Paths
@@ -20,7 +21,7 @@
 - Source: `scripts/`
 - Entry: `index.html`
 - Modules: storage.js → state.js → player.js → sync.js → main.js
-- UI modules: layout.js, ui.js, debug.js, electron.js, input.js, zoom-loupe.js（全15モジュール、循環依存なし）
+- UI modules: layout.js, ui.js, debug.js, electron.js, input.js, zoom-loupe.js, fitmode.js, searchbrowser.js（全17モジュール、循環依存なし）
 
 ## Rules
 

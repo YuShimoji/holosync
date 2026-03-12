@@ -26,6 +26,7 @@
         <div class="add-mode-tabs">
           <button id="singleModeBtn" class="mode-tab active" title="1つずつ追加">単体</button>
           <button id="bulkModeBtn" class="mode-tab" title="複数URLを一括追加">一括</button>
+          <button id="searchBrowserBtn" class="mode-tab" title="動画検索ブラウザ">検索</button>
         </div>
         <div id="singleAddMode">
           <form id="addForm" class="add-form">
@@ -54,6 +55,58 @@
           <p class="hint">
             改行区切りで複数URLを貼り付けてください。重複は自動でスキップされます。
           </p>
+        </div>
+        <div id="searchBrowserPanel" hidden>
+          <div class="sb-tabs">
+            <button id="sbApiModeBtn" class="sb-tab active">API検索</button>
+            <button id="sbYtModeBtn" class="sb-tab">URL追加</button>
+          </div>
+          <div id="sbApiKeyRow" class="sb-api-key-row"></div>
+          <div id="sbApiView">
+            <form id="sbSearchForm" class="sb-search-form">
+              <input
+                id="sbSearchInput"
+                type="text"
+                placeholder="キーワードで検索"
+                class="sb-search-input"
+              />
+              <div class="sb-filters">
+                <select id="sbDuration" class="sb-filter-select">
+                  <option value="any">長さ: 全て</option>
+                  <option value="short">短い (&lt;4分)</option>
+                  <option value="medium">中 (4-20分)</option>
+                  <option value="long">長い (&gt;20分)</option>
+                </select>
+                <select id="sbOrder" class="sb-filter-select">
+                  <option value="relevance">並び: 関連度</option>
+                  <option value="date">新しい順</option>
+                  <option value="viewCount">再生数順</option>
+                  <option value="rating">評価順</option>
+                </select>
+                <select id="sbType" class="sb-filter-select">
+                  <option value="video">動画</option>
+                  <option value="live">ライブ</option>
+                </select>
+              </div>
+              <button type="submit" class="primary sb-search-btn">検索</button>
+            </form>
+            <div id="sbLoading" class="sb-loading" hidden>検索中...</div>
+            <div id="sbError" class="sb-error" hidden></div>
+            <div id="sbEmpty" class="sb-empty" hidden>検索結果がありません</div>
+            <div id="sbResults" class="sb-results"></div>
+            <button id="sbLoadMore" class="sb-load-more" hidden>もっと見る</button>
+          </div>
+          <div id="sbYtView" hidden>
+            <form id="sbQuickAddForm" class="sb-quick-add-form">
+              <input
+                id="sbQuickAddInput"
+                type="text"
+                placeholder="YouTube URL または動画ID"
+                class="sb-quick-add-input"
+              />
+              <button type="submit" class="primary">追加</button>
+            </form>
+          </div>
         </div>
         <div id="addError" class="error" hidden></div>
       </section>
@@ -307,6 +360,37 @@
             <option value="theater">シアター</option>
             <option value="free">フリー配置</option>
           </select>
+          <button
+            id="fitModeBtn"
+            class="share-btn fit-btn"
+            title="フィットモード: 標準 → クリックで余白なし（Cover）に切替"
+          >
+            <svg
+              id="fitModeIcon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+            </svg>
+          </button>
+          <button id="fullFitBtn" class="share-btn fit-btn" title="全画面フィット（1動画を最大化）">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M9 3v18M3 9h6" />
+            </svg>
+          </button>
         </div>
         <div class="gap-controls">
           <label class="gap-label">間隔:</label>
@@ -319,7 +403,9 @@
         <button id="toolbarToggleBtn" class="share-btn" title="ツールバーの表示切替">
           &#x30c4;&#x30fc;&#x30eb;&#x30d0;&#x30fc;&#x3092;&#x96a0;&#x3059;
         </button>
-        <button id="immersiveToggleBtn" class="share-btn" title="没入表示の切替">&#x6ca1;&#x5165;&#x8868;&#x793a;</button>
+        <button id="immersiveToggleBtn" class="share-btn" title="没入表示の切替">
+          &#x6ca1;&#x5165;&#x8868;&#x793a;
+        </button>
         <button id="windowFrameToggleBtn" class="share-btn" title="ウィンドウ枠を非表示に切替">
           &#x30d5;&#x30ec;&#x30fc;&#x30e0;&#x30ec;&#x30b9;
         </button>
