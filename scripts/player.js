@@ -521,6 +521,10 @@ export function persistVideos() {
     queueIndex: v.queue ? v.queueIndex : undefined,
   }));
   storageAdapter.setItem('videos', data);
+  // Save as lastSession for restore (only when non-empty)
+  if (data.length > 0) {
+    storageAdapter.setItem('lastSession', data);
+  }
 }
 
 export function persistVolume(val) {

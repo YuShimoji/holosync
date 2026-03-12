@@ -151,5 +151,14 @@
     "cat": "ui",
     "file": "docs/specs/searchbrowser.md",
     "summary": "サイドバーにYouTube風リッチ検索ブラウザ追加。カード結果UI、フィルタ(長さ/並び/ライブ)、ページング、Quick-add。"
+  },
+  {
+    "id": "SP-018",
+    "title": "動画追加UX改善",
+    "status": "partial",
+    "pct": 33,
+    "cat": "ui",
+    "file": "docs/specs/video-add-ux.md",
+    "summary": "3Phase構成: (1)履歴ワンクリック再追加+チャンネルピン+セッション復元 (2)検索複数選択一括追加+履歴統合 (3)チャンネル最新動画フィード+共視聴提案"
   }
 ]

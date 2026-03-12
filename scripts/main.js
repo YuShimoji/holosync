@@ -32,7 +32,7 @@ import {
 import { normalizePlayerInfoMessage, syncAll, startSyncLoop, setSyncCallbacks } from './sync.js';
 import { initShare } from './share.js';
 import { initSearch, initializeApiKey, loadPresets } from './search.js';
-import { saveWatchHistoryEntry, loadWatchHistory, initHistory } from './history.js';
+import { saveWatchHistoryEntry, loadWatchHistory, initHistory, getLastSession } from './history.js';
 import { initUI, syncEmbedSettingsUI } from './ui.js';
 import { initDebugPanel } from './debug.js';
 import { initElectron } from './electron.js';
@@ -369,11 +369,69 @@ async function initializeApp() {
   } catch (error) {
     console.warn('Failed to restore from storage:', error);
   }
+
+  // Phase 1-C: Session restore banner
+  if (videos.length === 0) {
+    try {
+      const lastSession = await getLastSession();
+      if (lastSession.length > 0) {
+        const banner = document.getElementById('sessionRestoreBanner');
+        const restoreBtn = document.getElementById('restoreSessionBtn');
+        const dismissBtn = document.getElementById('dismissRestoreBtn');
+        if (banner) {
+          banner.hidden = false;
+          restoreBtn?.addEventListener(
+            'click',
+            () => {
+              state.isRestoring = true;
+              lastSession.forEach((entry) => {
+                const vid = typeof entry === 'string' ? entry : entry?.id;
+                if (typeof vid === 'string' && !hasVideo(vid)) {
+                  createTile(vid, typeof entry === 'object' ? entry : undefined);
+                }
+              });
+              state.isRestoring = false;
+              banner.hidden = true;
+            },
+            { once: true }
+          );
+          dismissBtn?.addEventListener(
+            'click',
+            () => {
+              banner.hidden = true;
+            },
+            { once: true }
+          );
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
 }
 
 initShare();
 initSearch({ createTile, refreshDescriptions: refreshDescriptionsForAllTiles });
-initHistory({ createTile });
+initHistory({
+  createTile,
+  onSearchChannel: (channelName) => {
+    // Switch to search browser tab and pre-fill the search query
+    const sbSearchInput = document.getElementById('sbSearchInput');
+    const searchBrowserBtn = document.getElementById('searchBrowserBtn');
+    if (searchBrowserBtn) {
+      searchBrowserBtn.click();
+    }
+    if (sbSearchInput) {
+      sbSearchInput.value = channelName;
+      sbSearchInput.focus();
+      // Auto-submit search
+      const sbSearchForm = document.getElementById('sbSearchForm');
+      if (sbSearchForm) {
+        sbSearchForm.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    }
+  },
+});
 initInput();
 initUI({ playAll, pauseAll, muteAll, unmuteAll });
 initDebugPanel();

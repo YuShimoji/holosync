@@ -529,4 +529,40 @@ export function initUI(deps) {
   });
 }
 
+// ── Toast Notification ──────────────────────────────────────
+
+let _toastContainer = null;
+
+function ensureToastContainer() {
+  if (_toastContainer) {
+    return _toastContainer;
+  }
+  _toastContainer = document.createElement('div');
+  _toastContainer.id = 'toastContainer';
+  _toastContainer.className = 'toast-container';
+  document.body.appendChild(_toastContainer);
+  return _toastContainer;
+}
+
+/**
+ * Show a brief toast notification.
+ * @param {string} message
+ * @param {number} [durationMs=3000]
+ */
+export function showToast(message, durationMs = 3000) {
+  const container = ensureToastContainer();
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  container.appendChild(toast);
+  // Trigger enter animation
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    // Fallback removal
+    setTimeout(() => toast.remove(), 500);
+  }, durationMs);
+}
+
 export { syncEmbedSettingsUI, setSidebarCollapsed, setToolbarCollapsed, updateLeaderIdOptions };
