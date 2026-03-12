@@ -15,7 +15,8 @@
   - Phase 1: 履歴ワンクリック再追加 + チャンネルピン + セッション復元
   - Phase 2: 検索複数選択一括追加 + 履歴統合 + プレビュー強化
   - Phase 3: チャンネル最新動画フィード + 共視聴提案 + クイック提案バー
-- 次: ブラウザでの動作検証、searchbrowser/fitmode統合テスト
+- 次: (1) ブラウザ動作検証（SP-018全機能 + SP-016 fitmode + SP-017 searchbrowser）
+  (2) 検証後、次のUX改善テーマ選定 or Electron再ビルド
 
 ## Key Paths
 
