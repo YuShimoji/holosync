@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>HoloSync - Web App</title>
     <link rel="stylesheet" href="styles/main.css" />
+    <script>
+      // Electron環境ではconfirm()後にwebContentsのフォーカスが失われるため、
+      // Electron dialog APIで置き換える
+      if (window.electronDialog) {
+        window.confirm = (msg) => window.electronDialog.confirm(msg);
+      }
+    </script>
   </head>
   <body>
     <aside class="sidebar" id="sidebar">

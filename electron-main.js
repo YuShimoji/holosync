@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -253,6 +253,22 @@ function startServer() {
 
   tryListen(PREFERRED_PORT, MAX_PORT_RETRIES);
 }
+
+// confirm() の代替: Electron dialog API を使用してフォーカス復帰を保証
+ipcMain.on('dialog:confirm', (event, message) => {
+  const result = dialog.showMessageBoxSync(mainWindow, {
+    type: 'question',
+    buttons: ['OK', 'キャンセル'],
+    defaultId: 0,
+    cancelId: 1,
+    message: String(message),
+  });
+  event.returnValue = result === 0;
+  // ダイアログ後にwebContentsへフォーカスを明示的に復帰
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.focus();
+  }
+});
 
 ipcMain.handle('window:get-preferences', () => {
   return { framelessMode: Boolean(windowPrefs.framelessMode) };

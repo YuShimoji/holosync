@@ -1,6 +1,12 @@
 /* eslint-env node */
 const { contextBridge, ipcRenderer } = require('electron');
 
+contextBridge.exposeInMainWorld('electronDialog', {
+  confirm(message) {
+    return ipcRenderer.sendSync('dialog:confirm', message);
+  },
+});
+
 contextBridge.exposeInMainWorld('electronWindow', {
   async getPreferences() {
     return ipcRenderer.invoke('window:get-preferences');
