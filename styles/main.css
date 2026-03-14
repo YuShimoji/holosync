@@ -360,47 +360,95 @@ label {
   color: #fff;
 }
 
-.controls {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 1fr 1fr;
-}
-.controls button {
-  padding: 8px;
-}
-.controls .speed {
-  grid-column: 1 / -1;
+.batch-main-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
-.controls .speed select {
-  flex: 1;
-}
-.controls .volume {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+.batch-icon-btn {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface, #f8f9fa);
+  color: var(--color-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
 }
-.controls .master-seek {
-  grid-column: 1 / -1;
+.batch-icon-btn:hover {
+  background: var(--color-border);
+}
+.batch-icon-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.batch-seek-row {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 6px;
 }
-.controls .master-seek input[type='range'] {
+.batch-seek-row input[type='range'] {
   flex: 1;
   min-width: 0;
 }
-.controls .seek-time {
+.batch-seek-row .seek-time {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
   white-space: nowrap;
   min-width: 32px;
   text-align: center;
+}
+.batch-details {
+  margin-top: 6px;
+}
+.batch-details-header {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  padding: 4px 0;
+}
+.batch-details-header::-webkit-details-marker {
+  display: none;
+}
+.batch-details-header::before {
+  content: '\25B8';
+  margin-right: 4px;
+  display: inline-block;
+  transition: transform 0.2s;
+}
+.batch-details[open] > .batch-details-header::before {
+  transform: rotate(90deg);
+}
+.batch-details-body {
+  display: grid;
+  gap: 8px;
+  padding: 6px 0;
+}
+.batch-details-body .speed,
+.batch-details-body .audio-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.batch-details-body .speed select,
+.batch-details-body .audio-mode select {
+  flex: 1;
+}
+.batch-details-body .volume {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
 }
 
 .footer {

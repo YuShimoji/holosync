@@ -567,7 +567,7 @@ export function showToast(message, durationMs = 3000) {
 
 // ── Accordion state persistence ──────────────────────────────
 
-const ACCORDION_IDS = ['accordionLibrary', 'accordionChannel', 'accordionSettings'];
+const ACCORDION_IDS = ['accordionLibrary', 'accordionChannel', 'accordionSettings', 'batchDetails'];
 
 async function restoreAccordionState() {
   const saved = (await storageAdapter.getItem('accordionState')) || {};

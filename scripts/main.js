@@ -57,10 +57,10 @@ import { initFitMode } from './fitmode.js';
 
 const gridEl = document.getElementById('grid');
 
-const playAllBtn = document.getElementById('playAll');
-const pauseAllBtn = document.getElementById('pauseAll');
-const muteAllBtn = document.getElementById('muteAll');
-const unmuteAllBtn = document.getElementById('unmuteAll');
+const playPauseToggle = document.getElementById('playPauseToggle');
+const playPauseIcon = document.getElementById('playPauseIcon');
+const muteToggle = document.getElementById('muteToggle');
+const muteIcon = document.getElementById('muteIcon');
 const volumeAll = document.getElementById('volumeAll');
 const volumeVal = document.getElementById('volumeVal');
 const masterSeekBar = document.getElementById('masterSeekBar');
@@ -146,6 +146,32 @@ function trackPlayerState(win, info) {
   if (previousState !== 0 && record.state === 0 && video.queue) {
     advanceQueue(video);
   }
+
+  updatePlayPauseIcon();
+}
+
+const ICON_PLAY = '<path d="M8 5v14l11-7z"/>';
+const ICON_PAUSE = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+const ICON_UNMUTED = '<path d="M3 9v6h4l5 5V4L7 9H3z"/>';
+const ICON_MUTED =
+  '<path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="23" y1="1" x2="1" y2="23" stroke="currentColor" stroke-width="2"/>';
+
+let isMuted = false;
+
+function updatePlayPauseIcon() {
+  const anyPlaying = videos.some((v) => {
+    const rec = playerStates.get(v.iframe?.contentWindow);
+    return rec && rec.state === 1;
+  });
+  playPauseIcon.innerHTML = anyPlaying ? ICON_PAUSE : ICON_PLAY;
+  playPauseToggle.classList.toggle('active', anyPlaying);
+  playPauseToggle.title = anyPlaying ? '一時停止 (Space)' : '再生 (Space)';
+}
+
+function updateMuteIcon() {
+  muteIcon.innerHTML = isMuted ? ICON_MUTED : ICON_UNMUTED;
+  muteToggle.classList.toggle('active', isMuted);
+  muteToggle.title = isMuted ? 'ミュート解除 (U)' : 'ミュート (M)';
 }
 
 function playAll() {
@@ -161,11 +187,15 @@ const DUCKING_RATIO = 0.2;
 function muteAll() {
   setAudioFocus(null);
   videos.forEach((v) => sendCommand(v.iframe, 'mute'));
+  isMuted = true;
+  updateMuteIcon();
 }
 
 function unmuteAll() {
   setAudioFocus(null);
   videos.forEach((v) => sendCommand(v.iframe, 'unMute'));
+  isMuted = false;
+  updateMuteIcon();
 }
 
 function setSpeedAll(rate) {
@@ -187,10 +217,26 @@ const syncAllBtn = document.getElementById('syncAll');
 const speedAllSelect = document.getElementById('speedAll');
 const audioModeSelect = document.getElementById('audioModeSelect');
 
-playAllBtn.addEventListener('click', playAll);
-pauseAllBtn.addEventListener('click', pauseAll);
-muteAllBtn.addEventListener('click', muteAll);
-unmuteAllBtn.addEventListener('click', unmuteAll);
+playPauseToggle.addEventListener('click', () => {
+  const anyPlaying = videos.some((v) => {
+    const rec = playerStates.get(v.iframe?.contentWindow);
+    return rec && rec.state === 1;
+  });
+  if (anyPlaying) {
+    pauseAll();
+  } else {
+    playAll();
+  }
+});
+
+muteToggle.addEventListener('click', () => {
+  if (isMuted) {
+    unmuteAll();
+  } else {
+    muteAll();
+  }
+});
+
 syncAllBtn.addEventListener('click', syncAll);
 
 speedAllSelect.addEventListener('change', (e) => {
