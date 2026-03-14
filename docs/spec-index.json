@@ -87,7 +87,7 @@
     "pct": 100,
     "cat": "infra",
     "file": "docs/specs/es-module-architecture.md",
-    "summary": "全17モジュール構成（storage→state→player→sync→main + layout/ui/debug/electron/input/channel/search/share/history/zoom-loupe/fitmode/searchbrowser）、循環依存なし"
+    "summary": "全16モジュール構成（storage→state→player→sync→main + layout/ui/debug/electron/input/channel/search/share/history/zoom-loupe/fitmode）、循環依存なし。searchbrowser.jsは統合入力に一本化し削除"
   },
   {
     "id": "SP-011",
@@ -146,11 +146,11 @@
   {
     "id": "SP-017",
     "title": "Search Browser Panel",
-    "status": "done",
-    "pct": 100,
+    "status": "deprecated",
+    "pct": 0,
     "cat": "ui",
     "file": "docs/specs/searchbrowser.md",
-    "summary": "サイドバーにYouTube風リッチ検索ブラウザ追加。カード結果UI、フィルタ(長さ/並び/ライブ)、ページング、Quick-add。"
+    "summary": "廃止: searchbrowser.jsを削除。検索機能はinput.jsの統合入力欄に一本化。"
   },
   {
     "id": "SP-018",

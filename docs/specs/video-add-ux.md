@@ -52,9 +52,9 @@
 ## Phase 2: 検索フローの高速化
 
 ### 現状の問題
-- `searchbrowser.js` で検索→結果カード表示→1件ずつ追加の流れ
+- ~~`searchbrowser.js` で検索→結果カード表示→1件ずつ追加の流れ~~ (searchbrowser.js廃止、input.jsに統合)
 - 複数動画を追加したい場合、カードを1つずつクリックする必要がある
-- `search.js` の検索履歴（5件）が `searchbrowser.js` と連携していない
+- ~~`search.js` の検索履歴（5件）が `searchbrowser.js` と連携していない~~ (統合入力に一本化済み)
 
 ### 仕様
 
@@ -83,10 +83,10 @@
 
 ### 実装詳細（Phase 2 完了）
 
-- searchbrowser.js: チェックボックス追加、selectedVideoIds Set管理、セレクションバー動的生成
-- searchbrowser.js: doSearch後にvideos.list API呼び出しでcontentDetails+statistics取得（1 unit/12件）
-- searchbrowser.js: 検索入力フォーカス時に履歴ドロップダウン表示、クリックで再検索
-- searchbrowser.js: showToast連携（個別追加・一括追加）
+- input.js (旧searchbrowser.js): チェックボックス追加、selectedVideoIds Set管理、セレクションバー動的生成
+- input.js (旧searchbrowser.js): doSearch後にvideos.list API呼び出しでcontentDetails+statistics取得（1 unit/12件）
+- input.js (旧searchbrowser.js): 検索入力フォーカス時に履歴ドロップダウン表示、クリックで再検索
+- input.js (旧searchbrowser.js): showToast連携（個別追加・一括追加）
 - styles/main.css: チェックボックス、セレクションバー、履歴ドロップダウン、再生時間バッジのCSS
 - 仕様変更: サムネイルホバー拡大は見送り（サイドバー幅の制約で効果が薄い）。代わりにサムネイル上に再生時間バッジを追加
 
@@ -147,7 +147,7 @@
 
 ## 影響範囲
 
-- **変更ファイル**: history.js, searchbrowser.js, channel.js, input.js, main.js, index.html, styles/main.css
+- **変更ファイル**: history.js, channel.js, input.js, main.js, index.html, styles/main.css (searchbrowser.js は廃止・削除済み)
 - **新規モジュール**: なし（既存モジュールの拡張で対応）
 - **ストレージ追加**: `lastSession` キーのみ（Phase 1-C）
 - **既存機能への影響**: なし（追加機能のみ）

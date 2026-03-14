@@ -31,7 +31,6 @@ storage.js → state.js → player.js → sync.js → main.js
 | `input.js` | 554 | URL入力、D&D、クリップボード、プレイリスト/チャンネル検出 |
 | `zoom-loupe.js` | 288 | ズームルーペ（拡大表示パネル） |
 | `fitmode.js` | 180 | フィットモード（動的列数/Cover/Full-Fit） |
-| `searchbrowser.js` | 282 | リッチ検索ブラウザ（カードUI/フィルタ/ページング） |
 
 ### 機能モジュール
 

@@ -1,6 +1,10 @@
-# SP-017: Search Browser Panel
+# SP-017: Search Browser Panel (廃止)
 
-## 概要
+> **廃止**: `searchbrowser.js` は削除済み。検索機能は `input.js` の統合入力欄に一本化された（8207c01）。
+> URL貼付とキーワード検索を1つのtextareaで自動判定する「スマート入力」に置換。
+> カードUI、フィルタ、ページング等の機能は `input.js` 内の `searchYouTube()` + `renderPreviewList()` に移行。
+
+## 旧概要
 
 サイドバーの「動画を追加」セクション内に YouTube 風リッチ検索ブラウザを追加。カード形式の検索結果表示、フィルタリング、ページング、ライブ検索を提供する。
 

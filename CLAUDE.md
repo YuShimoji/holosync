@@ -7,32 +7,27 @@
 プロジェクト名: HoloSync
 環境: Node.js 20 / Electron / JavaScript ES Modules / Playwright (Chromium)
 ブランチ戦略: main (トランクベース)
-現フェーズ: UX磨き上げフェーズ（動画追加の手間削減）→ タイルUI改善着手前
-直近の状態 (2026-03-13):
+現フェーズ: サイドバーUI再設計 Phase 1完了 → Phase 2/3 or 動作確認
+直近の状態 (2026-03-14):
 
-- 全18仕様完了（SP-001〜SP-018）、17モジュール構成確立
-- SP-018 動画追加UX改善 全3Phase完了（2026-03-12）
-  - Phase 1: 履歴ワンクリック再追加 + チャンネルピン + セッション復元
-  - Phase 2: 検索複数選択一括追加 + 履歴統合 + プレビュー強化
-  - Phase 3: チャンネル最新動画フィード + 共視聴提案 + クイック提案バー
-- 手動検証で以下6点を確認:
-  1. トースト通知が初回のみ → 仕様通り（liveVideoIds重複チェック）
-  2. ライブ一覧UIは未実装（一括更新ボタンで再追加は可能）
-  3. ドラッグ移動はfreeレイアウト限定、左下⋮⋮ハンドル（発見性低い）
-  4. オーディオマスター設定は右上ホバーボタン群（発見性低い）
-  5. syncBadgeとYouTube内蔵タイトルの重なり
-  6. Watch History 120秒自動保存で視聴中タイトルが入れ替わるUX問題
-- タイルUI改善方針を決定（ドラッグハンドル視認性/オーディオマスター発見性/syncBadge位置）
-- 調査完了・実装未着手でセッション破損により中断
-- リサイズドラッグのフォーカス離脱問題も報告あり（未対応）
-- 次: タイルUI改善実装 or ブラウザ動作検証（SP-018全機能 + SP-016 fitmode + SP-017 searchbrowser）
+- サイドバーUI再設計 Phase 1完了:
+  - searchbrowser.js 全削除、URL追加+検索をinput.jsの統合入力欄に一本化
+  - 旧search-panel削除、APIキー設定はコンパクト化して残存
+  - 統合入力: URLならプレビューカード、キーワードならYouTube API検索結果
+  - 全16モジュール構成に縮小（searchbrowser.js廃止）
+- APIキー永続化修正: server.listen(0)→固定ポート19876
+- 単体/一括タブを統合URL追加UIに置換済み
+- Phase 2: アコーディオン化（ライブラリ/設定/チャンネルLive監視）— 未着手
+- Phase 3: 一括操作のコンパクト化（サイドバー下部固定）— 未着手
+- Electron動作確認未実施（コミット済みだが手動テスト未）
+- クォータ表示UX問題: 「クォータ確認待ち」が自動チェックしないのに表示される
 
 ## Key Paths
 
 - Source: `scripts/`
 - Entry: `index.html`
 - Modules: storage.js → state.js → player.js → sync.js → main.js
-- UI modules: layout.js, ui.js, debug.js, electron.js, input.js, zoom-loupe.js, fitmode.js, searchbrowser.js（全17モジュール、循環依存なし）
+- UI modules: layout.js, ui.js, debug.js, electron.js, input.js, zoom-loupe.js, fitmode.js（全16モジュール、循環依存なし）
 
 ## Rules
 
@@ -70,7 +65,7 @@
 | 2026-03-10 | UI chrome管理: immersive/sidebar/toolbar状態の永続化と復帰パスを安定化 | 全状態再計算 / toolbar単独 / edge reveal含む安定化            | 全画面終了時の確実な状態復帰と、狭幅時の制御優先度を明確化                                           |
 | 2026-03-12 | AGENTS.md廃止→CLAUDE.md一本化                                          | 統合削除 / 同期維持 / 保留                                    | WORKFLOW_STATE_SSOT.md統合と同じ理由。SSOTの二重管理を排除                                           |
 | 2026-03-12 | 次フェーズ方針: UX磨き上げ（動画追加の手間削減）                       | UX磨き上げ(A) / 公開準備(B) / 新機能探索(C) / Electron強化(D) | 実運用でのペインポイントが「動画追加の手間」。基本機能は揃っているため体験の質を優先                 |
-| 2026-03-13 | タイルUI改善を次フェーズとして着手                                      | タイルUI改善 / Watch History UX / 新機能                       | 検証で発見されたUI発見性の低さ（ドラッグハンドル/オーディオマスター/syncBadge重なり）を優先          |
+| 2026-03-13 | タイルUI改善を次フェーズとして着手                                     | タイルUI改善 / Watch History UX / 新機能                      | 検証で発見されたUI発見性の低さ（ドラッグハンドル/オーディオマスター/syncBadge重なり）を優先          |
 
 ## Done条件（UX磨き上げフェーズ）
 
