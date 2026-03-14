@@ -230,16 +230,28 @@ function startServer() {
     }
   });
 
-  server.on('error', (error) => {
-    log(`Server error: ${error.code}`);
-  });
+  const PREFERRED_PORT = 19876;
+  const MAX_PORT_RETRIES = 10;
 
-  server.listen(0, '127.0.0.1', () => {
-    const address = server.address();
-    currentPort = address?.port;
-    log(`Internal server running at http://localhost:${currentPort}/`);
-    createWindow(currentPort);
-  });
+  function tryListen(port, retries) {
+    server.once('error', (error) => {
+      if (error.code === 'EADDRINUSE' && retries > 0) {
+        log(`Port ${port} in use, trying ${port + 1}...`);
+        tryListen(port + 1, retries - 1);
+      } else {
+        log(`Server error: ${error.code}`);
+      }
+    });
+
+    server.listen(port, '127.0.0.1', () => {
+      const address = server.address();
+      currentPort = address?.port;
+      log(`Internal server running at http://localhost:${currentPort}/`);
+      createWindow(currentPort);
+    });
+  }
+
+  tryListen(PREFERRED_PORT, MAX_PORT_RETRIES);
 }
 
 ipcMain.handle('window:get-preferences', () => {

@@ -366,19 +366,13 @@ export function initInput() {
       return;
     }
 
-    // Pure playlist URL (no v= parameter)
+    // Pure playlist URL (no v= parameter) — block batch add in single mode
     const playlistId = parsePlaylistId(raw);
     if (playlistId) {
-      if (!youtubeApiKey) {
-        addError.textContent =
-          '\u30D7\u30EC\u30A4\u30EA\u30B9\u30C8\u5C55\u958B\u306B\u306FAPI\u30AD\u30FC\u304C\u5FC5\u8981\u3067\u3059\u3002\u691C\u7D22\u30BB\u30AF\u30B7\u30E7\u30F3\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002';
-        addError.hidden = false;
-        return;
-      }
-      await addFromPlaylist(playlistId);
-      urlInput.value = '';
-      urlPreview.hidden = true;
-      urlInput.focus();
+      addError.textContent =
+        '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8URL\u3067\u3059\u3002\u4e00\u62ec\u8ffd\u52a0\u30bf\u30d6\u3092\u4f7f\u3046\u304b\u3001\u500b\u5225\u306e\u52d5\u753bURL\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
+      addError.hidden = false;
+      urlInput.select();
       return;
     }
 
