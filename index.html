@@ -28,86 +28,46 @@
 
       <section class="section">
         <h2>動画を追加</h2>
-        <div class="add-mode-tabs">
-          <button id="urlAddModeBtn" class="mode-tab active" title="URLで追加">URL追加</button>
-          <button id="searchBrowserBtn" class="mode-tab" title="動画検索ブラウザ">検索</button>
+        <textarea
+          id="urlAddInput"
+          class="bulk-textarea"
+          placeholder="URLを貼り付け or キーワードで検索&#10;複数URLは改行で区切り"
+          rows="2"
+        ></textarea>
+        <div id="searchFilters" class="sb-filters" hidden>
+          <select id="sbDuration" class="sb-filter-select">
+            <option value="any">長さ: 全て</option>
+            <option value="short">短い (&lt;4分)</option>
+            <option value="medium">中 (4-20分)</option>
+            <option value="long">長い (&gt;20分)</option>
+          </select>
+          <select id="sbOrder" class="sb-filter-select">
+            <option value="relevance">並び: 関連度</option>
+            <option value="date">新しい順</option>
+            <option value="viewCount">再生数順</option>
+            <option value="rating">評価順</option>
+          </select>
+          <select id="sbType" class="sb-filter-select">
+            <option value="video">動画</option>
+            <option value="live">ライブ</option>
+          </select>
         </div>
-        <div id="urlAddMode">
-          <textarea
-            id="urlAddInput"
-            class="bulk-textarea"
-            placeholder="YouTubeのURLを貼り付け（複数行対応）&#10;例: https://www.youtube.com/watch?v=...&#10;プレイリストURLも展開可能（APIキー要）"
-            rows="2"
-          ></textarea>
-          <div id="urlPreviewList" class="url-preview-list"></div>
-          <div id="urlAddBar" class="sb-selection-bar" hidden>
-            <span id="urlAddCount" class="sb-sel-count"></span>
-            <button id="urlAddSelectAll" class="sb-sel-clear">全選択</button>
-            <button id="urlAddDeselectAll" class="sb-sel-clear">全解除</button>
-            <button id="urlAddSubmit" class="primary sb-sel-add-all">追加</button>
-          </div>
-        </div>
-        <div id="searchBrowserPanel" hidden>
-          <div class="sb-tabs">
-            <button id="sbApiModeBtn" class="sb-tab active">API検索</button>
-            <button id="sbYtModeBtn" class="sb-tab">URL追加</button>
-          </div>
-          <div id="sbApiKeyRow" class="sb-api-key-row"></div>
-          <div id="sbApiView">
-            <form id="sbSearchForm" class="sb-search-form">
-              <input
-                id="sbSearchInput"
-                type="text"
-                placeholder="キーワードで検索"
-                class="sb-search-input"
-              />
-              <div class="sb-filters">
-                <select id="sbDuration" class="sb-filter-select">
-                  <option value="any">長さ: 全て</option>
-                  <option value="short">短い (&lt;4分)</option>
-                  <option value="medium">中 (4-20分)</option>
-                  <option value="long">長い (&gt;20分)</option>
-                </select>
-                <select id="sbOrder" class="sb-filter-select">
-                  <option value="relevance">並び: 関連度</option>
-                  <option value="date">新しい順</option>
-                  <option value="viewCount">再生数順</option>
-                  <option value="rating">評価順</option>
-                </select>
-                <select id="sbType" class="sb-filter-select">
-                  <option value="video">動画</option>
-                  <option value="live">ライブ</option>
-                </select>
-              </div>
-              <button type="submit" class="primary sb-search-btn">検索</button>
-            </form>
-            <div id="sbLoading" class="sb-loading" hidden>検索中...</div>
-            <div id="sbError" class="sb-error" hidden></div>
-            <div id="sbEmpty" class="sb-empty" hidden>検索結果がありません</div>
-            <div id="sbResults" class="sb-results"></div>
-            <button id="sbLoadMore" class="sb-load-more" hidden>もっと見る</button>
-          </div>
-          <div id="sbYtView" hidden>
-            <form id="sbQuickAddForm" class="sb-quick-add-form">
-              <input
-                id="sbQuickAddInput"
-                type="text"
-                placeholder="YouTube URL または動画ID"
-                class="sb-quick-add-input"
-              />
-              <button type="submit" class="primary">追加</button>
-            </form>
-          </div>
+        <div id="sbLoading" class="sb-loading" hidden>検索中...</div>
+        <div id="urlPreviewList" class="url-preview-list"></div>
+        <div id="urlAddBar" class="sb-selection-bar" hidden>
+          <span id="urlAddCount" class="sb-sel-count"></span>
+          <button id="urlAddSelectAll" class="sb-sel-clear">全選択</button>
+          <button id="urlAddDeselectAll" class="sb-sel-clear">全解除</button>
+          <button id="urlAddSubmit" class="primary sb-sel-add-all">追加</button>
         </div>
         <div id="addError" class="error" hidden></div>
       </section>
 
-      <section class="section search-panel">
-        <h2>動画検索</h2>
+      <section class="section api-key-panel">
+        <h2>APIキー</h2>
         <div class="api-key-section">
-          <label for="apiKeyInput">YouTube API Key:</label>
           <div class="api-key-controls">
-            <input id="apiKeyInput" type="password" placeholder="APIキーを入力" />
+            <input id="apiKeyInput" type="password" placeholder="YouTube APIキーを入力" />
             <button id="deleteApiKeyBtn" class="delete-btn" title="APIキーを削除">🗑️</button>
           </div>
           <div id="apiKeyStatus" class="api-key-status">
@@ -115,35 +75,6 @@
             <button id="checkQuotaBtn" class="small-btn">確認</button>
           </div>
         </div>
-        <form id="searchForm" class="search-form">
-          <div class="search-input-wrapper">
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="キーワードで検索"
-              required
-              autocomplete="off"
-            />
-            <ul id="searchHistory" class="search-history" hidden></ul>
-          </div>
-          <button type="submit" class="primary">検索</button>
-        </form>
-        <div class="search-filters">
-          <select id="searchDuration" title="動画の長さ">
-            <option value="any">長さ: 全て</option>
-            <option value="short">短い (&lt;4分)</option>
-            <option value="medium">中 (4-20分)</option>
-            <option value="long">長い (&gt;20分)</option>
-          </select>
-          <select id="searchOrder" title="並び順">
-            <option value="relevance">関連度順</option>
-            <option value="date">新しい順</option>
-            <option value="viewCount">再生回数順</option>
-            <option value="rating">評価順</option>
-          </select>
-        </div>
-        <ul id="searchResults" class="search-results" hidden></ul>
-        <div id="searchError" class="error" hidden></div>
       </section>
 
       <section class="section preset-panel">

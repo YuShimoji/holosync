@@ -1,6 +1,6 @@
 /**
  * @file scripts/input.js
- * @brief Unified URL input with preview list, drag & drop, clipboard paste, onboarding demo.
+ * @brief Unified smart input: URL paste + keyword search in one field.
  */
 import { hasVideo, youtubeApiKey } from './state.js';
 import { parseYouTubeId, parsePlaylistId, createTile } from './player.js';
@@ -17,6 +17,11 @@ const urlAddSubmit = document.getElementById('urlAddSubmit');
 const urlAddSelectAll = document.getElementById('urlAddSelectAll');
 const urlAddDeselectAll = document.getElementById('urlAddDeselectAll');
 const addError = document.getElementById('addError');
+const searchFilters = document.getElementById('searchFilters');
+const sbLoading = document.getElementById('sbLoading');
+const sbDuration = document.getElementById('sbDuration');
+const sbOrder = document.getElementById('sbOrder');
+const sbType = document.getElementById('sbType');
 
 // Onboarding
 const loadDemoBtn = document.getElementById('loadDemoBtn');
@@ -28,11 +33,11 @@ const contentEl = document.getElementById('content');
 
 // ── Preview State ──────────────────────────────────────────
 
-// Map<videoId, { videoId, title, author, thumbUrl, checked, isDuplicate }>
+// Map<videoId, { videoId, title, author, thumbUrl, checked, isDuplicate, playlistId?, isSearch? }>
 const previewMap = new Map();
-// Track which playlist IDs are currently being fetched
 const pendingPlaylists = new Set();
 let debounceTimer = null;
+let lastSearchQuery = '';
 
 // ── oEmbed Fetch ───────────────────────────────────────────
 
@@ -58,80 +63,125 @@ async function fetchOEmbed(videoId) {
   }
 }
 
-// ── Parse & Preview ────────────────────────────────────────
+// ── YouTube API Search ─────────────────────────────────────
 
-async function parseAndPreview() {
-  const text = urlAddInput.value;
+async function searchYouTube(query) {
+  if (!youtubeApiKey) {
+    throw new Error('API\u30ad\u30fc\u304c\u672a\u8a2d\u5b9a\u3067\u3059\u3002');
+  }
+  const duration = sbDuration?.value || 'any';
+  const order = sbOrder?.value || 'relevance';
+  const type = sbType?.value || 'video';
+  let url =
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12` +
+    `&q=${encodeURIComponent(query)}&order=${order}&key=${youtubeApiKey}`;
+  if (duration !== 'any') {
+    url += `&videoDuration=${duration}`;
+  }
+  if (type === 'live') {
+    url += '&eventType=live';
+  }
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API\u30a8\u30e9\u30fc (${resp.status})`);
+  }
+  const data = await resp.json();
+  return (data.items || [])
+    .filter((item) => item.id?.videoId)
+    .map((item) => ({
+      videoId: item.id.videoId,
+      title: item.snippet.title,
+      author: item.snippet.channelTitle,
+      thumbUrl: item.snippet.thumbnails?.medium?.url || '',
+    }));
+}
+
+// ── Classify Input ─────────────────────────────────────────
+
+function classifyInput(text) {
   const lines = text
     .split(/[\n\r]+/)
     .map((l) => l.trim())
     .filter(Boolean);
-
-  // Collect current video IDs and playlist IDs from textarea
-  const currentVideoIds = new Set();
-  const currentPlaylistIds = new Set();
-  const newVideoIds = [];
-  const newPlaylistIds = [];
+  const urls = [];
+  const playlists = [];
+  const channels = [];
+  let searchQuery = null;
 
   for (const line of lines) {
-    // Video ID takes priority (URL may contain both v= and list=)
     const vid = parseYouTubeId(line);
     if (vid) {
-      currentVideoIds.add(vid);
-      if (!previewMap.has(vid)) {
-        newVideoIds.push(vid);
-      }
+      urls.push({ line, videoId: vid });
       continue;
     }
-
     const plId = parsePlaylistId(line);
     if (plId) {
-      currentPlaylistIds.add(plId);
-      if (!pendingPlaylists.has(plId)) {
-        // Check if any preview entries already came from this playlist
-        let alreadyExpanded = false;
-        for (const entry of previewMap.values()) {
-          if (entry.playlistId === plId) {
-            alreadyExpanded = true;
-            break;
-          }
-        }
-        if (!alreadyExpanded) {
-          newPlaylistIds.push(plId);
-        }
-      }
+      playlists.push({ line, playlistId: plId });
       continue;
     }
-
-    // Channel URLs: show info in addError (not in preview list)
-    const chParsed = parseChannelInput(line);
-    if (chParsed) {
-      addError.textContent = '';
-      if (youtubeApiKey) {
-        const msgNode = document.createTextNode(
-          '\u30c1\u30e3\u30f3\u30cd\u30ebURL\u3092\u691c\u51fa\u3002'
-        );
-        addError.appendChild(msgNode);
-        const watchBtn = document.createElement('button');
-        watchBtn.className = 'queue-play-btn';
-        watchBtn.textContent = '\u3053\u306e\u30c1\u30e3\u30f3\u30cd\u30eb\u3092\u76e3\u8996';
-        watchBtn.addEventListener('click', async () => {
-          await addChannel(line);
-          addError.hidden = true;
-        });
-        addError.appendChild(watchBtn);
-      } else {
-        addError.textContent =
-          '\u30c1\u30e3\u30f3\u30cd\u30eb\u76e3\u8996\u306bAPI\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002';
-      }
-      addError.classList.add('info');
-      addError.hidden = false;
+    const ch = parseChannelInput(line);
+    if (ch) {
+      channels.push({ line, channel: ch });
+      continue;
+    }
+    // Not a URL — treat as search query (use first non-URL line)
+    if (!searchQuery) {
+      searchQuery = line;
     }
   }
 
-  // Remove entries no longer in textarea
+  return { urls, playlists, channels, searchQuery, isMultiLine: lines.length > 1 };
+}
+
+// ── Parse & Preview ────────────────────────────────────────
+
+async function parseAndPreview() {
+  const text = urlAddInput.value;
+  const { urls, playlists, channels, searchQuery, isMultiLine } = classifyInput(text);
+
+  // Show/hide search filters
+  const isSearchMode = !isMultiLine && !urls.length && !playlists.length && !!searchQuery;
+  if (searchFilters) {
+    searchFilters.hidden = !isSearchMode;
+  }
+
+  // Track current IDs to remove stale entries
+  const currentVideoIds = new Set(urls.map((u) => u.videoId));
+  const currentPlaylistIds = new Set(playlists.map((p) => p.playlistId));
+
+  // Handle channel URLs
+  for (const ch of channels) {
+    addError.textContent = '';
+    if (youtubeApiKey) {
+      const msgNode = document.createTextNode(
+        '\u30c1\u30e3\u30f3\u30cd\u30ebURL\u3092\u691c\u51fa\u3002'
+      );
+      addError.appendChild(msgNode);
+      const watchBtn = document.createElement('button');
+      watchBtn.className = 'queue-play-btn';
+      watchBtn.textContent = '\u3053\u306e\u30c1\u30e3\u30f3\u30cd\u30eb\u3092\u76e3\u8996';
+      watchBtn.addEventListener('click', async () => {
+        await addChannel(ch.line);
+        addError.hidden = true;
+      });
+      addError.appendChild(watchBtn);
+    } else {
+      addError.textContent =
+        '\u30c1\u30e3\u30f3\u30cd\u30eb\u76e3\u8996\u306bAPI\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002';
+    }
+    addError.classList.add('info');
+    addError.hidden = false;
+  }
+
+  // Remove stale entries
   for (const [vid, entry] of previewMap) {
-    if (entry.playlistId) {
+    if (entry.isSearch) {
+      // Search results cleared when query changes
+      if (searchQuery !== lastSearchQuery) {
+        previewMap.delete(vid);
+      }
+    } else if (entry.playlistId) {
       if (!currentPlaylistIds.has(entry.playlistId)) {
         previewMap.delete(vid);
       }
@@ -142,13 +192,14 @@ async function parseAndPreview() {
     }
   }
 
-  // Fetch oEmbed for new video IDs in parallel
+  // Fetch oEmbed for new video IDs
+  const newVideoIds = urls.filter((u) => !previewMap.has(u.videoId));
   if (newVideoIds.length > 0) {
-    const fetches = newVideoIds.map(async (vid) => {
-      const meta = await fetchOEmbed(vid);
-      const isDuplicate = hasVideo(vid);
-      previewMap.set(vid, {
-        videoId: vid,
+    const fetches = newVideoIds.map(async ({ videoId }) => {
+      const meta = await fetchOEmbed(videoId);
+      const isDuplicate = hasVideo(videoId);
+      previewMap.set(videoId, {
+        videoId,
         title: meta.title,
         author: meta.author,
         thumbUrl: meta.thumbUrl,
@@ -160,9 +211,18 @@ async function parseAndPreview() {
   }
 
   // Expand new playlists
-  for (const plId of newPlaylistIds) {
+  for (const { playlistId: plId } of playlists) {
+    let alreadyExpanded = false;
+    for (const entry of previewMap.values()) {
+      if (entry.playlistId === plId) {
+        alreadyExpanded = true;
+        break;
+      }
+    }
+    if (alreadyExpanded || pendingPlaylists.has(plId)) {
+      continue;
+    }
     if (!youtubeApiKey) {
-      // Show error for this playlist
       addError.textContent =
         'API\u30ad\u30fc\u672a\u8a2d\u5b9a\u306e\u305f\u3081\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u3092\u5c55\u958b\u3067\u304d\u307e\u305b\u3093\u3002';
       addError.classList.add('info');
@@ -170,7 +230,7 @@ async function parseAndPreview() {
       continue;
     }
     pendingPlaylists.add(plId);
-    renderPreviewList(); // Show loading state
+    renderPreviewList();
     try {
       const videoIds = await fetchPlaylistItems(plId);
       const fetches = videoIds.map(async (vid) => {
@@ -198,6 +258,60 @@ async function parseAndPreview() {
     }
   }
 
+  // Search mode: keyword search via YouTube API
+  if (isSearchMode && searchQuery && searchQuery !== lastSearchQuery) {
+    lastSearchQuery = searchQuery;
+    // Clear previous search results
+    for (const [vid, entry] of previewMap) {
+      if (entry.isSearch) {
+        previewMap.delete(vid);
+      }
+    }
+    if (youtubeApiKey) {
+      if (sbLoading) {
+        sbLoading.hidden = false;
+      }
+      try {
+        const results = await searchYouTube(searchQuery);
+        for (const r of results) {
+          if (previewMap.has(r.videoId)) {
+            continue;
+          }
+          const isDuplicate = hasVideo(r.videoId);
+          previewMap.set(r.videoId, {
+            videoId: r.videoId,
+            title: r.title,
+            author: r.author,
+            thumbUrl: r.thumbUrl,
+            checked: false,
+            isDuplicate,
+            isSearch: true,
+          });
+        }
+      } catch (err) {
+        addError.textContent = err.message;
+        addError.hidden = false;
+      } finally {
+        if (sbLoading) {
+          sbLoading.hidden = true;
+        }
+      }
+    } else {
+      addError.textContent =
+        '\u691c\u7d22\u306b\u306fAPI\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002';
+      addError.classList.add('info');
+      addError.hidden = false;
+    }
+  } else if (!isSearchMode) {
+    // Clear search results when switching back to URL mode
+    for (const [vid, entry] of previewMap) {
+      if (entry.isSearch) {
+        previewMap.delete(vid);
+      }
+    }
+    lastSearchQuery = '';
+  }
+
   renderPreviewList();
   updateAddBar();
 }
@@ -207,7 +321,6 @@ async function parseAndPreview() {
 function renderPreviewList() {
   urlPreviewList.innerHTML = '';
 
-  // Show loading for pending playlists
   for (const plId of pendingPlaylists) {
     const loadingEl = document.createElement('div');
     loadingEl.className = 'url-preview-loading';
@@ -263,7 +376,6 @@ function renderPreviewList() {
       card.appendChild(badge);
     }
 
-    // Click card to toggle checkbox
     card.addEventListener('click', (e) => {
       if (e.target.closest('.sb-result-check')) {
         return;
@@ -306,9 +418,12 @@ function submitSelected() {
       addError.hidden = true;
     }, 3000);
   }
-  // Clear
   urlAddInput.value = '';
   previewMap.clear();
+  lastSearchQuery = '';
+  if (searchFilters) {
+    searchFilters.hidden = true;
+  }
   renderPreviewList();
   updateAddBar();
 }
@@ -364,7 +479,7 @@ const DEMO_VIDEOS = [
 // ── Init ────────────────────────────────────────────────────
 
 export function initInput() {
-  // Unified URL input with debounced preview
+  // Unified input with debounced parse/search
   urlAddInput.addEventListener('input', () => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -374,6 +489,10 @@ export function initInput() {
     const val = urlAddInput.value.trim();
     if (!val) {
       previewMap.clear();
+      lastSearchQuery = '';
+      if (searchFilters) {
+        searchFilters.hidden = true;
+      }
       renderPreviewList();
       updateAddBar();
       return;
@@ -381,6 +500,26 @@ export function initInput() {
 
     debounceTimer = setTimeout(() => parseAndPreview(), 500);
   });
+
+  // Re-search when filters change
+  if (sbDuration) {
+    sbDuration.addEventListener('change', () => {
+      lastSearchQuery = '';
+      parseAndPreview();
+    });
+  }
+  if (sbOrder) {
+    sbOrder.addEventListener('change', () => {
+      lastSearchQuery = '';
+      parseAndPreview();
+    });
+  }
+  if (sbType) {
+    sbType.addEventListener('change', () => {
+      lastSearchQuery = '';
+      parseAndPreview();
+    });
+  }
 
   // Submit selected videos
   urlAddSubmit.addEventListener('click', () => submitSelected());

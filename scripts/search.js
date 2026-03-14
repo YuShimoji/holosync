@@ -12,11 +12,7 @@ import {
   setYoutubeApiKey,
 } from './state.js';
 
-// DOM references (search / preset / API key)
-const searchForm = document.getElementById('searchForm');
-const searchInput = document.getElementById('searchInput');
-const searchResults = document.getElementById('searchResults');
-const searchError = document.getElementById('searchError');
+// DOM references (preset / API key)
 const apiKeyInput = document.getElementById('apiKeyInput');
 const deleteApiKeyBtn = document.getElementById('deleteApiKeyBtn');
 const checkQuotaBtn = document.getElementById('checkQuotaBtn');
@@ -25,9 +21,6 @@ const savePresetBtn = document.getElementById('savePresetBtn');
 const presetNameInput = document.getElementById('presetNameInput');
 const presetList = document.getElementById('presetList');
 const gridEl = document.getElementById('grid');
-const searchHistoryEl = document.getElementById('searchHistory');
-const searchDurationEl = document.getElementById('searchDuration');
-const searchOrderEl = document.getElementById('searchOrder');
 
 export async function fetchPlaylistItems(playlistId, maxItems = 50) {
   if (!youtubeApiKey) {
@@ -60,58 +53,6 @@ export async function fetchPlaylistItems(playlistId, maxItems = 50) {
     pageToken = data.nextPageToken;
   }
   return items;
-}
-
-async function searchYouTube(query, { duration = 'any', order = 'relevance' } = {}) {
-  if (!youtubeApiKey) {
-    throw new Error('YouTube API key not set. Please enter it in the search section.');
-  }
-
-  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=${order}&key=${youtubeApiKey}`;
-  if (duration !== 'any') {
-    url += `&videoDuration=${duration}`;
-  }
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.items.map((item) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      channel: item.snippet.channelTitle,
-      thumbnailUrl: item.snippet.thumbnails.default.url,
-      duration: 'Unknown',
-    }));
-  } catch (error) {
-    console.error('Search failed:', error);
-    throw error;
-  }
-}
-
-function displaySearchResults(results, createTile) {
-  searchResults.innerHTML = '';
-  results.forEach((result) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <img src="${result.thumbnailUrl}" alt="Thumbnail">
-      <div>
-        <div class="title">${result.title}</div>
-        <div class="channel">${result.channel}</div>
-      </div>
-    `;
-    li.addEventListener('click', () => {
-      if (!hasVideo(result.id)) {
-        createTile(result.id);
-        searchResults.hidden = true;
-        searchInput.value = '';
-      }
-    });
-    searchResults.appendChild(li);
-  });
-  searchResults.hidden = false;
 }
 
 async function saveCurrentPreset(name) {
@@ -335,78 +276,6 @@ export function initSearch(deps) {
 
   checkQuotaBtn.addEventListener('click', async () => {
     await checkQuota();
-  });
-
-  // Search history dropdown
-  async function showSearchHistory() {
-    const history = await storageAdapter.getSearchHistory();
-    if (history.length === 0) {
-      searchHistoryEl.hidden = true;
-      return;
-    }
-    searchHistoryEl.innerHTML = '';
-    history.forEach((q) => {
-      const li = document.createElement('li');
-      li.textContent = q;
-      li.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        searchInput.value = q;
-        searchHistoryEl.hidden = true;
-        searchForm.dispatchEvent(new Event('submit'));
-      });
-      searchHistoryEl.appendChild(li);
-    });
-    const clearLi = document.createElement('li');
-    clearLi.className = 'history-clear';
-    clearLi.textContent = '\u5c65\u6b74\u3092\u30af\u30ea\u30a2';
-    clearLi.addEventListener('mousedown', async (e) => {
-      e.preventDefault();
-      await storageAdapter.setItem('searchHistory', []);
-      searchHistoryEl.hidden = true;
-    });
-    searchHistoryEl.appendChild(clearLi);
-    searchHistoryEl.hidden = false;
-  }
-
-  searchInput.addEventListener('focus', () => {
-    if (!searchInput.value.trim()) {
-      showSearchHistory();
-    }
-  });
-  searchInput.addEventListener('blur', () => {
-    setTimeout(() => {
-      searchHistoryEl.hidden = true;
-    }, 150);
-  });
-  searchInput.addEventListener('input', () => {
-    if (!searchInput.value.trim()) {
-      showSearchHistory();
-    } else {
-      searchHistoryEl.hidden = true;
-    }
-  });
-
-  searchForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    searchError.hidden = true;
-    searchHistoryEl.hidden = true;
-    const query = searchInput.value.trim();
-    if (!query) {
-      return;
-    }
-
-    try {
-      const filters = {
-        duration: searchDurationEl.value,
-        order: searchOrderEl.value,
-      };
-      const results = await searchYouTube(query, filters);
-      displaySearchResults(results, deps.createTile);
-      await storageAdapter.saveSearchHistory(query);
-    } catch (error) {
-      searchError.textContent = error.message;
-      searchError.hidden = false;
-    }
   });
 
   savePresetBtn.addEventListener('click', () => {

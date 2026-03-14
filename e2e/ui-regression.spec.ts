@@ -206,32 +206,6 @@ test.describe('UI Regression', () => {
     await expect(page.locator('#urlPreviewList .sb-result-card')).toHaveCount(0);
   });
 
-  // ── 8. URL追加/検索モード切替 ─────────────────────────────
-
-  test('url add and search mode toggle', async ({ page }) => {
-    const urlAddMode = page.locator('#urlAddMode');
-    const searchPanel = page.locator('#searchBrowserPanel');
-    const urlAddBtn = page.locator('#urlAddModeBtn');
-    const searchBtn = page.locator('#searchBrowserBtn');
-
-    // 初期状態: URL追加モード
-    await expect(urlAddMode).toBeVisible();
-    await expect(searchPanel).toBeHidden();
-    await expect(urlAddBtn).toHaveClass(/active/);
-
-    // 検索モードに切替
-    await page.click('#searchBrowserBtn');
-    await expect(urlAddMode).toBeHidden();
-    await expect(searchPanel).toBeVisible();
-    await expect(searchBtn).toHaveClass(/active/);
-    await expect(urlAddBtn).not.toHaveClass(/active/);
-
-    // URL追加モードに戻す
-    await page.click('#urlAddModeBtn');
-    await expect(urlAddMode).toBeVisible();
-    await expect(searchPanel).toBeHidden();
-  });
-
   // ── 9. 視聴履歴UIセクション表示 ──────────────────────────
 
   test('watch history section exists', async ({ page }) => {

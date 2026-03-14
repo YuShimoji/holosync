@@ -27,7 +27,6 @@ import {
   sanitizeEmbedSettings,
   buildEmbedUrl,
   advanceQueue,
-  parseYouTubeId,
 } from './player.js';
 import { normalizePlayerInfoMessage, syncAll, startSyncLoop, setSyncCallbacks } from './sync.js';
 import { initShare } from './share.js';
@@ -55,7 +54,6 @@ import {
 import { initInput } from './input.js';
 import { initChannel } from './channel.js';
 import { initFitMode } from './fitmode.js';
-import { initSearchBrowser } from './searchbrowser.js';
 
 const gridEl = document.getElementById('grid');
 
@@ -421,20 +419,12 @@ initSearch({ createTile, refreshDescriptions: refreshDescriptionsForAllTiles });
 initHistory({
   createTile,
   onSearchChannel: (channelName) => {
-    // Switch to search browser tab and pre-fill the search query
-    const sbSearchInput = document.getElementById('sbSearchInput');
-    const searchBrowserBtn = document.getElementById('searchBrowserBtn');
-    if (searchBrowserBtn) {
-      searchBrowserBtn.click();
-    }
-    if (sbSearchInput) {
-      sbSearchInput.value = channelName;
-      sbSearchInput.focus();
-      // Auto-submit search
-      const sbSearchForm = document.getElementById('sbSearchForm');
-      if (sbSearchForm) {
-        sbSearchForm.dispatchEvent(new Event('submit', { cancelable: true }));
-      }
+    // Pre-fill unified input with channel name to trigger search
+    const urlAddInput = document.getElementById('urlAddInput');
+    if (urlAddInput) {
+      urlAddInput.value = channelName;
+      urlAddInput.focus();
+      urlAddInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
   },
 });
@@ -450,7 +440,6 @@ loadWatchHistory();
 loadSuggestions();
 initChannel();
 initFitMode();
-initSearchBrowser({ createTile, parseYouTubeId });
 
 window.addEventListener('message', (event) => {
   try {
