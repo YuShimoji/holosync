@@ -7,7 +7,7 @@
 プロジェクト名: HoloSync
 環境: Node.js 20 / Electron / JavaScript ES Modules / Playwright (Chromium)
 ブランチ戦略: main (トランクベース)
-現フェーズ: サイドバーUI再設計 Phase 2完了 → Phase 3 or 別タスク
+現フェーズ: サイドバーUI再設計 Phase 1-3完了
 直近の状態 (2026-03-14):
 
 - サイドバーUI再設計 Phase 1完了:
@@ -20,7 +20,11 @@
   - 一括操作を動画追加直下に移動（高頻度セクション上部集約）
   - APIキーを設定アコーディオンに移動
   - Electron confirm()フォーカス喪失修正（contextBridge + dialog API）
-- Phase 3: 一括操作のコンパクト化（サイドバー下部固定）— 未着手
+- サイドバーUI再設計 Phase 3完了:
+  - 4テキストボタン → 2トグルアイコン(再生/ミュート) + 同期アイコン
+  - シークバーを専用行に配置（サイドバー幅でも十分な操作領域）
+  - 速度/音量/Audioモードをdetails折りたたみに格納
+  - トグルアイコンがplayerState変更に追従（再生中→一時停止アイコン等）
 - クォータ表示UX問題: 「クォータ確認待ち」が自動チェックしないのに表示される
 
 ## Key Paths
