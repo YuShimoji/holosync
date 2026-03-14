@@ -41,8 +41,8 @@ test.describe('HoloSync Basic Functionality', () => {
 
     await expect(page).toHaveTitle(/HoloSync/);
     await expect(page.locator('#grid')).toBeVisible();
-    await expect(page.locator('#addForm')).toBeVisible();
-    await expect(page.locator('#urlInput')).toBeVisible();
+    await expect(page.locator('#urlAddMode')).toBeVisible();
+    await expect(page.locator('#urlAddInput')).toBeVisible();
 
     console.log('All UI elements are visible');
   });

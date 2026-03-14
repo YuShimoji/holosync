@@ -198,39 +198,38 @@ test.describe('UI Regression', () => {
     // 初期状態: エラー非表示
     await expect(errorDiv).toBeHidden();
 
-    // 無効URL入力
-    await page.fill('#urlInput', 'https://example.com/not-a-youtube-url');
-    await page.click('#addForm button[type="submit"]');
-
-    // エラーメッセージ表示
-    await expect(errorDiv).toBeVisible();
-    await expect(errorDiv).not.toBeEmpty();
+    // 無効URL入力 — unified textarea triggers preview on input
+    await page.fill('#urlAddInput', 'https://example.com/not-a-youtube-url');
+    // Wait for debounce (500ms) + processing
+    await page.waitForTimeout(800);
+    // No preview cards should appear for invalid URL
+    await expect(page.locator('#urlPreviewList .sb-result-card')).toHaveCount(0);
   });
 
-  // ── 8. 単体/一括モード切替 ───────────────────────────────
+  // ── 8. URL追加/検索モード切替 ─────────────────────────────
 
-  test('single and bulk add mode toggle', async ({ page }) => {
-    const singleMode = page.locator('#singleAddMode');
-    const bulkMode = page.locator('#bulkAddMode');
-    const singleBtn = page.locator('#singleModeBtn');
-    const bulkBtn = page.locator('#bulkModeBtn');
+  test('url add and search mode toggle', async ({ page }) => {
+    const urlAddMode = page.locator('#urlAddMode');
+    const searchPanel = page.locator('#searchBrowserPanel');
+    const urlAddBtn = page.locator('#urlAddModeBtn');
+    const searchBtn = page.locator('#searchBrowserBtn');
 
-    // 初期状態: 単体モード
-    await expect(singleMode).toBeVisible();
-    await expect(bulkMode).toBeHidden();
-    await expect(singleBtn).toHaveClass(/active/);
+    // 初期状態: URL追加モード
+    await expect(urlAddMode).toBeVisible();
+    await expect(searchPanel).toBeHidden();
+    await expect(urlAddBtn).toHaveClass(/active/);
 
-    // 一括モードに切替
-    await page.click('#bulkModeBtn');
-    await expect(singleMode).toBeHidden();
-    await expect(bulkMode).toBeVisible();
-    await expect(bulkBtn).toHaveClass(/active/);
-    await expect(singleBtn).not.toHaveClass(/active/);
+    // 検索モードに切替
+    await page.click('#searchBrowserBtn');
+    await expect(urlAddMode).toBeHidden();
+    await expect(searchPanel).toBeVisible();
+    await expect(searchBtn).toHaveClass(/active/);
+    await expect(urlAddBtn).not.toHaveClass(/active/);
 
-    // 単体モードに戻す
-    await page.click('#singleModeBtn');
-    await expect(singleMode).toBeVisible();
-    await expect(bulkMode).toBeHidden();
+    // URL追加モードに戻す
+    await page.click('#urlAddModeBtn');
+    await expect(urlAddMode).toBeVisible();
+    await expect(searchPanel).toBeHidden();
   });
 
   // ── 9. 視聴履歴UIセクション表示 ──────────────────────────

@@ -105,26 +105,25 @@ export async function addVideoWithRetry(
     try {
       console.log(`Adding video (attempt ${attempt}/${maxRetries}): ${url}`);
 
-      // URL入力
-      await page.fill('#urlInput', url);
+      // URL入力 (unified textarea)
+      await page.fill('#urlAddInput', url);
 
       // 実際に入力されたか確認
-      const inputValue = await page.inputValue('#urlInput');
+      const inputValue = await page.inputValue('#urlAddInput');
       console.log(`Input value after fill: ${inputValue}`);
 
-      // ボタンクリック
-      await page.click('#addForm button[type="submit"]');
+      // Wait for debounce (500ms) + oEmbed fetch
+      await page.waitForTimeout(1500);
+
+      // プレビューカードが表示されたら追加ボタンクリック
+      const addBar = page.locator('#urlAddBar');
+      const isBarVisible = await addBar.isVisible();
+      if (isBarVisible) {
+        await page.click('#urlAddSubmit');
+      }
 
       // クリック後に少し待機
       await page.waitForTimeout(500);
-
-      // エラーメッセージを確認
-      const errorHidden = await page.locator('#addError').isHidden();
-      if (!errorHidden) {
-        const errorText = await page.locator('#addError').textContent();
-        console.error(`Form submission error: ${errorText}`);
-        throw new Error(`Form validation failed: ${errorText}`);
-      }
 
       // 動画追加の成功を確認
       await waitForYouTubePlayerReady(page, { timeout, index });
@@ -149,7 +148,7 @@ export async function addVideoWithRetry(
       await page.waitForTimeout(1000);
 
       // 入力フィールドをクリア
-      await page.fill('#urlInput', '');
+      await page.fill('#urlAddInput', '');
     }
   }
 }

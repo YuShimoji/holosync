@@ -29,37 +29,23 @@
       <section class="section">
         <h2>動画を追加</h2>
         <div class="add-mode-tabs">
-          <button id="singleModeBtn" class="mode-tab active" title="1つずつ追加">単体</button>
-          <button id="bulkModeBtn" class="mode-tab" title="複数URLを一括追加">一括</button>
+          <button id="urlAddModeBtn" class="mode-tab active" title="URLで追加">URL追加</button>
           <button id="searchBrowserBtn" class="mode-tab" title="動画検索ブラウザ">検索</button>
         </div>
-        <div id="singleAddMode">
-          <form id="addForm" class="add-form">
-            <input id="urlInput" type="url" placeholder="YouTubeのURLを貼り付け" required />
-            <button type="submit" class="primary">追加</button>
-          </form>
-          <div id="urlPreview" class="url-preview" hidden>
-            <img id="urlPreviewThumb" src="" alt="" class="preview-thumb" />
-            <div class="preview-info">
-              <div id="urlPreviewTitle" class="preview-title"></div>
-              <div id="urlPreviewAuthor" class="preview-author"></div>
-            </div>
-          </div>
-          <p class="hint">対応例: https://www.youtube.com/watch?v=..., https://youtu.be/...</p>
-        </div>
-        <div id="bulkAddMode" hidden>
+        <div id="urlAddMode">
           <textarea
-            id="bulkUrlInput"
+            id="urlAddInput"
             class="bulk-textarea"
-            placeholder="複数のYouTube URLを改行で区切って貼り付け&#10;例:&#10;https://www.youtube.com/watch?v=abc123...&#10;https://youtu.be/xyz789..."
+            placeholder="YouTubeのURLを貼り付け（複数行対応）&#10;例: https://www.youtube.com/watch?v=...&#10;プレイリストURLも展開可能（APIキー要）"
+            rows="2"
           ></textarea>
-          <div class="bulk-actions">
-            <button id="bulkAddBtn" class="primary">一括追加</button>
-            <span id="bulkCount" class="bulk-count"></span>
+          <div id="urlPreviewList" class="url-preview-list"></div>
+          <div id="urlAddBar" class="sb-selection-bar" hidden>
+            <span id="urlAddCount" class="sb-sel-count"></span>
+            <button id="urlAddSelectAll" class="sb-sel-clear">全選択</button>
+            <button id="urlAddDeselectAll" class="sb-sel-clear">全解除</button>
+            <button id="urlAddSubmit" class="primary sb-sel-add-all">追加</button>
           </div>
-          <p class="hint">
-            改行区切りで複数URLを貼り付けてください。重複は自動でスキップされます。
-          </p>
         </div>
         <div id="searchBrowserPanel" hidden>
           <div class="sb-tabs">

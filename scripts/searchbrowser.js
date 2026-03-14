@@ -30,10 +30,8 @@ const sbQuickAddInput = document.getElementById('sbQuickAddInput');
 
 // Add button tabs in the add-mode-tabs
 const searchBrowserBtn = document.getElementById('searchBrowserBtn');
-const singleModeBtn = document.getElementById('singleModeBtn');
-const bulkModeBtn = document.getElementById('bulkModeBtn');
-const singleAddMode = document.getElementById('singleAddMode');
-const bulkAddMode = document.getElementById('bulkAddMode');
+const urlAddModeBtn = document.getElementById('urlAddModeBtn');
+const urlAddMode = document.getElementById('urlAddMode');
 
 // ── State ──────────────────────────────────────────────────
 let _createTile = null;
@@ -421,25 +419,21 @@ function hideSearchHistory() {
 
 // ── Tab switching (add-mode-tabs) ─────────────────────────
 function setAddMode(mode) {
-  // mode: 'single' | 'bulk' | 'search'
-  [singleModeBtn, bulkModeBtn, searchBrowserBtn].forEach((btn) => btn?.classList.remove('active'));
-  [singleAddMode, bulkAddMode, searchBrowserPanel].forEach((el) => {
+  // mode: 'url' | 'search'
+  [urlAddModeBtn, searchBrowserBtn].forEach((btn) => btn?.classList.remove('active'));
+  [urlAddMode, searchBrowserPanel].forEach((el) => {
     if (el) {
       el.hidden = true;
     }
   });
 
-  if (mode === 'single') {
-    singleModeBtn?.classList.add('active');
-    singleAddMode.hidden = false;
-  } else if (mode === 'bulk') {
-    bulkModeBtn?.classList.add('active');
-    bulkAddMode.hidden = false;
+  if (mode === 'url') {
+    urlAddModeBtn?.classList.add('active');
+    urlAddMode.hidden = false;
   } else if (mode === 'search') {
     searchBrowserBtn?.classList.add('active');
     searchBrowserPanel.hidden = false;
     renderApiKeyStatus();
-    // Focus search input
     setTimeout(() => sbSearchInput?.focus(), 50);
   }
 }
@@ -465,11 +459,8 @@ export function initSearchBrowser(deps) {
   _parseYouTubeId = deps.parseYouTubeId;
 
   // Add-mode tab buttons
-  if (singleModeBtn) {
-    singleModeBtn.addEventListener('click', () => setAddMode('single'));
-  }
-  if (bulkModeBtn) {
-    bulkModeBtn.addEventListener('click', () => setAddMode('bulk'));
+  if (urlAddModeBtn) {
+    urlAddModeBtn.addEventListener('click', () => setAddMode('url'));
   }
   if (searchBrowserBtn) {
     searchBrowserBtn.addEventListener('click', () => setAddMode('search'));

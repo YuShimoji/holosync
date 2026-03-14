@@ -1,6 +1,6 @@
 /**
  * @file scripts/input.js
- * @brief URL input, preview, bulk add, drag & drop, clipboard paste, onboarding demo.
+ * @brief Unified URL input with preview list, drag & drop, clipboard paste, onboarding demo.
  */
 import { hasVideo, youtubeApiKey } from './state.js';
 import { parseYouTubeId, parsePlaylistId, createTile } from './player.js';
@@ -9,22 +9,14 @@ import { parseChannelInput, addChannel } from './channel.js';
 
 // ── DOM References ─────────────────────────────────────────
 
-const addForm = document.getElementById('addForm');
-const urlInput = document.getElementById('urlInput');
+const urlAddInput = document.getElementById('urlAddInput');
+const urlPreviewList = document.getElementById('urlPreviewList');
+const urlAddBar = document.getElementById('urlAddBar');
+const urlAddCount = document.getElementById('urlAddCount');
+const urlAddSubmit = document.getElementById('urlAddSubmit');
+const urlAddSelectAll = document.getElementById('urlAddSelectAll');
+const urlAddDeselectAll = document.getElementById('urlAddDeselectAll');
 const addError = document.getElementById('addError');
-const urlPreview = document.getElementById('urlPreview');
-const urlPreviewThumb = document.getElementById('urlPreviewThumb');
-const urlPreviewTitle = document.getElementById('urlPreviewTitle');
-const urlPreviewAuthor = document.getElementById('urlPreviewAuthor');
-
-// Bulk add mode
-const singleModeBtn = document.getElementById('singleModeBtn');
-const bulkModeBtn = document.getElementById('bulkModeBtn');
-const singleAddMode = document.getElementById('singleAddMode');
-const bulkAddMode = document.getElementById('bulkAddMode');
-const bulkUrlInput = document.getElementById('bulkUrlInput');
-const bulkAddBtn = document.getElementById('bulkAddBtn');
-const bulkCount = document.getElementById('bulkCount');
 
 // Onboarding
 const loadDemoBtn = document.getElementById('loadDemoBtn');
@@ -34,175 +26,291 @@ const dropHint = document.getElementById('dropHint');
 const gridEl = document.getElementById('grid');
 const contentEl = document.getElementById('content');
 
-// ── URL Preview ─────────────────────────────────────────────
+// ── Preview State ──────────────────────────────────────────
 
-let previewDebounceTimer = null;
+// Map<videoId, { videoId, title, author, thumbUrl, checked, isDuplicate }>
+const previewMap = new Map();
+// Track which playlist IDs are currently being fetched
+const pendingPlaylists = new Set();
+let debounceTimer = null;
 
-async function updateUrlPreview(videoId) {
-  if (!videoId) {
-    urlPreview.hidden = true;
-    return;
-  }
+// ── oEmbed Fetch ───────────────────────────────────────────
 
-  if (hasVideo(videoId)) {
-    urlPreview.hidden = false;
-    urlPreviewThumb.src = '';
-    urlPreviewTitle.textContent = '\u26a0\ufe0f \u8ffd\u52a0\u6e08\u307f';
-    urlPreviewAuthor.textContent =
-      '\u3053\u306e\u52d5\u753b\u306f\u65e2\u306b\u30ea\u30b9\u30c8\u306b\u3042\u308a\u307e\u3059';
-    urlPreviewThumb.hidden = true;
-    return;
-  }
-
+async function fetchOEmbed(videoId) {
   try {
     const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
     const resp = await fetch(url);
     if (!resp.ok) {
       throw new Error('Not found');
     }
-
     const data = await resp.json();
-    urlPreviewThumb.src = data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/default.jpg`;
-    urlPreviewThumb.hidden = false;
-    urlPreviewTitle.textContent = data.title;
-    urlPreviewAuthor.textContent = data.author_name;
-    urlPreview.hidden = false;
-    addError.hidden = true;
-  } catch (e) {
-    urlPreviewThumb.src = `https://img.youtube.com/vi/${videoId}/default.jpg`;
-    urlPreviewThumb.hidden = false;
-    urlPreviewTitle.textContent = `ID: ${videoId}`;
-    urlPreviewAuthor.textContent =
-      '\u30e1\u30bf\u30c7\u30fc\u30bf\u53d6\u5f97\u4e0d\u53ef (\u8ffd\u52a0\u53ef\u80fd)';
-    urlPreview.hidden = false;
+    return {
+      title: data.title,
+      author: data.author_name,
+      thumbUrl: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/default.jpg`,
+    };
+  } catch {
+    return {
+      title: `ID: ${videoId}`,
+      author: '\u30e1\u30bf\u30c7\u30fc\u30bf\u53d6\u5f97\u4e0d\u53ef',
+      thumbUrl: `https://img.youtube.com/vi/${videoId}/default.jpg`,
+    };
   }
 }
 
-// ── Playlist Batch Add ────────────────────────────────────────
+// ── Parse & Preview ────────────────────────────────────────
 
-async function addFromPlaylist(playlistId) {
-  addError.hidden = true;
-  if (!youtubeApiKey) {
-    addError.textContent =
-      'プレイリスト展開にはAPIキーが必要です。検索セクションで設定してください。';
-    addError.classList.remove('info');
-    addError.hidden = false;
-    return;
-  }
-  addError.textContent =
-    '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u3092\u8aad\u307f\u8fbc\u307f\u4e2d...';
-  addError.classList.add('info');
-  addError.hidden = false;
-  try {
-    const videoIds = await fetchPlaylistItems(playlistId);
-    const newIds = videoIds.filter((id) => !hasVideo(id));
-    newIds.forEach((id) => createTile(id));
-    const dupCount = videoIds.length - newIds.length;
-    let msg = `${newIds.length}\u4ef6\u8ffd\u52a0\u3057\u307e\u3057\u305f`;
-    if (dupCount > 0) {
-      msg += ` (${dupCount}\u4ef6\u91cd\u8907\u30b9\u30ad\u30c3\u30d7)`;
-    }
-    if (newIds.length === 0 && dupCount > 0) {
-      msg =
-        '\u3059\u3079\u3066\u306e\u52d5\u753b\u304c\u65e2\u306b\u8ffd\u52a0\u6e08\u307f\u3067\u3059';
-    }
-    addError.textContent = msg;
-    addError.classList.remove('info');
-    setTimeout(() => {
-      addError.hidden = true;
-    }, 4000);
-  } catch (err) {
-    addError.textContent = err.message;
-    addError.classList.remove('info');
-    addError.hidden = false;
-  }
-}
-
-// ── Playlist Queue Add ──────────────────────────────────────
-
-async function addAsQueue(playlistId) {
-  if (!youtubeApiKey) {
-    addError.textContent = 'キュー再生にはAPIキーが必要です。検索セクションで設定してください。';
-    addError.classList.remove('info');
-    addError.hidden = false;
-    return;
-  }
-  addError.textContent =
-    '\u30D7\u30EC\u30A4\u30EA\u30B9\u30C8\u3092\u8AAD\u307F\u8FBC\u307F\u4E2D...';
-  addError.classList.add('info');
-  addError.hidden = false;
-  try {
-    const videoIds = await fetchPlaylistItems(playlistId);
-    if (videoIds.length === 0) {
-      addError.textContent =
-        '\u30D7\u30EC\u30A4\u30EA\u30B9\u30C8\u306B\u52D5\u753B\u304C\u3042\u308A\u307E\u305B\u3093';
-      addError.classList.remove('info');
-      return;
-    }
-    createTile(videoIds[0], { queue: videoIds, queueIndex: 0 });
-    addError.textContent = `\u30AD\u30E5\u30FC\u518D\u751F: ${videoIds.length}\u4EF6\u306E\u52D5\u753B`;
-    addError.classList.remove('info');
-    setTimeout(() => {
-      addError.hidden = true;
-    }, 4000);
-  } catch (err) {
-    addError.textContent = err.message;
-    addError.classList.remove('info');
-    addError.hidden = false;
-  }
-}
-
-// ── Bulk URL Parsing ────────────────────────────────────────
-
-function parseBulkUrls(text) {
+async function parseAndPreview() {
+  const text = urlAddInput.value;
   const lines = text
     .split(/[\n\r]+/)
     .map((l) => l.trim())
     .filter(Boolean);
-  const ids = [];
-  for (const line of lines) {
-    const id = parseYouTubeId(line);
-    if (id && !ids.includes(id)) {
-      ids.push(id);
-    }
-  }
-  return ids;
-}
 
-async function expandBulkWithPlaylists(text) {
-  const lines = text
-    .split(/[\n\r]+/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  const ids = [];
+  // Collect current video IDs and playlist IDs from textarea
+  const currentVideoIds = new Set();
+  const currentPlaylistIds = new Set();
+  const newVideoIds = [];
+  const newPlaylistIds = [];
+
   for (const line of lines) {
-    // Only attempt playlist expansion when API key is available
-    if (youtubeApiKey) {
-      const plId = parsePlaylistId(line);
-      if (plId) {
-        try {
-          const plVideos = await fetchPlaylistItems(plId);
-          for (const vid of plVideos) {
-            if (!ids.includes(vid)) {
-              ids.push(vid);
-            }
-          }
-        } catch (_) {
-          // Playlist fetch failed — try as individual video
-          const id = parseYouTubeId(line);
-          if (id && !ids.includes(id)) {
-            ids.push(id);
+    // Video ID takes priority (URL may contain both v= and list=)
+    const vid = parseYouTubeId(line);
+    if (vid) {
+      currentVideoIds.add(vid);
+      if (!previewMap.has(vid)) {
+        newVideoIds.push(vid);
+      }
+      continue;
+    }
+
+    const plId = parsePlaylistId(line);
+    if (plId) {
+      currentPlaylistIds.add(plId);
+      if (!pendingPlaylists.has(plId)) {
+        // Check if any preview entries already came from this playlist
+        let alreadyExpanded = false;
+        for (const entry of previewMap.values()) {
+          if (entry.playlistId === plId) {
+            alreadyExpanded = true;
+            break;
           }
         }
-        continue;
+        if (!alreadyExpanded) {
+          newPlaylistIds.push(plId);
+        }
       }
+      continue;
     }
-    const id = parseYouTubeId(line);
-    if (id && !ids.includes(id)) {
-      ids.push(id);
+
+    // Channel URLs: show info in addError (not in preview list)
+    const chParsed = parseChannelInput(line);
+    if (chParsed) {
+      addError.textContent = '';
+      if (youtubeApiKey) {
+        const msgNode = document.createTextNode(
+          '\u30c1\u30e3\u30f3\u30cd\u30ebURL\u3092\u691c\u51fa\u3002'
+        );
+        addError.appendChild(msgNode);
+        const watchBtn = document.createElement('button');
+        watchBtn.className = 'queue-play-btn';
+        watchBtn.textContent = '\u3053\u306e\u30c1\u30e3\u30f3\u30cd\u30eb\u3092\u76e3\u8996';
+        watchBtn.addEventListener('click', async () => {
+          await addChannel(line);
+          addError.hidden = true;
+        });
+        addError.appendChild(watchBtn);
+      } else {
+        addError.textContent =
+          '\u30c1\u30e3\u30f3\u30cd\u30eb\u76e3\u8996\u306bAPI\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002';
+      }
+      addError.classList.add('info');
+      addError.hidden = false;
     }
   }
-  return ids;
+
+  // Remove entries no longer in textarea
+  for (const [vid, entry] of previewMap) {
+    if (entry.playlistId) {
+      if (!currentPlaylistIds.has(entry.playlistId)) {
+        previewMap.delete(vid);
+      }
+    } else {
+      if (!currentVideoIds.has(vid)) {
+        previewMap.delete(vid);
+      }
+    }
+  }
+
+  // Fetch oEmbed for new video IDs in parallel
+  if (newVideoIds.length > 0) {
+    const fetches = newVideoIds.map(async (vid) => {
+      const meta = await fetchOEmbed(vid);
+      const isDuplicate = hasVideo(vid);
+      previewMap.set(vid, {
+        videoId: vid,
+        title: meta.title,
+        author: meta.author,
+        thumbUrl: meta.thumbUrl,
+        checked: !isDuplicate,
+        isDuplicate,
+      });
+    });
+    await Promise.allSettled(fetches);
+  }
+
+  // Expand new playlists
+  for (const plId of newPlaylistIds) {
+    if (!youtubeApiKey) {
+      // Show error for this playlist
+      addError.textContent =
+        'API\u30ad\u30fc\u672a\u8a2d\u5b9a\u306e\u305f\u3081\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u3092\u5c55\u958b\u3067\u304d\u307e\u305b\u3093\u3002';
+      addError.classList.add('info');
+      addError.hidden = false;
+      continue;
+    }
+    pendingPlaylists.add(plId);
+    renderPreviewList(); // Show loading state
+    try {
+      const videoIds = await fetchPlaylistItems(plId);
+      const fetches = videoIds.map(async (vid) => {
+        if (previewMap.has(vid)) {
+          return;
+        }
+        const meta = await fetchOEmbed(vid);
+        const isDuplicate = hasVideo(vid);
+        previewMap.set(vid, {
+          videoId: vid,
+          title: meta.title,
+          author: meta.author,
+          thumbUrl: meta.thumbUrl,
+          checked: !isDuplicate,
+          isDuplicate,
+          playlistId: plId,
+        });
+      });
+      await Promise.allSettled(fetches);
+    } catch (err) {
+      addError.textContent = `\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u5c55\u958b\u30a8\u30e9\u30fc: ${err.message}`;
+      addError.hidden = false;
+    } finally {
+      pendingPlaylists.delete(plId);
+    }
+  }
+
+  renderPreviewList();
+  updateAddBar();
+}
+
+// ── Render Preview List ────────────────────────────────────
+
+function renderPreviewList() {
+  urlPreviewList.innerHTML = '';
+
+  // Show loading for pending playlists
+  for (const plId of pendingPlaylists) {
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'url-preview-loading';
+    loadingEl.textContent = `\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8 ${plId.slice(0, 12)}... \u3092\u5c55\u958b\u4e2d...`;
+    urlPreviewList.appendChild(loadingEl);
+  }
+
+  for (const [vid, entry] of previewMap) {
+    const card = document.createElement('div');
+    card.className = 'sb-result-card';
+    if (entry.checked) {
+      card.classList.add('selected');
+    }
+    card.dataset.videoId = vid;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'sb-result-check';
+    checkbox.checked = entry.checked;
+    checkbox.addEventListener('change', () => {
+      entry.checked = checkbox.checked;
+      card.classList.toggle('selected', checkbox.checked);
+      updateAddBar();
+    });
+
+    const thumbWrap = document.createElement('div');
+    thumbWrap.className = 'sb-result-thumb-wrap';
+    const thumb = document.createElement('img');
+    thumb.className = 'sb-result-thumb';
+    thumb.src = entry.thumbUrl;
+    thumb.alt = '';
+    thumbWrap.appendChild(thumb);
+
+    const info = document.createElement('div');
+    info.className = 'sb-result-info';
+    const title = document.createElement('div');
+    title.className = 'sb-result-title';
+    title.textContent = entry.title;
+    const author = document.createElement('div');
+    author.className = 'sb-result-channel';
+    author.textContent = entry.author;
+    info.appendChild(title);
+    info.appendChild(author);
+
+    card.appendChild(checkbox);
+    card.appendChild(thumbWrap);
+    card.appendChild(info);
+
+    if (entry.isDuplicate) {
+      const badge = document.createElement('span');
+      badge.className = 'url-preview-duplicate';
+      badge.textContent = '\u8ffd\u52a0\u6e08\u307f';
+      card.appendChild(badge);
+    }
+
+    // Click card to toggle checkbox
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.sb-result-check')) {
+        return;
+      }
+      checkbox.checked = !checkbox.checked;
+      entry.checked = checkbox.checked;
+      card.classList.toggle('selected', checkbox.checked);
+      updateAddBar();
+    });
+
+    urlPreviewList.appendChild(card);
+  }
+}
+
+// ── Add Bar ────────────────────────────────────────────────
+
+function updateAddBar() {
+  const checkedCount = [...previewMap.values()].filter((e) => e.checked && !e.isDuplicate).length;
+  if (checkedCount > 0 || previewMap.size > 0) {
+    urlAddCount.textContent = `${checkedCount}\u4ef6\u9078\u629e\u4e2d`;
+    urlAddBar.hidden = false;
+  } else {
+    urlAddBar.hidden = true;
+  }
+}
+
+function submitSelected() {
+  let added = 0;
+  for (const entry of previewMap.values()) {
+    if (entry.checked && !entry.isDuplicate) {
+      createTile(entry.videoId);
+      added++;
+    }
+  }
+  if (added > 0) {
+    addError.textContent = `${added}\u4ef6\u8ffd\u52a0\u3057\u307e\u3057\u305f`;
+    addError.classList.add('info');
+    addError.hidden = false;
+    setTimeout(() => {
+      addError.hidden = true;
+    }, 3000);
+  }
+  // Clear
+  urlAddInput.value = '';
+  previewMap.clear();
+  renderPreviewList();
+  updateAddBar();
 }
 
 // ── Drag & Drop / Clipboard ────────────────────────────────
@@ -215,7 +323,6 @@ async function handleDroppedText(text) {
   let added = 0;
   for (const line of lines) {
     const trimmed = line.trim();
-    // Only attempt playlist expansion when API key is available
     if (youtubeApiKey) {
       const plId = parsePlaylistId(trimmed);
       if (plId) {
@@ -228,7 +335,6 @@ async function handleDroppedText(text) {
             }
           }
         } catch (_) {
-          // Playlist fetch failed — try as individual video
           const id = parseYouTubeId(trimmed);
           if (id && !hasVideo(id)) {
             createTile(id);
@@ -258,242 +364,42 @@ const DEMO_VIDEOS = [
 // ── Init ────────────────────────────────────────────────────
 
 export function initInput() {
-  // URL input preview
-  urlInput.addEventListener('input', () => {
-    const val = urlInput.value.trim();
-    if (previewDebounceTimer) {
-      clearTimeout(previewDebounceTimer);
+  // Unified URL input with debounced preview
+  urlAddInput.addEventListener('input', () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
     }
+    addError.hidden = true;
 
+    const val = urlAddInput.value.trim();
     if (!val) {
-      urlPreview.hidden = true;
-      addError.hidden = true;
+      previewMap.clear();
+      renderPreviewList();
+      updateAddBar();
       return;
     }
 
-    // Single video takes priority over playlist (URLs may contain both v= and list=)
-    const id = parseYouTubeId(val);
-    if (id) {
-      addError.hidden = true;
-      addError.classList.remove('info');
-      previewDebounceTimer = setTimeout(() => updateUrlPreview(id), 300);
-      return;
-    }
-
-    // Pure playlist URL (no v= parameter)
-    const plId = parsePlaylistId(val);
-    if (plId) {
-      urlPreview.hidden = true;
-      addError.textContent = '';
-      if (youtubeApiKey) {
-        const msgNode = document.createTextNode(
-          '\u30D7\u30EC\u30A4\u30EA\u30B9\u30C8URL\u3092\u691C\u51FA\u3002'
-        );
-        addError.appendChild(msgNode);
-        const queueBtn = document.createElement('button');
-        queueBtn.className = 'queue-play-btn';
-        queueBtn.textContent = '\u30AD\u30E5\u30FC\u518D\u751F';
-        queueBtn.title = '1\u30BF\u30A4\u30EB\u3067\u9806\u6B21\u518D\u751F';
-        queueBtn.addEventListener('click', async () => {
-          await addAsQueue(plId);
-          urlInput.value = '';
-          urlPreview.hidden = true;
-        });
-        addError.appendChild(queueBtn);
-      } else {
-        addError.textContent =
-          '\u30D7\u30EC\u30A4\u30EA\u30B9\u30C8\u5C55\u958B\u306B\u306FAPI\u30AD\u30FC\u304C\u5FC5\u8981\u3067\u3059\u3002\u52D5\u753BURL\u3092\u76F4\u63A5\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002';
-      }
-      addError.classList.add('info');
-      addError.hidden = false;
-      return;
-    }
-
-    // Channel URL (/@handle or /channel/UCxxx)
-    const chParsed = parseChannelInput(val);
-    if (chParsed) {
-      urlPreview.hidden = true;
-      addError.textContent = '';
-      if (youtubeApiKey) {
-        const msgNode = document.createTextNode(
-          '\u30C1\u30E3\u30F3\u30CD\u30EBURL\u3092\u691C\u51FA\u3002'
-        );
-        addError.appendChild(msgNode);
-        const watchBtn = document.createElement('button');
-        watchBtn.className = 'queue-play-btn';
-        watchBtn.textContent = '\u3053\u306E\u30C1\u30E3\u30F3\u30CD\u30EB\u3092\u76E3\u8996';
-        watchBtn.title = '\u30E9\u30A4\u30D6\u914D\u4FE1\u3092\u81EA\u52D5\u691C\u51FA';
-        watchBtn.addEventListener('click', async () => {
-          await addChannel(val);
-          urlInput.value = '';
-          urlPreview.hidden = true;
-          addError.hidden = true;
-        });
-        addError.appendChild(watchBtn);
-      } else {
-        addError.textContent =
-          '\u30C1\u30E3\u30F3\u30CD\u30EB\u76E3\u8996\u306B\u306FAPI\u30AD\u30FC\u304C\u5FC5\u8981\u3067\u3059\u3002\u691C\u7D22\u30BB\u30AF\u30B7\u30E7\u30F3\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002';
-      }
-      addError.classList.add('info');
-      addError.hidden = false;
-      return;
-    }
-
-    addError.classList.remove('info');
-    urlPreview.hidden = true;
+    debounceTimer = setTimeout(() => parseAndPreview(), 500);
   });
 
-  // Form submit (single add)
-  addForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    addError.hidden = true;
-    const raw = urlInput.value.trim();
+  // Submit selected videos
+  urlAddSubmit.addEventListener('click', () => submitSelected());
 
-    // Single video takes priority over playlist (URLs may contain both v= and list=)
-    const id = parseYouTubeId(raw);
-    if (id) {
-      if (hasVideo(id)) {
-        addError.textContent =
-          '\u3053\u306e\u52d5\u753b\u306f\u65e2\u306b\u8ffd\u52a0\u3055\u308c\u3066\u3044\u307e\u3059\u3002';
-        addError.hidden = false;
-        urlInput.select();
-        return;
-      }
-      createTile(id);
-      urlInput.value = '';
-      urlPreview.hidden = true;
-      urlInput.focus();
-      return;
+  // Select all / deselect all
+  urlAddSelectAll.addEventListener('click', () => {
+    for (const entry of previewMap.values()) {
+      entry.checked = true;
     }
-
-    // Pure playlist URL (no v= parameter) — add only the first video
-    const playlistId = parsePlaylistId(raw);
-    if (playlistId) {
-      if (!youtubeApiKey) {
-        addError.textContent =
-          '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u304b\u3089\u306e\u5358\u4f53\u8ffd\u52a0\u306b\u306fAPI\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002\u691c\u7d22\u30bb\u30af\u30b7\u30e7\u30f3\u3067\u8a2d\u5b9a\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
-        addError.hidden = false;
-        return;
-      }
-      try {
-        const videoIds = await fetchPlaylistItems(playlistId, 1);
-        if (videoIds.length > 0) {
-          const firstId = videoIds[0];
-          if (hasVideo(firstId)) {
-            addError.textContent =
-              '\u3053\u306e\u52d5\u753b\u306f\u65e2\u306b\u8ffd\u52a0\u3055\u308c\u3066\u3044\u307e\u3059\u3002';
-            addError.hidden = false;
-            urlInput.select();
-            return;
-          }
-          createTile(firstId);
-          urlInput.value = '';
-          urlPreview.hidden = true;
-          urlInput.focus();
-        } else {
-          addError.textContent =
-            '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u306b\u52d5\u753b\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f\u3002';
-          addError.hidden = false;
-        }
-      } catch (error) {
-        addError.textContent = error.message;
-        addError.hidden = false;
-      }
-      return;
-    }
-
-    // Channel URL — add to watch list
-    const chSubmit = parseChannelInput(raw);
-    if (chSubmit) {
-      if (!youtubeApiKey) {
-        addError.textContent =
-          '\u30C1\u30E3\u30F3\u30CD\u30EB\u76E3\u8996\u306B\u306FAPI\u30AD\u30FC\u304C\u5FC5\u8981\u3067\u3059\u3002\u691C\u7D22\u30BB\u30AF\u30B7\u30E7\u30F3\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002';
-        addError.hidden = false;
-        return;
-      }
-      await addChannel(raw);
-      urlInput.value = '';
-      urlPreview.hidden = true;
-      urlInput.focus();
-      return;
-    }
-
-    addError.textContent =
-      'URL\u304c\u7121\u52b9\u3067\u3059\u3002YouTube\u306e\u52d5\u753bURL\u307e\u305f\u306f\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8URL\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
-    addError.hidden = false;
+    renderPreviewList();
+    updateAddBar();
   });
 
-  // Bulk add mode toggle
-  singleModeBtn.addEventListener('click', () => {
-    singleModeBtn.classList.add('active');
-    bulkModeBtn.classList.remove('active');
-    singleAddMode.hidden = false;
-    bulkAddMode.hidden = true;
-  });
-
-  bulkModeBtn.addEventListener('click', () => {
-    bulkModeBtn.classList.add('active');
-    singleModeBtn.classList.remove('active');
-    bulkAddMode.hidden = false;
-    singleAddMode.hidden = true;
-  });
-
-  // Bulk URL count
-  bulkUrlInput.addEventListener('input', () => {
-    const lines = bulkUrlInput.value
-      .split(/[\n\r]+/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const playlistCount = lines.filter((l) => parsePlaylistId(l)).length;
-    const ids = parseBulkUrls(bulkUrlInput.value);
-    const newCount = ids.filter((id) => !hasVideo(id)).length;
-    const dupCount = ids.length - newCount;
-
-    if (ids.length === 0 && playlistCount === 0) {
-      bulkCount.textContent = '';
-      bulkCount.classList.remove('has-items');
-    } else {
-      let text = `${newCount}\u4ef6\u8ffd\u52a0\u53ef\u80fd`;
-      if (dupCount > 0) {
-        text += ` (${dupCount}\u4ef6\u91cd\u8907)`;
-      }
-      if (playlistCount > 0) {
-        text += ` + \u30d7\u30ec\u30a4\u30ea\u30b9\u30c8${playlistCount}\u4ef6`;
-      }
-      bulkCount.textContent = text;
-      bulkCount.classList.toggle('has-items', newCount > 0 || playlistCount > 0);
+  urlAddDeselectAll.addEventListener('click', () => {
+    for (const entry of previewMap.values()) {
+      entry.checked = false;
     }
-  });
-
-  // Bulk add button
-  bulkAddBtn.addEventListener('click', async () => {
-    addError.hidden = true;
-    const hasPlaylist = bulkUrlInput.value.split(/[\n\r]+/).some((l) => parsePlaylistId(l.trim()));
-    let ids;
-    if (hasPlaylist) {
-      bulkCount.textContent = '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u3092\u5c55\u958b\u4e2d...';
-      bulkCount.classList.add('has-items');
-      ids = await expandBulkWithPlaylists(bulkUrlInput.value);
-    } else {
-      ids = parseBulkUrls(bulkUrlInput.value);
-    }
-    const newIds = ids.filter((id) => !hasVideo(id));
-
-    if (newIds.length === 0) {
-      addError.textContent =
-        '\u8ffd\u52a0\u3067\u304d\u308b\u52d5\u753b\u304c\u3042\u308a\u307e\u305b\u3093\u3002URL\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
-      addError.hidden = false;
-      return;
-    }
-
-    newIds.forEach((id) => createTile(id));
-    bulkUrlInput.value = '';
-    bulkCount.textContent = `${newIds.length}\u4ef6\u8ffd\u52a0\u3057\u307e\u3057\u305f`;
-    bulkCount.classList.add('has-items');
-    setTimeout(() => {
-      bulkCount.textContent = '';
-      bulkCount.classList.remove('has-items');
-    }, 3000);
+    renderPreviewList();
+    updateAddBar();
   });
 
   // Demo load
