@@ -70,60 +70,6 @@
         <div id="addError" class="error" hidden></div>
       </section>
 
-      <section class="section api-key-panel">
-        <h2>APIキー</h2>
-        <div class="api-key-section">
-          <div class="api-key-controls">
-            <input id="apiKeyInput" type="password" placeholder="YouTube APIキーを入力" />
-            <button id="deleteApiKeyBtn" class="delete-btn" title="APIキーを削除">🗑️</button>
-          </div>
-          <div id="apiKeyStatus" class="api-key-status">
-            <span id="quotaInfo">クオータ: 未確認</span>
-            <button id="checkQuotaBtn" class="small-btn">確認</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="section preset-panel">
-        <h2>プリセット</h2>
-        <button id="savePresetBtn">現在のセットを保存</button>
-        <input id="presetNameInput" type="text" placeholder="プリセット名" />
-        <ul id="presetList" class="preset-list"></ul>
-      </section>
-
-      <section class="section channel-panel">
-        <h2>チャンネルLive監視</h2>
-        <div class="channel-add-row">
-          <input
-            id="channelUrlInput"
-            type="text"
-            placeholder="チャンネルURL (@handle / /channel/UCxxx)"
-          />
-          <button id="channelAddBtn" class="primary">追加</button>
-        </div>
-        <ul id="channelList" class="channel-list"></ul>
-        <div class="channel-controls">
-          <button id="channelRefreshAllBtn">一括更新</button>
-          <span id="channelNextCheck" class="channel-next-check"></span>
-        </div>
-        <div class="channel-interval-row">
-          <label>
-            間隔:
-            <input
-              id="channelIntervalInput"
-              type="number"
-              min="1"
-              max="60"
-              value="15"
-              class="channel-interval-input"
-            />
-            分
-          </label>
-        </div>
-        <p id="channelQuotaHint" class="hint channel-quota-hint" hidden></p>
-        <p id="channelError" class="error" hidden></p>
-      </section>
-
       <div id="sessionRestoreBanner" class="session-restore-banner" hidden>
         <span class="restore-text">前回のセッションを復元しますか?</span>
         <div class="restore-actions">
@@ -131,16 +77,6 @@
           <button id="dismissRestoreBtn" class="restore-btn">閉じる</button>
         </div>
       </div>
-
-      <section class="section top-channels-section" hidden>
-        <h2>よく見るチャンネル</h2>
-        <ul id="topChannelsList" class="top-channels-list"></ul>
-      </section>
-
-      <section class="section watch-history-panel">
-        <h2>Watch History</h2>
-        <ul id="watchHistoryList" class="watch-history-list"></ul>
-      </section>
 
       <section class="section">
         <h2>一括操作</h2>
@@ -185,87 +121,155 @@
         <p class="note">Autoplay制限のため、最初の「全て再生」はミュート状態で開始されます。</p>
       </section>
 
-      <section class="section sync-settings">
-        <h2>同期設定</h2>
-        <label>
-          <select id="leaderMode">
-            <option value="first" selected>最初の動画</option>
-            <option value="longest-playing">最も長く再生している動画</option>
-            <option value="least-buffered">最も安定している動画</option>
-            <option value="manual">手動選択</option>
-          </select>
-          基準プレイヤー選択
-        </label>
-        <div id="manualLeaderSection" hidden>
-          <label>
-            <select id="leaderId">
-              <!-- Options will be populated dynamically -->
-            </select>
-            基準動画ID
-          </label>
+      <details class="accordion" id="accordionLibrary">
+        <summary class="accordion-header">ライブラリ</summary>
+        <div class="accordion-body">
+          <div class="accordion-sub">
+            <h3>プリセット</h3>
+            <button id="savePresetBtn">現在のセットを保存</button>
+            <input id="presetNameInput" type="text" placeholder="プリセット名" />
+            <ul id="presetList" class="preset-list"></ul>
+          </div>
+          <div class="accordion-sub">
+            <h3>Watch History</h3>
+            <ul id="watchHistoryList" class="watch-history-list"></ul>
+          </div>
+          <div class="accordion-sub top-channels-section" id="topChannelsSection" hidden>
+            <h3>よく見るチャンネル</h3>
+            <ul id="topChannelsList" class="top-channels-list"></ul>
+          </div>
         </div>
-        <label>
-          <input type="range" id="toleranceMs" min="100" max="2000" step="100" value="300" />
-          <span>同期許容値: <span id="toleranceValue">300</span>ms</span>
-        </label>
-        <label>
-          <input type="range" id="syncFrequency" min="1" max="10" step="1" value="2" />
-          <span>同期頻度: <span id="syncFrequencyValue">2</span>Hz</span>
-        </label>
-      </section>
+      </details>
 
-      <section class="section recovery-settings">
-        <h2>回復設定</h2>
-        <label>
-          <input type="checkbox" id="retryOnError" checked />
-          エラー時に自動回復を試行
-        </label>
-        <label>
-          <select id="fallbackMode">
-            <option value="mute-continue" selected>ミュート継続</option>
-            <option value="pause-catchup">一時停止後追いかけ再生</option>
-            <option value="none">なし</option>
-          </select>
-          フォールバックモード
-        </label>
-      </section>
-
-      <section class="section embed-settings">
-        <h2>Embed Settings</h2>
-        <label>
-          <input id="embedControls" type="checkbox" checked />
-          Show player controls (controls=1)
-        </label>
-        <label>
-          <input id="embedModestBranding" type="checkbox" checked />
-          Minimize YouTube branding (modestbranding=1)
-        </label>
-        <label>
-          <input id="embedRelatedVideos" type="checkbox" />
-          Show related videos (rel=1)
-        </label>
-        <label>
-          <input id="embedPlaysInline" type="checkbox" checked />
-          Inline playback (playsinline=1)
-        </label>
-        <label>
-          <input id="embedNoCookie" type="checkbox" />
-          Privacy-enhanced mode (youtube-nocookie.com)
-        </label>
-        <p class="hint">Changes reload existing tiles to apply parameters.</p>
-      </section>
-
-      <section class="section onboarding-section">
-        <h2>クイックスタート</h2>
-        <div class="onboarding-buttons">
-          <button id="loadDemoBtn" class="demo-btn" title="サンプル動画をセットして機能を体験">
-            🎬 デモをロード
-          </button>
-          <button id="showHelpBtn" class="help-btn" title="ショートカットキー一覧を表示">
-            ❓ ヘルプ
-          </button>
+      <details class="accordion" id="accordionChannel">
+        <summary class="accordion-header">チャンネルLive監視</summary>
+        <div class="accordion-body">
+          <div class="channel-add-row">
+            <input
+              id="channelUrlInput"
+              type="text"
+              placeholder="チャンネルURL (@handle / /channel/UCxxx)"
+            />
+            <button id="channelAddBtn" class="primary">追加</button>
+          </div>
+          <ul id="channelList" class="channel-list"></ul>
+          <div class="channel-controls">
+            <button id="channelRefreshAllBtn">一括更新</button>
+            <span id="channelNextCheck" class="channel-next-check"></span>
+          </div>
+          <div class="channel-interval-row">
+            <label>
+              間隔:
+              <input
+                id="channelIntervalInput"
+                type="number"
+                min="1"
+                max="60"
+                value="15"
+                class="channel-interval-input"
+              />
+              分
+            </label>
+          </div>
+          <p id="channelQuotaHint" class="hint channel-quota-hint" hidden></p>
+          <p id="channelError" class="error" hidden></p>
         </div>
-      </section>
+      </details>
+
+      <details class="accordion" id="accordionSettings">
+        <summary class="accordion-header">設定</summary>
+        <div class="accordion-body">
+          <div class="accordion-sub api-key-panel">
+            <h3>APIキー</h3>
+            <div class="api-key-section">
+              <div class="api-key-controls">
+                <input id="apiKeyInput" type="password" placeholder="YouTube APIキーを入力" />
+                <button id="deleteApiKeyBtn" class="delete-btn" title="APIキーを削除">🗑️</button>
+              </div>
+              <div id="apiKeyStatus" class="api-key-status">
+                <span id="quotaInfo">クオータ: 未確認</span>
+                <button id="checkQuotaBtn" class="small-btn">確認</button>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-sub sync-settings">
+            <h3>同期設定</h3>
+            <label>
+              <select id="leaderMode">
+                <option value="first" selected>最初の動画</option>
+                <option value="longest-playing">最も長く再生している動画</option>
+                <option value="least-buffered">最も安定している動画</option>
+                <option value="manual">手動選択</option>
+              </select>
+              基準プレイヤー選択
+            </label>
+            <div id="manualLeaderSection" hidden>
+              <label>
+                <select id="leaderId"></select>
+                基準動画ID
+              </label>
+            </div>
+            <label>
+              <input type="range" id="toleranceMs" min="100" max="2000" step="100" value="300" />
+              <span>同期許容値: <span id="toleranceValue">300</span>ms</span>
+            </label>
+            <label>
+              <input type="range" id="syncFrequency" min="1" max="10" step="1" value="2" />
+              <span>同期頻度: <span id="syncFrequencyValue">2</span>Hz</span>
+            </label>
+          </div>
+          <div class="accordion-sub recovery-settings">
+            <h3>回復設定</h3>
+            <label>
+              <input type="checkbox" id="retryOnError" checked />
+              エラー時に自動回復を試行
+            </label>
+            <label>
+              <select id="fallbackMode">
+                <option value="mute-continue" selected>ミュート継続</option>
+                <option value="pause-catchup">一時停止後追いかけ再生</option>
+                <option value="none">なし</option>
+              </select>
+              フォールバックモード
+            </label>
+          </div>
+          <div class="accordion-sub embed-settings">
+            <h3>Embed Settings</h3>
+            <label>
+              <input id="embedControls" type="checkbox" checked />
+              Show player controls (controls=1)
+            </label>
+            <label>
+              <input id="embedModestBranding" type="checkbox" checked />
+              Minimize YouTube branding (modestbranding=1)
+            </label>
+            <label>
+              <input id="embedRelatedVideos" type="checkbox" />
+              Show related videos (rel=1)
+            </label>
+            <label>
+              <input id="embedPlaysInline" type="checkbox" checked />
+              Inline playback (playsinline=1)
+            </label>
+            <label>
+              <input id="embedNoCookie" type="checkbox" />
+              Privacy-enhanced mode (youtube-nocookie.com)
+            </label>
+            <p class="hint">Changes reload existing tiles to apply parameters.</p>
+          </div>
+          <div class="accordion-sub onboarding-section">
+            <h3>クイックスタート</h3>
+            <div class="onboarding-buttons">
+              <button id="loadDemoBtn" class="demo-btn" title="サンプル動画をセットして機能を体験">
+                🎬 デモをロード
+              </button>
+              <button id="showHelpBtn" class="help-btn" title="ショートカットキー一覧を表示">
+                ❓ ヘルプ
+              </button>
+            </div>
+          </div>
+        </div>
+      </details>
 
       <footer class="footer">
         <small>HoloSync Web</small>

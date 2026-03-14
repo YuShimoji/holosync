@@ -154,6 +154,55 @@ body.sidebar-collapsed .sidebar-toggle .toggle-icon {
   font-weight: 600;
 }
 
+/* Accordion */
+.accordion {
+  margin-top: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.accordion-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+  list-style: none;
+}
+.accordion-header::-webkit-details-marker {
+  display: none;
+}
+.accordion-header::before {
+  content: '\25b8';
+  margin-right: 6px;
+  transition: transform 0.2s;
+  font-size: 10px;
+}
+.accordion[open] > .accordion-header::before {
+  transform: rotate(90deg);
+}
+.accordion-body {
+  padding: 0 12px 8px;
+}
+.accordion-sub {
+  margin-top: 12px;
+}
+.accordion-sub:first-child {
+  margin-top: 4px;
+}
+.accordion-sub h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .add-mode-tabs {
   display: flex;
   gap: 4px;

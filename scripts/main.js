@@ -38,7 +38,7 @@ import {
   getLastSession,
   loadSuggestions,
 } from './history.js';
-import { initUI, syncEmbedSettingsUI } from './ui.js';
+import { initUI, syncEmbedSettingsUI, initAccordions } from './ui.js';
 import { initDebugPanel } from './debug.js';
 import { initElectron } from './electron.js';
 import {
@@ -440,6 +440,7 @@ loadWatchHistory();
 loadSuggestions();
 initChannel();
 initFitMode();
+initAccordions();
 
 window.addEventListener('message', (event) => {
   try {

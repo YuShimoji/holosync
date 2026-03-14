@@ -565,4 +565,39 @@ export function showToast(message, durationMs = 3000) {
   }, durationMs);
 }
 
+// ── Accordion state persistence ──────────────────────────────
+
+const ACCORDION_IDS = ['accordionLibrary', 'accordionChannel', 'accordionSettings'];
+
+async function restoreAccordionState() {
+  const saved = (await storageAdapter.getItem('accordionState')) || {};
+  ACCORDION_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && saved[id]) {
+      el.open = true;
+    }
+  });
+}
+
+function saveAccordionState() {
+  const state = {};
+  ACCORDION_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      state[id] = el.open;
+    }
+  });
+  storageAdapter.setItem('accordionState', state);
+}
+
+export function initAccordions() {
+  ACCORDION_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('toggle', saveAccordionState);
+    }
+  });
+  restoreAccordionState();
+}
+
 export { syncEmbedSettingsUI, setSidebarCollapsed, setToolbarCollapsed, updateLeaderIdOptions };
