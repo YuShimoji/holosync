@@ -180,7 +180,7 @@ function updateApiKeyStatus() {
   deleteApiKeyBtn.disabled = !hasKey;
   checkQuotaBtn.disabled = !hasKey;
   if (hasKey) {
-    quotaInfo.textContent = 'クオータ: 確認中...';
+    quotaInfo.textContent = 'クオータ: 「確認」ボタンで確認';
   } else {
     quotaInfo.textContent = 'クオータ: APIキーが設定されていません';
   }

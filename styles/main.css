@@ -2339,16 +2339,6 @@ button:active {
   background: var(--color-input-bg);
   color: var(--color-text);
 }
-.sb-api-key-status.ok {
-  color: #16a34a;
-  font-size: 11px;
-}
-.sb-no-api-hint {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-
 /* Phase 2-A: Multi-select checkbox & selection bar */
 .sb-result-check {
   flex-shrink: 0;
@@ -2390,39 +2380,6 @@ button:active {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
-}
-
-/* Phase 2-B: Search history dropdown */
-.sb-history-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--color-bg, #fff);
-  border: 1px solid var(--color-border);
-  border-radius: 0 0 6px 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  z-index: 100;
-  max-height: 160px;
-  overflow-y: auto;
-}
-.sb-history-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: var(--color-text);
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-border);
-}
-.sb-history-item:last-child {
-  border-bottom: none;
-}
-.sb-history-item:hover {
-  background: var(--color-hover-bg);
 }
 
 /* Phase 2-C: Duration badge on thumbnail */
