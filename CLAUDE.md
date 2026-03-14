@@ -7,19 +7,20 @@
 プロジェクト名: HoloSync
 環境: Node.js 20 / Electron / JavaScript ES Modules / Playwright (Chromium)
 ブランチ戦略: main (トランクベース)
-現フェーズ: サイドバーUI再設計 Phase 1完了 → Phase 2/3 or 動作確認
+現フェーズ: サイドバーUI再設計 Phase 2完了 → Phase 3 or 別タスク
 直近の状態 (2026-03-14):
 
 - サイドバーUI再設計 Phase 1完了:
   - searchbrowser.js 全削除、URL追加+検索をinput.jsの統合入力欄に一本化
-  - 旧search-panel削除、APIキー設定はコンパクト化して残存
-  - 統合入力: URLならプレビューカード、キーワードならYouTube API検索結果
   - 全16モジュール構成に縮小（searchbrowser.js廃止）
-- APIキー永続化修正: server.listen(0)→固定ポート19876
-- 単体/一括タブを統合URL追加UIに置換済み
-- Phase 2: アコーディオン化（ライブラリ/設定/チャンネルLive監視）— 未着手
+- サイドバーUI再設計 Phase 2完了:
+  - 12セクション → 3常時表示 + 3アコーディオン（ライブラリ/チャンネルLive監視/設定）
+  - HTML `<details>/<summary>` によるネイティブ折りたたみ
+  - アコーディオン開閉状態の永続化（storageAdapter）
+  - 一括操作を動画追加直下に移動（高頻度セクション上部集約）
+  - APIキーを設定アコーディオンに移動
+  - Electron confirm()フォーカス喪失修正（contextBridge + dialog API）
 - Phase 3: 一括操作のコンパクト化（サイドバー下部固定）— 未着手
-- Electron動作確認未実施（コミット済みだが手動テスト未）
 - クォータ表示UX問題: 「クォータ確認待ち」が自動チェックしないのに表示される
 
 ## Key Paths
@@ -66,6 +67,9 @@
 | 2026-03-12 | AGENTS.md廃止→CLAUDE.md一本化                                          | 統合削除 / 同期維持 / 保留                                    | WORKFLOW_STATE_SSOT.md統合と同じ理由。SSOTの二重管理を排除                                           |
 | 2026-03-12 | 次フェーズ方針: UX磨き上げ（動画追加の手間削減）                       | UX磨き上げ(A) / 公開準備(B) / 新機能探索(C) / Electron強化(D) | 実運用でのペインポイントが「動画追加の手間」。基本機能は揃っているため体験の質を優先                 |
 | 2026-03-13 | タイルUI改善を次フェーズとして着手                                     | タイルUI改善 / Watch History UX / 新機能                      | 検証で発見されたUI発見性の低さ（ドラッグハンドル/オーディオマスター/syncBadge重なり）を優先          |
+| 2026-03-14 | サイドバーアコーディオン: `<details>/<summary>`でネイティブ実装        | details/summary / JSアコーディオン / ライブラリ使用           | ブラウザネイティブ、JSなしで動作、CSSトランジション可能                                              |
+| 2026-03-14 | アコーディオン3グループ: ライブラリ/チャンネルLive監視/設定            | 3グループ / 4グループ / 全セクション個別                      | 頻度で分類。高頻度（動画追加+一括操作）は常時表示、中低頻度を3アコーディオンに集約                   |
+| 2026-03-14 | Electron confirm()をcontextBridge経由のdialog APIに置換                | contextBridge / preload直接 / renderer内                      | contextIsolation:trueでpreloadのwindow.confirmはrendererに届かない。contextBridge必須                |
 
 ## Done条件（UX磨き上げフェーズ）
 

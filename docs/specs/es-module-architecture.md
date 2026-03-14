@@ -2,9 +2,9 @@
 
 ## 概要
 
-monolith な `main.js`（旧3000行超）を ES Module で17モジュールに分割。循環依存なし、関心の分離を維持。
+monolith な `main.js`（旧3000行超）を ES Module で16モジュールに分割。循環依存なし、関心の分離を維持。
 
-## モジュール構成（17ファイル / 7,175行）
+## モジュール構成（16ファイル）
 
 ### コアチェーン（初期化順）
 
@@ -25,7 +25,7 @@ storage.js → state.js → player.js → sync.js → main.js
 | モジュール | 行数 | 責務 |
 |-----------|------|------|
 | `layout.js` | 535 | グリッドレイアウト、ドラッグ並べ替え、リサイズ、フリー配置 |
-| `ui.js` | 532 | サイドバー、ツールバー、没入モード、ダークモード、embed設定UI |
+| `ui.js` | 570 | サイドバー、ツールバー、没入モード、ダークモード、embed設定UI、アコーディオン状態永続化 |
 | `debug.js` | 158 | 同期デバッグパネル |
 | `electron.js` | 95 | Electron固有: フレームレスウィンドウ、タイトルバー制御 |
 | `input.js` | 554 | URL入力、D&D、クリップボード、プレイリスト/チャンネル検出 |
@@ -36,7 +36,7 @@ storage.js → state.js → player.js → sync.js → main.js
 
 | モジュール | 行数 | 責務 |
 |-----------|------|------|
-| `search.js` | 416 | YouTube Data API検索、プリセット管理、検索履歴 |
+| `search.js` | 320 | YouTube Data API検索、プリセット管理、APIキー管理、クォータ確認 |
 | `share.js` | 245 | 共有URL生成/パース、JSON export/import |
 | `history.js` | 101 | 視聴履歴（30件MRU、再生時間追跡） |
 | `channel.js` | 515 | チャンネルLive監視（ポーリング、自動追加） |
@@ -44,10 +44,10 @@ storage.js → state.js → player.js → sync.js → main.js
 ## 依存関係ルール
 
 1. **循環依存禁止**: 全モジュール間で単方向の依存のみ
-2. **DI パターン**: `main.js` がコールバックやdepsオブジェクトで注入（例: `initPlayer({...})`, `initSearchBrowser({createTile, parseYouTubeId})`）
+2. **DI パターン**: `main.js` がコールバックやdepsオブジェクトで注入（例: `initPlayer({...})`）
 3. **グローバル汚染なし**: `window.*` への代入を廃止。全てモジュールスコープ
 4. **エントリポイント**: `index.html` → `<script type="module" src="scripts/main.js">`
 
 ## ESLint 設定
 
-`.eslintrc.json` の `overrides` で全17ファイルに `"sourceType": "module"` を適用。
+`.eslintrc.json` の `overrides` で全16ファイルに `"sourceType": "module"` を適用。
