@@ -366,13 +366,39 @@ export function initInput() {
       return;
     }
 
-    // Pure playlist URL (no v= parameter) — block batch add in single mode
+    // Pure playlist URL (no v= parameter) — add only the first video
     const playlistId = parsePlaylistId(raw);
     if (playlistId) {
-      addError.textContent =
-        '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8URL\u3067\u3059\u3002\u4e00\u62ec\u8ffd\u52a0\u30bf\u30d6\u3092\u4f7f\u3046\u304b\u3001\u500b\u5225\u306e\u52d5\u753bURL\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
-      addError.hidden = false;
-      urlInput.select();
+      if (!youtubeApiKey) {
+        addError.textContent =
+          '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u304b\u3089\u306e\u5358\u4f53\u8ffd\u52a0\u306b\u306fAPI\u30ad\u30fc\u304c\u5fc5\u8981\u3067\u3059\u3002\u691c\u7d22\u30bb\u30af\u30b7\u30e7\u30f3\u3067\u8a2d\u5b9a\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
+        addError.hidden = false;
+        return;
+      }
+      try {
+        const videoIds = await fetchPlaylistItems(playlistId, 1);
+        if (videoIds.length > 0) {
+          const firstId = videoIds[0];
+          if (hasVideo(firstId)) {
+            addError.textContent =
+              '\u3053\u306e\u52d5\u753b\u306f\u65e2\u306b\u8ffd\u52a0\u3055\u308c\u3066\u3044\u307e\u3059\u3002';
+            addError.hidden = false;
+            urlInput.select();
+            return;
+          }
+          createTile(firstId);
+          urlInput.value = '';
+          urlPreview.hidden = true;
+          urlInput.focus();
+        } else {
+          addError.textContent =
+            '\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u306b\u52d5\u753b\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f\u3002';
+          addError.hidden = false;
+        }
+      } catch (error) {
+        addError.textContent = error.message;
+        addError.hidden = false;
+      }
       return;
     }
 
