@@ -239,6 +239,9 @@ async function initializeApiKey(refreshDescriptions) {
   }
   updateApiKeyStatus();
   refreshDescriptions();
+  if (youtubeApiKey) {
+    checkQuota();
+  }
 }
 export { initializeApiKey };
 
