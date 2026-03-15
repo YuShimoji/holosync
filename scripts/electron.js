@@ -60,10 +60,44 @@ function ensureFramelessDragHandle() {
   content.insertBefore(dragHandle, content.firstChild);
 }
 
+function initDragMode() {
+  const dragOverlay = document.getElementById('dragOverlay');
+  if (!dragOverlay) {
+    return;
+  }
+
+  function enterDragMode() {
+    if (!state.framelessModeEnabled) {
+      return;
+    }
+    document.body.classList.add('drag-mode');
+    dragOverlay.hidden = false;
+  }
+
+  function exitDragMode() {
+    document.body.classList.remove('drag-mode');
+    dragOverlay.hidden = true;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Alt' && !e.repeat) {
+      enterDragMode();
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'Alt') {
+      exitDragMode();
+    }
+  });
+
+  window.addEventListener('blur', exitDragMode);
+}
 
 export function initElectron() {
   ensureFramelessDragHandle();
   syncWindowModeFromMain();
+  initDragMode();
 
   if (windowFrameToggleBtn && hasElectronWindowBridge()) {
     windowFrameToggleBtn.addEventListener('click', async () => {

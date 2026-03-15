@@ -745,6 +745,23 @@ body.frameless-mode .sidebar .watch-history-list,
 body.frameless-mode .sidebar ul {
   -webkit-app-region: no-drag;
 }
+
+/* Alt+Drag mode: full-screen drag overlay */
+.drag-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  cursor: move;
+  background: transparent;
+}
+body.frameless-mode.drag-mode .drag-overlay {
+  display: block !important;
+  -webkit-app-region: drag;
+}
+body.frameless-mode.drag-mode .tile iframe {
+  pointer-events: none;
+}
+
 @keyframes pulse-border {
   0%,
   100% {
