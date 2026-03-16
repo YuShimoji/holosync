@@ -21,36 +21,48 @@ const fitState = {
 
 // ── Dynamic column calculation ─────────────────────────────
 // Given video count & container size, find optimal column count
-// that minimizes wasted space while respecting the 16:9 aspect ratio.
-function calcOptimalColumns(containerW, containerH, count) {
-  if (count === 0) {
-    return 1;
-  }
-  if (count === 1) {
-    return 1;
+// that minimizes wasted space while fitting all tiles in view.
+// Returns { cols, rowHeight } where rowHeight is null when 16:9 fits naturally.
+function calcOptimalLayout(containerW, containerH, count) {
+  if (count <= 1) {
+    return { cols: 1, rowHeight: null };
   }
 
   let bestCols = 1;
-  let bestWaste = Infinity;
+  let bestScore = -Infinity;
+  let bestRowH = null;
 
   for (let cols = 1; cols <= count; cols++) {
     const rows = Math.ceil(count / cols);
     const cellW = containerW / cols;
-    const cellH = cellW * (9 / 16);
-    const usedH = rows * cellH;
-    if (usedH > containerH * 1.5) {
-      continue;
-    } // skip layouts that overflow too much
-    const waste = Math.abs(usedH / containerH - 1); // how close we are to filling height
-    if (waste < bestWaste) {
-      bestWaste = waste;
+    const naturalH = cellW * (9 / 16);
+    const usedH = rows * naturalH;
+
+    let rowH = null;
+    let actualCellH = naturalH;
+
+    if (usedH > containerH) {
+      // Tiles overflow — constrain row height to fit all rows
+      rowH = Math.floor(containerH / rows);
+      actualCellH = rowH;
+    }
+
+    // Score: prefer layouts that fill the screen with minimal waste
+    // and keep tiles close to 16:9 aspect ratio
+    const fillRatio = (rows * actualCellH) / containerH; // 1.0 = perfect fit
+    const aspectDeviation = Math.abs(actualCellH / cellW - 9 / 16);
+    const score = fillRatio - aspectDeviation * 2; // penalize aspect distortion
+
+    if (score > bestScore) {
+      bestScore = score;
       bestCols = cols;
+      bestRowH = rowH;
     }
   }
-  return bestCols;
+  return { cols: bestCols, rowHeight: bestRowH };
 }
 
-// Apply dynamic columns to the grid CSS variable
+// Apply dynamic columns (and row height) to the grid CSS variables
 function applyDynamicColumns() {
   if (fitState.fullFit || fitState.coverMode || !gridEl.classList.contains('layout-auto-dynamic')) {
     return;
@@ -59,8 +71,15 @@ function applyDynamicColumns() {
   const w = contentEl ? contentEl.clientWidth : gridEl.clientWidth;
   const h = contentEl ? contentEl.clientHeight : gridEl.clientHeight;
   const count = videos.length;
-  const cols = calcOptimalColumns(w, h, count);
+  const { cols, rowHeight } = calcOptimalLayout(w, h, count);
   gridEl.style.setProperty('--auto-cols', String(cols));
+  if (rowHeight) {
+    gridEl.style.setProperty('--auto-row-height', rowHeight + 'px');
+    gridEl.classList.add('auto-fit-rows');
+  } else {
+    gridEl.style.removeProperty('--auto-row-height');
+    gridEl.classList.remove('auto-fit-rows');
+  }
 }
 
 // ── Cover Mode ─────────────────────────────────────────────
@@ -108,15 +127,21 @@ function setFullFit(enabled) {
     fitState._savedLayoutClass = Array.from(gridEl.classList).find(
       (c) => c.startsWith('layout-') && c !== 'layout-auto-dynamic'
     );
-    // Remove all layout classes
+    // Remove all layout classes and auto-fit state
     [...gridEl.classList]
       .filter((c) => c.startsWith('layout-'))
       .forEach((c) => gridEl.classList.remove(c));
+    gridEl.classList.remove('auto-fit-rows');
+    gridEl.style.removeProperty('--auto-row-height');
     gridEl.classList.add('layout-fullfit');
   } else {
     gridEl.classList.remove('layout-fullfit');
     if (fitState._savedLayoutClass) {
       gridEl.classList.add(fitState._savedLayoutClass);
+    }
+    // Restore auto-dynamic layout if applicable
+    if (gridEl.classList.contains('layout-auto-dynamic')) {
+      applyDynamicColumns();
     }
   }
 
@@ -185,7 +210,9 @@ export function initFitMode() {
       applyDynamicColumns();
     } else {
       gridEl.classList.remove('layout-auto-dynamic');
+      gridEl.classList.remove('auto-fit-rows');
       gridEl.style.removeProperty('--auto-cols');
+      gridEl.style.removeProperty('--auto-row-height');
     }
   });
 

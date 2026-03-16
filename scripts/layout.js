@@ -257,6 +257,7 @@ function handleLayoutChange(layout) {
 function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
   let isResizing = false;
   let startX, startW, lastW, lastH, rafId;
+  let cachedTileLeft, cachedGridRight;
 
   resizeHandle.addEventListener('mousedown', (e) => {
     if (!state.cellModeEnabled) {
@@ -273,18 +274,22 @@ function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
     sizeBadge.style.display = 'block';
     sizeBadge.textContent = `${lastW}×${lastH}`;
 
+    // Cache layout values once at resize start to avoid per-frame reflow
+    const tileRect = tile.getBoundingClientRect();
+    const gridRect = gridEl.getBoundingClientRect();
+    cachedTileLeft = tileRect.left;
+    cachedGridRight = gridRect.right;
+
     const onMove = (ev) => {
       if (!isResizing) {
         return;
       }
       const deltaX = ev.clientX - startX;
-      const tileRect = tile.getBoundingClientRect();
-      const gridRect = gridEl.getBoundingClientRect();
       const maxWidthByGrid = Math.max(
         MIN_TILE_WIDTH,
-        gridRect.right - tileRect.left - state.cellGap
+        cachedGridRight - cachedTileLeft - state.cellGap
       );
-      const maxWidthByViewport = Math.max(MIN_TILE_WIDTH, window.innerWidth - tileRect.left - 12);
+      const maxWidthByViewport = Math.max(MIN_TILE_WIDTH, window.innerWidth - cachedTileLeft - 12);
       const maxWidth = Math.min(maxWidthByGrid, maxWidthByViewport);
       const newW = Math.max(MIN_TILE_WIDTH, Math.min(startW + deltaX, maxWidth));
       const newH = Math.round(newW * ASPECT_RATIO);
