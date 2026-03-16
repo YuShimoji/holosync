@@ -358,6 +358,41 @@ class StorageAdapter {
     return presets.find((p) => p.name === name) || null;
   }
 
+  // Channel preset methods
+  async saveChannelPreset(name, channels) {
+    const presets = (await this.getItem('channelPresets')) || [];
+    const existingIndex = presets.findIndex((p) => p.name === name);
+    const preset = {
+      id: crypto.randomUUID(),
+      name,
+      channels,
+      createdAt: Date.now(),
+    };
+
+    if (existingIndex >= 0) {
+      preset.createdAt = presets[existingIndex].createdAt;
+      presets[existingIndex] = preset;
+    } else {
+      presets.push(preset);
+      if (presets.length > 10) {
+        presets.shift();
+      }
+    }
+
+    await this.setItem('channelPresets', presets);
+    return preset;
+  }
+
+  async loadChannelPresets() {
+    return (await this.getItem('channelPresets')) || [];
+  }
+
+  async deleteChannelPreset(name) {
+    const presets = (await this.getItem('channelPresets')) || [];
+    const filtered = presets.filter((p) => p.name !== name);
+    await this.setItem('channelPresets', filtered);
+  }
+
   // Search history
   async saveSearchHistory(query) {
     const history = (await this.getItem('searchHistory')) || [];

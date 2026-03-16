@@ -5,6 +5,7 @@
  */
 import { youtubeApiKey, hasVideo } from './state.js';
 import { createTile } from './player.js';
+import { storageAdapter } from './storage.js';
 
 // ── Constants ─────────────────────────────────────────────
 
@@ -441,6 +442,97 @@ function updateIntervalFromInput() {
   restartPolling();
 }
 
+// ── Channel Presets ───────────────────────────────────────
+
+let chPresetListEl = null;
+let chPresetNameInput = null;
+let chPresetSaveBtn = null;
+
+async function saveCurrentChannelPreset() {
+  const name = chPresetNameInput?.value.trim();
+  if (!name || watchList.length === 0) {
+    return;
+  }
+  // Store channel entries without transient state
+  const channels = watchList.map((ch) => ({
+    channelId: ch.channelId,
+    name: ch.name,
+    handle: ch.handle,
+  }));
+  await storageAdapter.saveChannelPreset(name, channels);
+  chPresetNameInput.value = '';
+  await renderChannelPresets();
+}
+
+async function loadChannelPreset(name) {
+  const presets = await storageAdapter.loadChannelPresets();
+  const preset = presets.find((p) => p.name === name);
+  if (!preset) {
+    return;
+  }
+
+  // Replace current watchList with preset channels
+  stopPolling();
+  watchList = preset.channels.map((ch) => ({
+    channelId: ch.channelId,
+    name: ch.name,
+    handle: ch.handle || null,
+    addedAt: Date.now(),
+    lastChecked: 0,
+    liveVideoIds: [],
+  }));
+  saveWatchList();
+  renderChannelList();
+
+  // Start monitoring the loaded channels
+  if (youtubeApiKey && watchList.length > 0) {
+    setTimeout(() => {
+      checkAllChannels();
+      ensurePolling();
+    }, 1000);
+  }
+}
+
+async function deleteChannelPreset(name) {
+  await storageAdapter.deleteChannelPreset(name);
+  await renderChannelPresets();
+}
+
+async function renderChannelPresets() {
+  if (!chPresetListEl) {
+    return;
+  }
+  const presets = await storageAdapter.loadChannelPresets();
+  chPresetListEl.innerHTML = '';
+
+  if (presets.length === 0) {
+    return;
+  }
+
+  for (const preset of presets) {
+    const li = document.createElement('li');
+    li.className = 'ch-preset-item';
+
+    const info = document.createElement('span');
+    info.className = 'ch-preset-info';
+    info.textContent = `${preset.name} (${preset.channels.length}ch)`;
+    info.title = preset.channels.map((c) => c.handle || c.name).join(', ');
+
+    const loadBtn = document.createElement('button');
+    loadBtn.className = 'ch-preset-load-btn';
+    loadBtn.textContent = '読込';
+    loadBtn.addEventListener('click', () => loadChannelPreset(preset.name));
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'ch-preset-del-btn';
+    delBtn.textContent = '削除';
+    delBtn.addEventListener('click', () => deleteChannelPreset(preset.name));
+
+    li.append(info, loadBtn, delBtn);
+    chPresetListEl.appendChild(li);
+  }
+}
+
 // ── Initialization ────────────────────────────────────────
 
 /**
@@ -457,11 +549,21 @@ export function initChannel() {
   channelQuotaHint = document.getElementById('channelQuotaHint');
   channelIntervalInput = document.getElementById('channelIntervalInput');
 
+  // Bind preset DOM
+  chPresetListEl = document.getElementById('chPresetList');
+  chPresetNameInput = document.getElementById('chPresetNameInput');
+  chPresetSaveBtn = document.getElementById('chPresetSaveBtn');
+
+  if (chPresetSaveBtn) {
+    chPresetSaveBtn.addEventListener('click', saveCurrentChannelPreset);
+  }
+
   // Load persisted data
   loadWatchList();
 
   // Render existing list
   renderChannelList();
+  renderChannelPresets();
 
   // Set interval input value
   if (channelIntervalInput) {
