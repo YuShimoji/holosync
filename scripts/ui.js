@@ -458,6 +458,9 @@ export function initUI(deps) {
     const val = parseInt(e.target.value, 10);
     toleranceValue.textContent = val;
     SYNC_SETTINGS.toleranceMs = val;
+    // Keep soft/hard thresholds proportional to tolerance
+    SYNC_SETTINGS.softToleranceMs = Math.round(val * 0.5);
+    SYNC_SETTINGS.hardToleranceMs = Math.round(val * 3.33);
   });
   syncFrequencyInput.addEventListener('input', (e) => {
     const val = parseInt(e.target.value, 10);

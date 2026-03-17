@@ -54,7 +54,7 @@ class StorageAdapter {
     } catch (error) {
       console.warn(`Storage set failed for ${key}:`, error);
       // Fallback to next storage type
-      this.fallbackSet(key, value);
+      await this.fallbackSet(key, value);
     }
   }
 
@@ -302,14 +302,14 @@ class StorageAdapter {
     }
   }
 
-  fallbackGet(key) {
+  async fallbackGet(key) {
     // Try next storage type
     const nextIndex = this.storageTypes.indexOf(this.currentStorage) + 1;
     if (nextIndex < this.storageTypes.length) {
       const original = this.currentStorage;
       this.currentStorage = this.storageTypes[nextIndex];
       try {
-        const value = this.getItem(key);
+        const value = await this.getItem(key);
         console.log(`Fallback storage: ${original} -> ${this.currentStorage}`);
         this.currentStorage = original;
         return value;
