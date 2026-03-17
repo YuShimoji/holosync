@@ -167,7 +167,7 @@
     "status": "done",
     "pct": 100,
     "cat": "ui",
-    "file": null,
+    "file": "docs/specs/sidebar-ui-redesign.md",
     "summary": "Phase 1: searchbrowser.js削除+統合入力一本化。Phase 2: 3アコーディオン化+セクション並替+開閉永続化。Phase 3: 一括操作をトグルアイコン+シークバー分離+詳細折りたたみにコンパクト化"
   }
 ]

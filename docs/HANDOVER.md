@@ -1,10 +1,41 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-12
+**Updated**: 2026-03-17
 **Branch**: `main`
-**Status**: P2バックログ消化フェーズ完了、UI安定化作業完了（SP-013～015）。全15仕様完了、15モジュール ES Module構成。次フェーズ未定。
+**Status**: P2バックログ6件中4件完了。UX磨き上げ+サイドバーUI再設計完了。全19仕様(うち1件deprecated)、16モジュール ES Module構成。P2残2件: YouTube履歴同期(OAuth)、同期アルゴリズム改善。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-17（ドキュメント整合）
+- SP-019 サイドバーUI再設計の仕様本文作成 (docs/specs/sidebar-ui-redesign.md)
+- spec-index.json の SP-019 file フィールド修正
+- HANDOVER.md 更新 (本ファイル)
+
+### 2026-03-16（P2バックログ消化 4/6件）
+- fix(P2): フリータイル拡縮安定化 — getBoundingClientRectをリサイズ開始時キャッシュに変更 (ba67a9b)
+- fix(P2): サイドバー幅拡大 280→320px、padding 16→12px (ba67a9b)
+- feat(P2): 自動最大化フィット — calcOptimalLayout拡張、列数+行高さ同時最適化 (ba67a9b)
+- feat(P2): チャンネル一括登録プリセット — storageAdapter拡張、保存/読込/削除UI (a6d7b07)
+- docs: P2バックログ状態同期 (862e28e)
+
+### 2026-03-15（サイドバーUI再設計 SP-019 Phase 1-3 + UX改善）
+- refactor: 検索UI統合 — searchbrowser.js (531行) 削除、input.jsに一本化 (8207c01)
+- feat: Phase 2 サイドバーアコーディオン化 — details/summary、3グループ、開閉永続化 (533be07)
+- feat: Phase 3 一括操作コンパクト化 — トグルアイコン+シークバー分離+詳細折りたたみ (817ea35)
+- feat: タイルUI改善 — ドラッグハンドル発見性向上、オーディオマスターバッジ、syncBadge位置調整 (b12a002)
+- feat: Alt+ドラッグでiframe上からもウィンドウ移動可能に (e0b65f2)
+- fix: APIキー設定時にクォータを自動チェック (d2203fd)
+- fix: Electron confirm()後のフォーカス喪失をcontextBridge経由dialog APIに置換 (150a8c0)
+- fix: クォータ表示テキスト修正 + 死CSSの削除 (ac0bc51)
+- DECISION LOG 6件追記 (アコーディオン構成、confirm()置換、一括操作コンパクト化、framelessドラッグ方式、オーディオマスター表示)
+
+### 2026-03-14（UX磨き上げ準備）
+- feat: 単体/一括タブを統合URL追加UIに置換 (64fc0d1)
+- fix: 固定ポートでAPIキー永続化 + 単体追加でプレイリスト一括追加を阻止 (262f633, c4a11ea)
+
+### 2026-03-12（ライブ対応 + エンコーディング修復）
+- feat: ライブ配信対応マスターシークバー + 通知表示切替 (db70ea8)
+- fix: CLAUDE.md と SP-015 のエンコーディング破壊を修復 (06122a3)
 
 ### 2026-03-10（Worker A/B/C — UI安定化）
 - Worker B: レイアウト追従改善（SP-013）
