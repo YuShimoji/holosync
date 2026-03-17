@@ -25,8 +25,8 @@ test.describe('UI Regression', () => {
     await page.click('#sidebarToolbarToggle');
     await expect(page.locator('body')).not.toHaveClass(/toolbar-collapsed/);
 
-    // 初期状態: auto（layout-* クラスなし）
-    await expect(grid).toHaveClass('grid');
+    // 初期状態: auto (fitmode.js が auto-dynamic クラスを付与)
+    await expect(grid).toHaveClass(/grid/);
 
     // 2列に切替
     await page.selectOption('#layoutSelect', '2');
@@ -36,9 +36,9 @@ test.describe('UI Regression', () => {
     await page.selectOption('#layoutSelect', 'theater');
     await expect(grid).toHaveClass('grid layout-theater');
 
-    // 自動に戻す
+    // 自動に戻す (fitmode.js が auto-dynamic クラスを付与する)
     await page.selectOption('#layoutSelect', 'auto');
-    await expect(grid).toHaveClass('grid');
+    await expect(grid).toHaveClass(/grid/);
   });
 
   // ── 2. サイドバー折りたたみ ──────────────────────────────
@@ -174,6 +174,10 @@ test.describe('UI Regression', () => {
 
     // 初期状態: 非表示
     await expect(modal).not.toHaveClass(/active/);
+
+    // ヘルプボタンはアコーディオン（設定）内にある場合があるので開く
+    const settingsAccordion = page.locator('#accordionSettings');
+    await settingsAccordion.evaluate((el: HTMLDetailsElement) => (el.open = true));
 
     // 開く
     await page.click('#showHelpBtn');

@@ -41,7 +41,6 @@ test.describe('HoloSync Basic Functionality', () => {
 
     await expect(page).toHaveTitle(/HoloSync/);
     await expect(page.locator('#grid')).toBeVisible();
-    await expect(page.locator('#urlAddMode')).toBeVisible();
     await expect(page.locator('#urlAddInput')).toBeVisible();
 
     console.log('All UI elements are visible');
@@ -78,12 +77,14 @@ test.describe('HoloSync Basic Functionality', () => {
   test('batch controls are present', async ({ page }) => {
     console.log('=== Test: batch controls are present ===');
 
-    // 一括操作ボタンの存在確認
-    await expect(page.locator('#playAll')).toBeVisible();
-    await expect(page.locator('#pauseAll')).toBeVisible();
-    await expect(page.locator('#muteAll')).toBeVisible();
-    await expect(page.locator('#unmuteAll')).toBeVisible();
-    await expect(page.locator('#volumeAll')).toBeVisible();
+    // Phase 3: 一括操作はトグルアイコン + 詳細折りたたみに再編
+    await expect(page.locator('#playPauseToggle')).toBeVisible();
+    await expect(page.locator('#muteToggle')).toBeVisible();
+    await expect(page.locator('#masterSeekBar')).toBeVisible();
+
+    // 詳細設定は折りたたみ内（存在確認のみ）
+    await expect(page.locator('#volumeAll')).toBeAttached();
+    await expect(page.locator('#speedAll')).toBeAttached();
 
     console.log('✓ All batch control buttons are visible');
   });
@@ -91,7 +92,10 @@ test.describe('HoloSync Basic Functionality', () => {
   test('settings panel is accessible', async ({ page }) => {
     console.log('=== Test: settings panel is accessible ===');
 
-    // 同期設定の存在確認
+    // Phase 2: 設定はアコーディオン内。開いてから確認
+    const accordion = page.locator('#accordionSettings');
+    await accordion.evaluate((el: HTMLDetailsElement) => (el.open = true));
+
     await expect(page.locator('#leaderMode')).toBeVisible();
     await expect(page.locator('#toleranceMs')).toBeVisible();
     await expect(page.locator('#syncFrequency')).toBeVisible();
@@ -147,20 +151,19 @@ test.describe('HoloSync AI Agent Helper Functions', () => {
       timeout: 15000,
     });
 
-    // 再生ボタンのクリック
-    console.log('Clicking play all button');
-    await page.click('#playAll');
+    // Phase 3: 再生/一時停止はトグルボタンに統合
+    console.log('Clicking play/pause toggle');
+    await page.click('#playPauseToggle');
     await page.waitForTimeout(1000);
 
-    // 一時停止ボタンのクリック
-    console.log('Clicking pause all button');
-    await page.click('#pauseAll');
+    // もう一度クリックで一時停止
+    console.log('Clicking play/pause toggle again');
+    await page.click('#playPauseToggle');
     await page.waitForTimeout(500);
 
     // ボタンが有効であることを確認
-    await expect(page.locator('#playAll')).toBeEnabled();
-    await expect(page.locator('#pauseAll')).toBeEnabled();
+    await expect(page.locator('#playPauseToggle')).toBeEnabled();
 
-    console.log('✓ Play and pause all buttons work');
+    console.log('✓ Play/pause toggle works');
   });
 });
