@@ -6,7 +6,7 @@
     "pct": 100,
     "cat": "core",
     "file": "docs/SYNC_ALGO.md",
-    "summary": "3段階drift補正、リーダー選出4モード、同期グループ、動画間オフセット"
+    "summary": "3段階drift補正、リーダー選出4モード、同期グループ、動画間オフセット、Live Edge Sync(ライブ配信時seekTo抑制)"
   },
   {
     "id": "SP-002",

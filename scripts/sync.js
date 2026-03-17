@@ -25,6 +25,18 @@ export function setSyncCallbacks({ onRecovery } = {}) {
 // Utility
 // ---------------------------------------------------------------------------
 
+/**
+ * Detect if a player record likely represents a live stream.
+ * Live streams have very large DVR buffer duration and currentTime near the edge.
+ */
+export function isLikelyLive(rec) {
+  if (!rec || typeof rec.duration !== 'number') {
+    return false;
+  }
+  const edgeGap = rec.duration - (rec.time || 0);
+  return rec.duration > 43200 || (rec.duration > 3600 && edgeGap < 30);
+}
+
 function getStateLabel(state) {
   switch (state) {
     case -1:
@@ -280,6 +292,7 @@ function reconcileGroup(groupVideos, now) {
   const softToleranceSec = SYNC_SETTINGS.softToleranceMs / 1000;
   const hardToleranceSec = SYNC_SETTINGS.hardToleranceMs / 1000;
   const leaderPlaying = leaderRecord.state === 1;
+  const leaderIsLive = isLikelyLive(leaderRecord);
 
   for (const entry of activeEntries) {
     if (entry.v === leaderEntry.v) {
@@ -294,29 +307,41 @@ function reconcileGroup(groupVideos, now) {
     if (!record || typeof record.time !== 'number') {
       continue;
     }
-    // Apply per-video offset
-    const offsetSec = (entry.v.offsetMs || 0) / 1000;
-    const expectedTime = leaderRecord.time + offsetSec;
-    const drift = record.time - expectedTime;
-    const absDrift = Math.abs(drift);
 
-    if (absDrift > hardToleranceSec) {
-      // Hard correction: seekTo for large drift
-      sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
+    if (leaderIsLive) {
+      // Live Edge Sync: skip drift correction entirely.
+      // Live streams report DVR-relative currentTime, so seekTo-based sync
+      // would pull followers away from the live edge. Only sync play/pause state.
       if (speedAdjustedPlayers.has(entry.win)) {
         sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
         speedAdjustedPlayers.delete(entry.win);
       }
-    } else if (absDrift > softToleranceSec) {
-      // Soft correction: adjust playback speed to converge
-      const factor = SYNC_SETTINGS.speedCorrectionFactor;
-      const rate = drift > 0 ? 1 - factor : 1 + factor;
-      sendCommand(entry.v.iframe, 'setPlaybackRate', [rate]);
-      speedAdjustedPlayers.add(entry.win);
-    } else if (speedAdjustedPlayers.has(entry.win)) {
-      // Within soft tolerance: restore normal speed
-      sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
-      speedAdjustedPlayers.delete(entry.win);
+    } else {
+      // VOD sync: 3-stage drift correction
+      // Apply per-video offset
+      const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      const expectedTime = leaderRecord.time + offsetSec;
+      const drift = record.time - expectedTime;
+      const absDrift = Math.abs(drift);
+
+      if (absDrift > hardToleranceSec) {
+        // Hard correction: seekTo for large drift
+        sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
+        if (speedAdjustedPlayers.has(entry.win)) {
+          sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
+          speedAdjustedPlayers.delete(entry.win);
+        }
+      } else if (absDrift > softToleranceSec) {
+        // Soft correction: adjust playback speed to converge
+        const factor = SYNC_SETTINGS.speedCorrectionFactor;
+        const rate = drift > 0 ? 1 - factor : 1 + factor;
+        sendCommand(entry.v.iframe, 'setPlaybackRate', [rate]);
+        speedAdjustedPlayers.add(entry.win);
+      } else if (speedAdjustedPlayers.has(entry.win)) {
+        // Within soft tolerance: restore normal speed
+        sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
+        speedAdjustedPlayers.delete(entry.win);
+      }
     }
 
     const isPlaying = record.state === 1;
@@ -439,12 +464,15 @@ function syncAll() {
     if (!leader || typeof leader.rec?.time !== 'number') {
       continue;
     }
+    const liveMode = isLikelyLive(leader.rec);
     for (const entry of activeEntries) {
       if (entry.v === leader.v) {
         continue;
       }
-      const offsetSec = (entry.v.offsetMs || 0) / 1000;
-      sendCommand(entry.v.iframe, 'seekTo', [leader.rec.time + offsetSec, true]);
+      if (!liveMode) {
+        const offsetSec = (entry.v.offsetMs || 0) / 1000;
+        sendCommand(entry.v.iframe, 'seekTo', [leader.rec.time + offsetSec, true]);
+      }
       if (leader.rec.state === 1) {
         sendCommand(entry.v.iframe, 'playVideo');
       }

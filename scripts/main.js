@@ -28,7 +28,13 @@ import {
   buildEmbedUrl,
   advanceQueue,
 } from './player.js';
-import { normalizePlayerInfoMessage, syncAll, startSyncLoop, setSyncCallbacks } from './sync.js';
+import {
+  normalizePlayerInfoMessage,
+  syncAll,
+  startSyncLoop,
+  setSyncCallbacks,
+  isLikelyLive,
+} from './sync.js';
 import { initShare } from './share.js';
 import { initSearch, initializeApiKey, loadPresets } from './search.js';
 import {
@@ -547,16 +553,6 @@ function getLeaderRecord() {
     }
   }
   return null;
-}
-
-function isLikelyLive(rec) {
-  if (!rec || typeof rec.duration !== 'number') {
-    return false;
-  }
-  // Live streams typically have very large duration (DVR buffer) and
-  // currentTime stays near the duration (live edge).
-  const edgeGap = rec.duration - (rec.time || 0);
-  return rec.duration > 43200 || (rec.duration > 3600 && edgeGap < 30);
 }
 
 function updateMasterSeekbar() {
