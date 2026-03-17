@@ -1,13 +1,23 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-17
+**Updated**: 2026-03-18
 **Branch**: `main`
-**Status**: P2バックログ6件中4件完了。UX磨き上げ+サイドバーUI再設計完了。全19仕様(うち1件deprecated)、16モジュール ES Module構成。P2残2件: YouTube履歴同期(OAuth)、同期アルゴリズム改善。
+**Status**: P2バックログ5/6件完了（残: OAuth履歴同期のみ）。Live Edge Sync実装完了。全19仕様、16モジュール、Playwright 15/15 passed。
 
 ## 1) 直近セッションで完了したこと
 
-### 2026-03-17（ドキュメント整合）
-- SP-019 サイドバーUI再設計の仕様本文作成 (docs/specs/sidebar-ui-redesign.md)
+### 2026-03-17〜18（同期基盤 + ドキュメント整合 + テスト修正）
+- feat: Live Edge Sync — ライブ配信時seekTo抑制+play/pause同期のみ (08a17bb)
+- feat: ライブ+オフセット時seekTo許可 — 手動オフセット付きフォロワーはseekTo実行 (06ef917)
+- fix: storageAdapter非同期バグ — fallbackGet() async化+setItem内await追加 (c519972)
+- fix: tolerance UIスライダーがsoft/hardToleranceMsに連動していなかった問題を修正 (c519972)
+- fix(test): Playwright テストをPhase 2/3のUI変更に追従 — 15/15 passed (63966b7)
+- docs: SP-019 サイドバーUI再設計の仕様本文作成 (665f356)
+- docs: HANDOVER.md更新、TESTING.md整合 (665f356, dc81a12)
+- CLAUDE.md: CURRENT DEVELOPMENT AXIS / LANE / SLICE 追加、DECISION LOG 2件追記
+  (Live Edge Sync採用、音声映像解析不採用)
+
+### 2026-03-17（ドキュメント整合 — 上記に統合）
 - spec-index.json の SP-019 file フィールド修正
 - HANDOVER.md 更新 (本ファイル)
 
