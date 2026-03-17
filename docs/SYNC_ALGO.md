@@ -116,11 +116,14 @@ drift = followerTime - (leaderTime + followerOffsetSec)
 - `duration > 3600` かつ `edgeGap < 30` (1時間超でエッジ付近)
 
 **動作**: リーダーがライブ配信と判定された場合
-- drift補正 (seekTo / 速度調整) を全てスキップ
+- drift補正 (seekTo / 速度調整) を原則スキップ
 - play/pause 状態の同期のみ実行
 - 速度補正中のフォロワーは通常速度(1x)に戻す
+- **例外**: フォロワーに手動オフセット (`offsetMs != 0`) が設定されている場合、
+  オフセット付きseekToを許可する (hardTolerance超過時のみ)。
+  これにより「配信Aに対して配信Bを5秒遅らせて見る」ユースケースに対応。
 
-**手動同期ボタン** (`syncAll`): ライブモード時はseekToを抑制し、再生状態の同期のみ。
+**手動同期ボタン** (`syncAll`): ライブモード時も、オフセット付きフォロワーにはseekToを実行。オフセットなしフォロワーはseekToスキップ。
 
 **マスターシークバー**: ライブ判定時は `disabled` に設定し、"LIVE" テキストを表示。
 

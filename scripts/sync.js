@@ -309,12 +309,22 @@ function reconcileGroup(groupVideos, now) {
     }
 
     if (leaderIsLive) {
-      // Live Edge Sync: skip drift correction entirely.
+      // Live Edge Sync: skip drift correction for live streams.
       // Live streams report DVR-relative currentTime, so seekTo-based sync
-      // would pull followers away from the live edge. Only sync play/pause state.
+      // would pull followers away from the live edge.
       if (speedAdjustedPlayers.has(entry.win)) {
         sendCommand(entry.v.iframe, 'setPlaybackRate', [1]);
         speedAdjustedPlayers.delete(entry.win);
+      }
+      // Exception: if follower has a manual offset, apply it via seekTo once.
+      // This lets users align live streams with known delay differences.
+      const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      if (offsetSec !== 0) {
+        const expectedTime = leaderRecord.time + offsetSec;
+        const drift = record.time - expectedTime;
+        if (Math.abs(drift) > hardToleranceSec) {
+          sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
+        }
       }
     } else {
       // VOD sync: 3-stage drift correction
@@ -469,8 +479,8 @@ function syncAll() {
       if (entry.v === leader.v) {
         continue;
       }
-      if (!liveMode) {
-        const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      const offsetSec = (entry.v.offsetMs || 0) / 1000;
+      if (!liveMode || offsetSec !== 0) {
         sendCommand(entry.v.iframe, 'seekTo', [leader.rec.time + offsetSec, true]);
       }
       if (leader.rec.state === 1) {

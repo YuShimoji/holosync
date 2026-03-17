@@ -7,15 +7,39 @@
 プロジェクト名: HoloSync
 環境: Node.js 20 / Electron / JavaScript ES Modules / Playwright (Chromium)
 ブランチ戦略: main (トランクベース)
-現フェーズ: P2バックログ消化中 (4/6件完了)
-直近の状態 (2026-03-16):
+現フェーズ: P2バックログ消化中 (5/6件完了 — 同期アルゴリズム改善を進行中)
+直近の状態 (2026-03-17):
 
-- P2バックログ4件完了:
+- P2バックログ5件完了:
   - fix: フリータイル拡縮安定化 (reflow削減) (ba67a9b)
   - fix: サイドバー幅拡大 280→320px + padding縮小 (ba67a9b)
   - feat: 自動最大化フィット (calcOptimalLayout拡張) (ba67a9b)
   - feat: チャンネル一括プリセット (保存/読込/削除) (a6d7b07)
-- P2残り2件: YouTube履歴同期(OAuth)、同期アルゴリズム改善
+  - feat: Live Edge Sync — ライブ配信時seekTo抑制 (08a17bb)
+- バグ修正: storageAdapter非同期バグ + tolerance UIスライダー接続修正 (c519972)
+- ドキュメント整合: SP-019仕様本文作成、HANDOVER更新、TESTING整合 (665f356, dc81a12)
+- P2残り1件: YouTube履歴同期(OAuth)
+
+## CURRENT DEVELOPMENT AXIS
+
+- 主軸: 同期基盤 (ライブ配信同期の能力獲得)
+- この軸を優先する理由: 最終体験「複数ライブ配信の同期視聴」の核心。seekToベースの同期がライブで逆効果になる問題を解決する
+- 今ここで避けるべき脱線: コンテンツ活用 / 新機能探索 / Electron配布
+
+## CURRENT LANE
+
+- 主レーン: Runtime Core (sync.js / state.js)
+- 副レーン: ドキュメント整合 (仕様とコードの同期)
+- 今このレーンを優先する理由: Live Edge Sync を入れたことで、次はオフセット付きライブ同期とテストが必要
+- いまは深入りしないレーン: Authoring/Tooling, Acceptance/E2E拡充
+
+## CURRENT SLICE
+
+- スライス名: ライブ配信同期の基盤能力
+- ユーザー操作列: ライブ配信2本を追加 → 再生 → 同期が play/pause のみで干渉せず動作する
+- 成功状態: ライブ配信時にseekToが発火せず、手動オフセット指定時は考慮される
+- このスライスで必要な基盤能力: isLikelyLive判定、ライブ分岐、オフセット+ライブの組合せ対応
+- 今回はやらないこと: 遅延差の自動検出、音声解析、least-bufferedモード修正
 
 ## Key Paths
 
@@ -67,6 +91,8 @@
 | 2026-03-14 | 一括操作: 4ボタン→2トグル+同期アイコン+詳細折りたたみ                  | テキストボタン維持 / アイコン化 / ツールバー移動              | サイドバー幅を圧迫していた。高頻度(再生/ミュート)をトグル化、低頻度(速度/音量)を折りたたみに         |
 | 2026-03-14 | フレームレスドラッグ: グリッド+サイドバー空白+Alt+iframe上             | 空白のみ / Alt+ドラッグ / タイトルバー帯                      | 空白だけでは動画が画面を占めると移動不能。Altキーで透明オーバーレイ前面化→時分割でiframe操作と両立   |
 | 2026-03-14 | オーディオマスター表示: box-shadow強化+♪バッジ(CSS疑似要素)            | JSでバッジ要素追加 / CSS疑似要素 / アニメーション             | CSS ::afterのみでJS変更不要。bottom-leftに配置しsyncBadge(top-left)との干渉を回避                    |
+| 2026-03-17 | Live Edge Sync: ライブ配信時seekTo抑制                                 | seekTo維持 / 全スキップ / オフセット時のみ許可                | ライブのcurrentTimeはDVR相対値でseekToが逆効果。play/pause同期のみに制限                             |
+| 2026-03-17 | 音声/映像解析による自動遅延検出: 不採用                                | 音声フィンガープリント / 映像解析 / 手動オフセット            | YouTube iframeはcross-originでcaptureStream/Canvas取得不可。技術的に実装不能。手動オフセットで代替   |
 
 ## Done条件（P2バックログ消化フェーズ）
 
@@ -75,7 +101,7 @@
 - [x] feat(P2): 自動最大化フィット（calcOptimalLayout拡張、全動画画面内フィット）
 - [x] feat(P2): チャンネル一括登録プリセット（保存/読込/削除、サイドバーUI）
 - [ ] feat(P2): YouTube自チャンネル履歴同期
-- [ ] feat(P2): 同期アルゴリズム根本改善
+- [x] feat(P2): 同期アルゴリズム改善 — Live Edge Sync（ライブ配信時seekTo抑制+play/pause同期）、tolerance UIスライダー接続修正、storageAdapter非同期バグ修正
 
 ### 前フェーズ（UX磨き上げ -- 完了）
 
