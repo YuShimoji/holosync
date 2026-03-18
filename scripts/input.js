@@ -6,6 +6,7 @@ import { hasVideo, youtubeApiKey } from './state.js';
 import { parseYouTubeId, parsePlaylistId, createTile } from './player.js';
 import { fetchPlaylistItems } from './search.js';
 import { parseChannelInput, addChannel } from './channel.js';
+import { onVideosChanged } from './fitmode.js';
 
 // ── DOM References ─────────────────────────────────────────
 
@@ -426,6 +427,9 @@ function submitSelected() {
   }
   renderPreviewList();
   updateAddBar();
+  if (added > 0) {
+    onVideosChanged();
+  }
 }
 
 // ── Drag & Drop / Clipboard ────────────────────────────────
@@ -464,6 +468,9 @@ async function handleDroppedText(text) {
       createTile(id);
       added++;
     }
+  }
+  if (added > 0) {
+    onVideosChanged();
   }
   return added;
 }

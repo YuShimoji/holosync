@@ -1,10 +1,19 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-18 (nightshift)
+**Updated**: 2026-03-19
 **Branch**: `main`
-**Status**: P2バックログ5/6件完了（残: OAuth履歴同期のみ）。Live Edge Sync実装完了。全19仕様（17 done + 1 deprecated + 1 superseded）、16モジュール、Playwright 15/15 passed。ドキュメント整合完了。
+**Status**: SP-020 レイアウトUX摩擦5件修正完了。全20仕様（17 done + 1 deprecated + 1 superseded + 1 todo/SP-020）。Playwright 15/15 passed、ESLint clean。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-19（SP-020 レイアウトUX摩擦の解消）
+- feat(SP-020/F-5): content-toolbar を position: sticky に変更 — スクロールしてもツールバーが上部に固定される
+- feat(SP-020/F-1): 動画追加後に onVideosChanged() を自動呼び出し — input.js (submitSelected/handleDroppedText) + channel.js (ライブ自動追加)
+- feat(SP-020/F-3): calcOptimalLayout の count<=1 分岐で containerH を考慮した rowHeight を計算 — 1列時の上下切れ防止
+- feat(SP-020/F-2): applyDynamicColumns の coverMode 早期return を除去 + .content に scrollbar-gutter: stable 追加 — リサイズ追従改善
+- feat(SP-020/F-4): frameless-mode の -webkit-app-region: drag を .content → .grid に移動 — スクロールバーがドラッグ領域から分離
+- docs: SP-020 仕様書作成 (docs/specs/layout-ux-friction.md) + spec-index.json にエントリ追加
+- docs: CLAUDE.md CURRENT AXIS/LANE/SLICE を SP-020 に更新
 
 ### 2026-03-18 nightshift（ドキュメント整合）
 - docs: SP-002 superseded化 — フェーズα初期原案を後続仕様(SP-007/010/018/019)への参照に更新

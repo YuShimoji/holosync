@@ -169,5 +169,14 @@
     "cat": "ui",
     "file": "docs/specs/sidebar-ui-redesign.md",
     "summary": "Phase 1: searchbrowser.js削除+統合入力一本化。Phase 2: 3アコーディオン化+セクション並替+開閉永続化。Phase 3: 一括操作をトグルアイコン+シークバー分離+詳細折りたたみにコンパクト化"
+  },
+  {
+    "id": "SP-020",
+    "title": "レイアウトUX摩擦の解消",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/layout-ux-friction.md",
+    "summary": "5件のUX摩擦修正: (F-1)動画追加後の自動レイアウト (F-2)リサイズ追従 (F-3)1列時の高さ制限 (F-4)スクロールバーvsドラッグ (F-5)ツールバーsticky固定"
   }
 ]

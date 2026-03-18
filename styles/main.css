@@ -458,6 +458,7 @@ label {
 
 .content {
   overflow: auto;
+  scrollbar-gutter: stable;
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
@@ -494,6 +495,9 @@ body.immersive-mode .content {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .content-toolbar > * {
@@ -725,7 +729,7 @@ body.frameless-mode .frameless-drag-handle {
   -webkit-app-region: drag;
   pointer-events: auto;
 }
-body.frameless-mode .content,
+body.frameless-mode .grid,
 body.frameless-mode .sidebar {
   -webkit-app-region: drag;
 }

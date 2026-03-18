@@ -6,6 +6,7 @@
 import { youtubeApiKey, hasVideo } from './state.js';
 import { createTile } from './player.js';
 import { storageAdapter } from './storage.js';
+import { onVideosChanged } from './fitmode.js';
 
 // ── Constants ─────────────────────────────────────────────
 
@@ -231,11 +232,16 @@ async function checkChannelLive(entry) {
     const currentIds = liveStreams.map((s) => s.videoId);
 
     // Detect new live streams
+    let added = false;
     for (const stream of liveStreams) {
       if (!entry.liveVideoIds.includes(stream.videoId) && !hasVideo(stream.videoId)) {
         createTile(stream.videoId);
         showChannelNotification(entry.name, stream.title);
+        added = true;
       }
+    }
+    if (added) {
+      onVideosChanged();
     }
 
     // Update tracked live IDs

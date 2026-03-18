@@ -25,7 +25,9 @@ const fitState = {
 // Returns { cols, rowHeight } where rowHeight is null when 16:9 fits naturally.
 function calcOptimalLayout(containerW, containerH, count) {
   if (count <= 1) {
-    return { cols: 1, rowHeight: null };
+    const naturalH = containerW * (9 / 16);
+    const rowHeight = naturalH > containerH ? Math.floor(containerH) : null;
+    return { cols: 1, rowHeight };
   }
 
   let bestCols = 1;
@@ -64,7 +66,7 @@ function calcOptimalLayout(containerW, containerH, count) {
 
 // Apply dynamic columns (and row height) to the grid CSS variables
 function applyDynamicColumns() {
-  if (fitState.fullFit || fitState.coverMode || !gridEl.classList.contains('layout-auto-dynamic')) {
+  if (fitState.fullFit || !gridEl.classList.contains('layout-auto-dynamic')) {
     return;
   }
   const contentEl = gridEl.parentElement;
