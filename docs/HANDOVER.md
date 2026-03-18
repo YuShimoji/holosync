@@ -218,7 +218,9 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-（P1バックログ完了。P2バックログは [docs/ISSUES.md](ISSUES.md) 参照）
+1. 次スライス決定 (HUMAN_AUTHORITY) — OAuth / 手動テスト / 新方向のいずれか
+2. feat(P2): YouTube OAuth 履歴同期 — P2最後の1件
+3. 手動テスト24項目消化 — TESTING.md参照、E2Eカバレッジ表で自動/手動の分担確認可能
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。
 

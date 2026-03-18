@@ -93,6 +93,7 @@
 | 2026-03-14 | オーディオマスター表示: box-shadow強化+♪バッジ(CSS疑似要素)            | JSでバッジ要素追加 / CSS疑似要素 / アニメーション             | CSS ::afterのみでJS変更不要。bottom-leftに配置しsyncBadge(top-left)との干渉を回避                    |
 | 2026-03-17 | Live Edge Sync: ライブ配信時seekTo抑制                                 | seekTo維持 / 全スキップ / オフセット時のみ許可                | ライブのcurrentTimeはDVR相対値でseekToが逆効果。play/pause同期のみに制限                             |
 | 2026-03-17 | 音声/映像解析による自動遅延検出: 不採用                                | 音声フィンガープリント / 映像解析 / 手動オフセット            | YouTube iframeはcross-originでcaptureStream/Canvas取得不可。技術的に実装不能。手動オフセットで代替   |
+| 2026-03-18 | SP-002 superseded化                                                    | 内容更新 / superseded / 削除                                  | 2025-10-19のフェーズα初期原案。機能はSP-007/010/018/019に分散実装済み。原案を残しつつsuperseded注記  |
 
 ## Done条件（P2バックログ消化フェーズ）
 
