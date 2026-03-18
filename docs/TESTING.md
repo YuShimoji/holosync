@@ -95,5 +95,34 @@
 ## 不具合報告
 - バグを見つけた場合は `.github/ISSUE_TEMPLATE/bug.md` を使ってIssueを作成してください
 
+## E2E テストと手動テストの対応
+
+| E2E テスト (自動) | 対応する手動テスト | カバー度 |
+|---|---|---|
+| page loads successfully | - | インフラ |
+| can add YouTube video | #1 URL追加（正常） | 部分 (UI確認は手動) |
+| batch controls are present | #3-#8 一括操作 | 存在確認のみ |
+| settings panel is accessible | - | インフラ |
+| add multiple videos | #1 URL追加（正常） | 複数追加 |
+| play and pause all | #3 一括再生, #4 一括停止 | 部分 |
+| layout select changes grid class | #15 レイアウト切替 | 完全 |
+| sidebar toggle collapses/expands | #16 サイドバー折りたたみ | 完全 |
+| immersive mode toggles | - | UI回帰 |
+| immersive mode persisted state | - | UI回帰 |
+| toolbar toggle | - | UI回帰 |
+| dark mode toggle | - | UI回帰 |
+| help modal opens/closes | - | UI回帰 |
+| invalid URL shows error | #2 URL追加（無効URL） | 完全 |
+| watch history section exists | - | 存在確認 |
+
+**手動テストでのみ確認可能な項目** (E2E 未カバー):
+- #5 手動同期, #6 自動同期 (YouTube再生状態依存)
+- #7 音量一括, #8 再生速度 (iframe操作)
+- #9 動画削除, #10 レスポンシブ, #11 エラー処理, #12 バッファリング耐性
+- #13 検索導線, #14 プリセット保存/読込, #17 フルスクリーン
+- #18 動画情報パネル, #19 D&D追加, #20 クリップボード貼付
+- #21 同期グループ, #22 プリセット可視化, #23 キーボードショートカット, #24 オーディオフォーカス
+
 ## E2E Test Runs
-- 2026-03-08: `npm run test` (Playwright) passed 15 tests (chromium only). 基本機能6件 + UI回帰9件。
+- 2026-03-17: `npm run test` (Playwright) passed 15 tests (chromium only). 基本機能6件 + UI回帰9件。
+- 2026-03-08: 初回テスト追加。

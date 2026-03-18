@@ -1,10 +1,18 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-18
+**Updated**: 2026-03-18 (nightshift)
 **Branch**: `main`
-**Status**: P2バックログ5/6件完了（残: OAuth履歴同期のみ）。Live Edge Sync実装完了。全19仕様、16モジュール、Playwright 15/15 passed。
+**Status**: P2バックログ5/6件完了（残: OAuth履歴同期のみ）。Live Edge Sync実装完了。全19仕様（17 done + 1 deprecated + 1 superseded）、16モジュール、Playwright 15/15 passed。ドキュメント整合完了。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-18 nightshift（ドキュメント整合）
+- docs: SP-002 superseded化 — フェーズα初期原案を後続仕様(SP-007/010/018/019)への参照に更新
+- docs: spec-index.json SP-002 status:superseded, pct:100 に修正
+- docs: CLAUDE.md PROJECT CONTEXT/CURRENT AXIS/LANE/SLICE を最新状態に更新
+- docs: TESTING.md に E2E テストと手動テストの対応表を追加
+- docs: ISSUES.md 運用メモを簡素化
+- docs: HANDOVER.md 状態更新
 
 ### 2026-03-17〜18（同期基盤 + ドキュメント整合 + テスト修正）
 - feat: Live Edge Sync — ライブ配信時seekTo抑制+play/pause同期のみ (08a17bb)

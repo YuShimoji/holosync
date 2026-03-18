@@ -11,11 +11,11 @@
   {
     "id": "SP-002",
     "title": "検索導線とプリセット機能",
-    "status": "done",
-    "pct": 95,
+    "status": "superseded",
+    "pct": 100,
     "cat": "ui",
     "file": "docs/specs/phase-alpha-search-preset.md",
-    "summary": "YouTube Data API検索UI、プリセット保存/読込、共有リンク生成"
+    "summary": "フェーズα初期原案。機能はSP-007(検索拡張)、SP-010(ESModule/storage)、SP-018(動画追加UX)、SP-019(サイドバーUI)に分散実装済み"
   },
   {
     "id": "SP-003",

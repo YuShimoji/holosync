@@ -1,5 +1,12 @@
 # フェーズα仕様: 検索導線とプリセット機能
 
+> **Status: SUPERSEDED (2026-03-18)**
+> 本仕様はフェーズα初期の原案であり、以下の後続仕様に分散実装済み:
+> - SP-007: 検索拡張（履歴/フィルタ） → `docs/specs/search-enhancements.md`
+> - SP-010: ES Module アーキテクチャ（storage.js 含む） → `docs/specs/es-module-architecture.md`
+> - SP-018: 動画追加UX改善 → `docs/specs/video-add-ux.md`
+> - SP-019: サイドバーUI再設計 → `docs/specs/sidebar-ui-redesign.md`
+
 最終更新: 2025-10-19 21:20 (JST)
 作成者: Cascade (AIアシスタント)
 関連ドキュメント: `docs/ISSUES.md`, `docs/TESTING.md`
