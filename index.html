@@ -327,8 +327,7 @@
           <span>☰</span>
         </button>
         <div class="layout-controls">
-          <label class="layout-label">レイアウト:</label>
-          <select id="layoutSelect" class="layout-select">
+          <select id="layoutSelect" class="layout-select" title="レイアウト">
             <option value="auto">自動</option>
             <option value="1">1列</option>
             <option value="2">2列</option>
@@ -369,22 +368,89 @@
             </svg>
           </button>
         </div>
-        <div class="gap-controls">
-          <label class="gap-label">間隔:</label>
-          <input id="gridGap" type="range" min="0" max="24" step="2" value="8" class="gap-slider" />
-          <span id="gridGapVal">8</span>px
-        </div>
-        <button id="shareBtn" class="share-btn" title="現在の状態を共有URLとしてコピー">
-          🔗 共有
+        <details class="toolbar-details" title="間隔調整">
+          <summary class="toolbar-more-btn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="19" cy="12" r="1" />
+              <circle cx="5" cy="12" r="1" />
+            </svg>
+          </summary>
+          <div class="toolbar-dropdown">
+            <div class="gap-controls">
+              <label class="gap-label">間隔:</label>
+              <input
+                id="gridGap"
+                type="range"
+                min="0"
+                max="24"
+                step="2"
+                value="8"
+                class="gap-slider"
+              />
+              <span id="gridGapVal">8</span>px
+            </div>
+          </div>
+        </details>
+        <button id="shareBtn" class="share-btn toolbar-icon-btn" title="共有">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
         </button>
-        <button id="toolbarToggleBtn" class="share-btn" title="ツールバーの表示切替">
-          &#x30c4;&#x30fc;&#x30eb;&#x30d0;&#x30fc;&#x3092;&#x96a0;&#x3059;
+        <button id="toolbarToggleBtn" class="share-btn toolbar-icon-btn" title="ツールバーを隠す">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 3h18v4H3zM3 10h18v11H3z" />
+          </svg>
         </button>
-        <button id="immersiveToggleBtn" class="share-btn" title="没入表示の切替">
-          &#x6ca1;&#x5165;&#x8868;&#x793a;
+        <button id="immersiveToggleBtn" class="share-btn toolbar-icon-btn" title="没入表示">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
         </button>
-        <button id="windowFrameToggleBtn" class="share-btn" title="ウィンドウ枠を非表示に切替">
-          &#x30d5;&#x30ec;&#x30fc;&#x30e0;&#x30ec;&#x30b9;
+        <button id="windowFrameToggleBtn" class="share-btn toolbar-icon-btn" title="フレームレス">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="2" y="3" width="20" height="18" rx="2" />
+            <line x1="2" y1="9" x2="22" y2="9" />
+          </svg>
         </button>
         <div id="windowControls" class="window-controls" hidden>
           <button id="windowMinBtn" class="window-control-btn" title="最小化">-</button>

@@ -44,7 +44,13 @@ import {
   getLastSession,
   loadSuggestions,
 } from './history.js';
-import { initUI, syncEmbedSettingsUI, initAccordions } from './ui.js';
+import {
+  initUI,
+  syncEmbedSettingsUI,
+  initAccordions,
+  setSidebarCollapsed,
+  setToolbarCollapsed,
+} from './ui.js';
 import { initDebugPanel } from './debug.js';
 import { initElectron } from './electron.js';
 import {
@@ -59,7 +65,7 @@ import {
 } from './layout.js';
 import { initInput } from './input.js';
 import { initChannel } from './channel.js';
-import { initFitMode } from './fitmode.js';
+import { initFitMode, toggleFocusMode } from './fitmode.js';
 
 const gridEl = document.getElementById('grid');
 
@@ -92,6 +98,7 @@ initPlayer({
   toggleZoomPanel,
   refreshTileStackOrder,
   setAudioFocus,
+  toggleFocusMode,
   onTileIframeLoaded: () => applyAudioFocus(),
   clearAudioFocus: () => setAudioFocus(null),
 });
@@ -491,7 +498,7 @@ loadPresets();
 loadWatchHistory();
 loadSuggestions();
 initChannel();
-initFitMode();
+initFitMode({ setSidebarCollapsed, setToolbarCollapsed });
 initAccordions();
 
 window.addEventListener('message', (event) => {

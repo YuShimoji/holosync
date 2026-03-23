@@ -17,6 +17,8 @@ const layoutSelect = document.getElementById('layoutSelect');
 const fitState = {
   coverMode: false, // true = fill (cover), false = standard (contain + aspect-ratio)
   fullFit: false, // true = show only 1st video, maximized
+  focusVideoId: null, // non-null = focus mode active for this video
+  _savedFocusState: null, // sidebar/toolbar/frameless state before focus
 };
 
 // ── Dynamic column calculation ─────────────────────────────
@@ -157,6 +159,63 @@ function setFullFit(enabled) {
   }
 }
 
+// ── Focus Mode (SP-021/F-11) ────────────────────────────────
+// Single video maximized, all chrome hidden. Double-click tile to enter, ESC to exit.
+let _uiDeps = null; // { setSidebarCollapsed, setToolbarCollapsed }
+
+function setFocusMode(videoId) {
+  if (fitState.focusVideoId) {
+    exitFocusMode();
+  }
+
+  // Save current chrome state
+  fitState._savedFocusState = {
+    sidebarCollapsed: document.body.classList.contains('sidebar-collapsed'),
+    toolbarCollapsed: document.body.classList.contains('toolbar-collapsed'),
+    frameless: document.body.classList.contains('frameless-mode'),
+    fullFit: fitState.fullFit,
+  };
+
+  fitState.focusVideoId = videoId;
+  document.body.classList.add('focus-mode');
+
+  // Mark the focused tile
+  const entry = videos.find((v) => v.id === videoId);
+  if (entry?.tile) {
+    entry.tile.classList.add('focus-target');
+  }
+
+  // Hide all chrome
+  if (_uiDeps) {
+    _uiDeps.setSidebarCollapsed(true, { persist: false, source: 'focus' });
+    _uiDeps.setToolbarCollapsed(true, { persist: false, source: 'focus' });
+  }
+}
+
+function exitFocusMode() {
+  if (!fitState.focusVideoId) {
+    return;
+  }
+
+  const prevId = fitState.focusVideoId;
+  fitState.focusVideoId = null;
+  document.body.classList.remove('focus-mode');
+
+  // Remove focus-target from tile
+  const entry = videos.find((v) => v.id === prevId);
+  if (entry?.tile) {
+    entry.tile.classList.remove('focus-target');
+  }
+
+  // Restore chrome state
+  const saved = fitState._savedFocusState;
+  if (saved && _uiDeps) {
+    _uiDeps.setSidebarCollapsed(saved.sidebarCollapsed, { persist: false, source: 'focus' });
+    _uiDeps.setToolbarCollapsed(saved.toolbarCollapsed, { persist: false, source: 'focus' });
+  }
+  fitState._savedFocusState = null;
+}
+
 // ── Public API ─────────────────────────────────────────────
 export function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
@@ -164,6 +223,18 @@ export function toggleCoverMode() {
 
 export function toggleFullFit() {
   setFullFit(!fitState.fullFit);
+}
+
+export function toggleFocusMode(videoId) {
+  if (fitState.focusVideoId === videoId) {
+    exitFocusMode();
+  } else {
+    setFocusMode(videoId);
+  }
+}
+
+export function isFocusModeActive() {
+  return !!fitState.focusVideoId;
 }
 
 export function onVideosChanged() {
@@ -177,12 +248,26 @@ export function onVideosChanged() {
 }
 
 // ── Init ────────────────────────────────────────────────────
-export function initFitMode() {
+export function initFitMode(deps) {
+  // Store UI deps for focus mode chrome control
+  if (deps) {
+    _uiDeps = deps;
+  }
+
   // Fit/Cover toggle button
   fitModeBtn?.addEventListener('click', toggleCoverMode);
 
   // Full-fit button
   fullFitBtn?.addEventListener('click', toggleFullFit);
+
+  // ESC key exits focus mode
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && fitState.focusVideoId) {
+      e.preventDefault();
+      e.stopPropagation();
+      exitFocusMode();
+    }
+  });
 
   // ResizeObserver for dynamic auto layout
   const ro = new ResizeObserver(() => {

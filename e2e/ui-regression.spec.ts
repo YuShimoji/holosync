@@ -81,14 +81,14 @@ test.describe('UI Regression', () => {
       document.documentElement.requestFullscreen = async () => {};
     });
 
-    // 初期状態
+    // 初期状態 (SP-021/F-03: icon button — check title instead of text)
     await expect(body).not.toHaveClass(/immersive-mode/);
-    await expect(btn).toHaveText('\u6ca1\u5165\u8868\u793a');
+    await expect(btn).toHaveAttribute('title', '\u6ca1\u5165\u8868\u793a');
 
     // 没入モードON
     await page.click('#immersiveToggleBtn');
     await expect(body).toHaveClass(/immersive-mode/);
-    await expect(btn).toHaveText('\u6ca1\u5165\u8868\u793a\u3092\u7d42\u4e86');
+    await expect(btn).toHaveAttribute('title', '\u6ca1\u5165\u8868\u793a\u3092\u7d42\u4e86');
 
     // サイドバーとツールバーも自動的に非表示になる
     await expect(body).toHaveClass(/sidebar-collapsed/);
@@ -99,7 +99,7 @@ test.describe('UI Regression', () => {
       document.getElementById('immersiveToggleBtn')!.click();
     });
     await expect(body).not.toHaveClass(/immersive-mode/);
-    await expect(btn).toHaveText('\u6ca1\u5165\u8868\u793a');
+    await expect(btn).toHaveAttribute('title', '\u6ca1\u5165\u8868\u793a');
   });
 
   // ── 4. ツールバー表示切替 ────────────────────────────────

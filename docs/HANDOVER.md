@@ -1,10 +1,19 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-19
+**Updated**: 2026-03-23
 **Branch**: `main`
-**Status**: SP-020 レイアウトUX摩擦5件修正完了。全20仕様（17 done + 1 deprecated + 1 superseded + 1 todo/SP-020）。Playwright 15/15 passed、ESLint clean。
+**Status**: SP-021 UI/UX洗練 Phase 1 着手。仕様書作成+Phase A/B部分実装(F-03/F-06/F-11)。全21仕様（18 done + 1 deprecated + 1 superseded + 1 draft/SP-021）。Playwright 15/15 passed、ESLint clean。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-23（SP-021 UI/UX洗練 Phase 1 着手）
+- docs: SP-021 仕様書作成 (docs/specs/ux-refinement-phase1.md) — 11件のUX改善を体系化
+- feat(SP-021/F-06): 動画情報パネルをオーバーレイ化 — frame-wrap内に移動、ホバー表示、ダーク半透明背景
+- feat(SP-021/F-03): ツールバー簡素化 — テキストボタンをSVGアイコン化、間隔スライダーを折りたたみメニューに移動、gap縮小
+- feat(SP-021/F-11): フォーカスモード実装 — タイルアクションからワンクリック最大化、ESCで復帰、全chrome非表示
+- fix(test): E2Eテストをアイコンボタン化に追従（toHaveText→toHaveAttribute title）
+- docs: CLAUDE.md CURRENT AXIS/LANE/SLICE を SP-021 に更新
+- docs: spec-index.json にSP-021追加（計21エントリ）
 
 ### 2026-03-19（SP-020 レイアウトUX摩擦の解消）
 - feat(SP-020/F-5): content-toolbar を position: sticky に変更 — スクロールしてもツールバーが上部に固定される
@@ -227,9 +236,10 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-1. 次スライス決定 (HUMAN_AUTHORITY) — OAuth / 手動テスト / 新方向のいずれか
-2. feat(P2): YouTube OAuth 履歴同期 — P2最後の1件
-3. 手動テスト24項目消化 — TESTING.md参照、E2Eカバレッジ表で自動/手動の分担確認可能
+1. SP-021 UI/UX洗練 Phase 1 の手動検証 — F-03/F-06/F-11の動作確認
+2. SP-021 Phase A/B/C/D の残り実装 (F-01/F-02/F-04/F-05/F-07/F-08/F-09/F-10)
+3. feat(P2): YouTube OAuth 履歴同期 — P2最後の1件
+4. 手動テスト24項目消化 — TESTING.md参照
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。
 

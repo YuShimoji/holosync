@@ -178,5 +178,14 @@
     "cat": "ui",
     "file": "docs/specs/layout-ux-friction.md",
     "summary": "5件のUX摩擦修正: (F-1)動画追加後の自動レイアウト (F-2)リサイズ追従 (F-3)1列時の高さ制限 (F-4)スクロールバーvsドラッグ (F-5)ツールバーsticky固定"
+  },
+  {
+    "id": "SP-021",
+    "title": "UI/UX洗練 Phase 1",
+    "status": "draft",
+    "pct": 0,
+    "cat": "ui",
+    "file": "docs/specs/ux-refinement-phase1.md",
+    "summary": "11件のUX改善: (F-01)フィット手数削減 (F-02)最大化モード再分類 (F-03)ツールバー簡素化 (F-04)メインエリア検索 (F-05)スクロールバー/ドラッグ分離 (F-06)動画情報折りたたみ (F-07)YouTube風コントロール (F-08)ブラウザ遷移防止 (F-09)ルーペ拡張 (F-10)双方向フィット (F-11)ワンアクション最大化"
   }
 ]

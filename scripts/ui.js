@@ -104,7 +104,10 @@ function setButtonLabel(button, text, title = text) {
   if (!button) {
     return;
   }
-  button.textContent = text;
+  // SP-021/F-03: icon buttons have SVG children — only set textContent if no SVG
+  if (!button.querySelector('svg')) {
+    button.textContent = text;
+  }
   button.title = title;
   button.setAttribute('aria-label', title);
 }

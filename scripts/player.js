@@ -611,12 +611,23 @@ export function createTile(videoId, options = {}) {
   audioBtn.title = 'オーディオマスターに設定';
   audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoId));
 
+  const focusBtn = document.createElement('button');
+  focusBtn.className = 'tile-action-btn tile-focus-btn';
+  focusBtn.textContent = '\u26F6';
+  focusBtn.title = 'フォーカスモード（この動画を最大化）';
+  focusBtn.addEventListener('click', () => {
+    if (_deps.toggleFocusMode) {
+      _deps.toggleFocusMode(videoId);
+    }
+  });
+
   const removeBtn = document.createElement('button');
   removeBtn.className = 'tile-action-btn tile-remove';
   removeBtn.textContent = '✕';
   removeBtn.title = 'この動画を削除';
   removeBtn.addEventListener('click', () => removeVideo(videoId, tile));
 
+  actions.appendChild(focusBtn);
   actions.appendChild(audioBtn);
   actions.appendChild(zoomBtn);
   actions.appendChild(movePrevBtn);
@@ -646,6 +657,7 @@ export function createTile(videoId, options = {}) {
 
   infoHeader.addEventListener('click', () => {
     const isOpen = infoPanel.classList.toggle('open');
+    infoHeader.classList.toggle('info-open', isOpen);
     infoToggleIcon.textContent = isOpen ? '▲' : '▼';
   });
 
@@ -684,6 +696,8 @@ export function createTile(videoId, options = {}) {
 
   frameWrap.appendChild(thumbnail);
   frameWrap.appendChild(iframe);
+  frameWrap.appendChild(infoHeader);
+  frameWrap.appendChild(infoPanel);
   tile.appendChild(syncBadge);
   tile.appendChild(actions);
   tile.appendChild(offsetControl);
@@ -691,8 +705,6 @@ export function createTile(videoId, options = {}) {
   tile.appendChild(resizeHandle);
   tile.appendChild(sizeBadge);
   tile.appendChild(frameWrap);
-  tile.appendChild(infoHeader);
-  tile.appendChild(infoPanel);
 
   _deps.gridEl.appendChild(tile);
 
