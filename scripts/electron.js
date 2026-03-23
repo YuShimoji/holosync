@@ -23,7 +23,9 @@ function applyFramelessState(isFrameless) {
   document.body.classList.toggle('frameless-mode', isFrameless);
   if (windowFrameToggleBtn) {
     windowFrameToggleBtn.classList.toggle('success', isFrameless);
-    windowFrameToggleBtn.textContent = isFrameless ? 'Framed' : 'Frameless';
+    const label = isFrameless ? 'フレーム付きに戻す' : 'フレームレス';
+    windowFrameToggleBtn.title = label;
+    windowFrameToggleBtn.setAttribute('aria-label', label);
   }
   if (windowControls) {
     windowControls.hidden = !isFrameless;

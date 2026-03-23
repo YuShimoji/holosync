@@ -1,10 +1,16 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-23
+**Updated**: 2026-03-24
 **Branch**: `main`
-**Status**: SP-021 UI/UX洗練 Phase 1 着手。仕様書作成+Phase A/B部分実装(F-03/F-06/F-11)。全21仕様（18 done + 1 deprecated + 1 superseded + 1 draft/SP-021）。Playwright 15/15 passed、ESLint clean。
+**Status**: SP-021 UI/UX洗練 Phase 1 進行中(3/11件)。F-03/F-06/F-11実装済み+フレームレスボタンSVG修正。全21仕様（18 done + 1 deprecated + 1 superseded + 1 partial/SP-021 pct30）。E2E 9/9 passed、ESLint clean。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-24（SP-021 フレームレスボタンSVG修正 + 手動検証）
+- fix: electron.js applyFramelessState() がtextContentでSVGアイコンを上書きしていた → title/aria-labelのみに修正
+- 手動検証結果: F-06(情報オーバーレイ), F-11(フォーカスモード), F-03(ツールバーアイコン) の動作確認OK
+- フレームレスボタン(1-2)はアプリ再起動後の再確認待ち
+- docs: CLAUDE.md/HANDOVER.md/spec-index.json更新
 
 ### 2026-03-23（SP-021 UI/UX洗練 Phase 1 着手）
 - docs: SP-021 仕様書作成 (docs/specs/ux-refinement-phase1.md) — 11件のUX改善を体系化
@@ -236,8 +242,10 @@
 
 ## 2) 現在の未完了タスク（優先順）
 
-1. SP-021 UI/UX洗練 Phase 1 の手動検証 — F-03/F-06/F-11の動作確認
-2. SP-021 Phase A/B/C/D の残り実装 (F-01/F-02/F-04/F-05/F-07/F-08/F-09/F-10)
+1. フレームレスボタンのアイコン表示確認 — Electronアプリ再起動後
+2. SP-021 Phase B残り: F-01(フィット手数削減), F-02(最大化モード再分類), F-10(双方向フィット)
+3. SP-021 Phase C: F-07(YouTube風コントロール), F-08(ブラウザ遷移防止), F-05(スクロールバー分離)
+4. SP-021 Phase D: F-04(メインエリア検索), F-09(ルーペ拡張)
 3. feat(P2): YouTube OAuth 履歴同期 — P2最後の1件
 4. 手動テスト24項目消化 — TESTING.md参照
 
