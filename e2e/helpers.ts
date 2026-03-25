@@ -40,10 +40,9 @@ export async function waitForYouTubePlayerReady(
   });
 
   // Step 3: YouTube埋め込みプレイヤーの初期化を待つ
-  // HoloSyncのinitializeSyncForIframe実装（main.js 162-171行目）:
-  //   iframe.addEventListener('load', () => setTimeout(triggerSnapshot, 200))
-  //   setTimeout(triggerSnapshot, 600)
-  // 最大値800ms + 安全マージン200ms = 1000ms
+  // initializeSyncForIframe実装（player.js）:
+  //   iframe load後にtriggerSnapshotを実行
+  // 安全マージン含め1000ms待機
   await page.waitForTimeout(1000);
 
   // Step 4: DOM構造の確認（グリッドにタイルが存在する）

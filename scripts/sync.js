@@ -519,11 +519,7 @@ export {
   normalizePlayerInfoMessage,
   getSuspensionReason,
   pickLeader,
-  attemptRecovery,
-  reconcileGroup,
-  groupAwareReconcile,
   syncAll,
   startSyncLoop,
-  stopSyncLoop,
   restartSyncLoop,
 };

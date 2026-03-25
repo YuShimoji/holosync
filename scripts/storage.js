@@ -76,6 +76,18 @@ class StorageAdapter {
     }
   }
 
+  async getChromeStorage(key) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get([key], (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result[key]);
+        }
+      });
+    });
+  }
+
   async setChromeStorage(key, data) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.set({ [key]: data }, () => {
@@ -391,25 +403,6 @@ class StorageAdapter {
     const presets = (await this.getItem('channelPresets')) || [];
     const filtered = presets.filter((p) => p.name !== name);
     await this.setItem('channelPresets', filtered);
-  }
-
-  // Search history
-  async saveSearchHistory(query) {
-    const history = (await this.getItem('searchHistory')) || [];
-    const existingIndex = history.indexOf(query);
-    if (existingIndex >= 0) {
-      history.splice(existingIndex, 1);
-    }
-    history.unshift(query);
-    // Keep only last 5
-    if (history.length > 5) {
-      history.pop();
-    }
-    await this.setItem('searchHistory', history);
-  }
-
-  async getSearchHistory() {
-    return (await this.getItem('searchHistory')) || [];
   }
 }
 

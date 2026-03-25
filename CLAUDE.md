@@ -8,13 +8,13 @@
 環境: Node.js 20 / Electron / JavaScript ES Modules / Playwright (Chromium)
 ブランチ戦略: main (トランクベース)
 現フェーズ: SP-021 UI/UX洗練 Phase 1
-直近の状態 (2026-03-24):
+直近の状態 (2026-03-26):
 
 - SP-021 UI/UX洗練 Phase 1: 3/11件実装済み (F-03ツールバーアイコン化, F-06情報オーバーレイ, F-11フォーカスモード)
-- フレームレスボタンSVG破壊バグ修正 (electron.js textContent→title/aria-label)
-- 手動検証: F-03/F-06/F-11の3-6項目OK、1-2(フレームレスボタン)は再起動後に再確認待ち
-- E2E 9/9 PASS, ESLint clean
+- レガシー根絶: 孤立CSS 286行削除, デッドJS削除, getChromeStorageバグ修正, --color-accent未定義修正
+- E2E 15/15 PASS, ESLint clean
 - 仕様: 21エントリ (18 done + 1 deprecated + 1 superseded + 1 partial/SP-021 pct30)
+- docs: feature-audit.md (機能状態テーブル), runtime-state.md 新設
 
 ## CURRENT DEVELOPMENT AXIS
 

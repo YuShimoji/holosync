@@ -103,7 +103,7 @@ function setCoverMode(enabled) {
 
   if (enabled) {
     // In cover mode, use dynamic columns if auto layout
-    if (layoutSelect?.value === 'auto' || layoutSelect?.value === 'auto-dynamic') {
+    if (layoutSelect?.value === 'auto') {
       applyDynamicColumns();
     }
   }
@@ -231,10 +231,6 @@ export function toggleFocusMode(videoId) {
   } else {
     setFocusMode(videoId);
   }
-}
-
-export function isFocusModeActive() {
-  return !!fitState.focusVideoId;
 }
 
 export function onVideosChanged() {

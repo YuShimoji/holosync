@@ -1,10 +1,22 @@
 # HoloSync Handover
 
-**Updated**: 2026-03-24
+**Updated**: 2026-03-26
 **Branch**: `main`
-**Status**: SP-021 UI/UX洗練 Phase 1 進行中(3/11件)。F-03/F-06/F-11実装済み+フレームレスボタンSVG修正。全21仕様（18 done + 1 deprecated + 1 superseded + 1 partial/SP-021 pct30）。E2E 9/9 passed、ESLint clean。
+**Status**: SP-021 UI/UX洗練 Phase 1 進行中(3/11件)。レガシー根絶+UIバグ修正完了。E2E 15/15 passed、ESLint clean。
 
 ## 1) 直近セッションで完了したこと
+
+### 2026-03-26（レガシー根絶 + UIバグ修正 + 機能監査）
+- fix: `--color-accent` CSS変数が未定義で`.queue-play-btn`/`.error.info`の色が透明だった → `:root`と`[data-theme='dark']`に追加
+- fix: `getChromeStorage`メソッドが未定義でchrome環境でクラッシュする潜在バグ → storage.jsに追加
+- excise: 孤立CSS 286行削除 (searchbrowser.js削除後の残骸: `.add-mode-tabs`, `.mode-tab`, `.bulk-actions`, `.bulk-count`, `.search-input-wrapper`, `.search-history`, `.search-results`, `.sb-tabs/tab/search-*/loading/empty/error/results/live-badge/result-meta/result-add/load-more/quick-add-*`)
+- excise: デッドJS削除 — `saveLastSession`/`clearLastSession` (history.js), `saveSearchHistory`/`getSearchHistory` (storage.js), `isFocusModeActive` (fitmode.js)
+- excise: 不要export削除 — sync.js (`attemptRecovery`/`reconcileGroup`/`groupAwareReconcile`/`stopSyncLoop`), layout.js (`handleLayoutChange`)
+- fix: fitmode.js の到達不能条件 `auto-dynamic` 削除
+- fix: e2e/helpers.ts の陳腐コメント修正 (main.js→player.js)
+- docs: feature-audit.md (機能状態テーブル) 新設 — 全機能の実装/検証/懸念状態を一覧化
+- docs: runtime-state.md 新設
+- E2E 15/15 PASS確認
 
 ### 2026-03-24（SP-021 フレームレスボタンSVG修正 + 手動検証）
 - fix: electron.js applyFramelessState() がtextContentでSVGアイコンを上書きしていた → title/aria-labelのみに修正
@@ -243,11 +255,11 @@
 ## 2) 現在の未完了タスク（優先順）
 
 1. フレームレスボタンのアイコン表示確認 — Electronアプリ再起動後
-2. SP-021 Phase B残り: F-01(フィット手数削減), F-02(最大化モード再分類), F-10(双方向フィット)
+2. SP-021 Phase B: F-01(フィット手数削減), F-02(最大化モード再分類), F-10(双方向フィット)
 3. SP-021 Phase C: F-07(YouTube風コントロール), F-08(ブラウザ遷移防止), F-05(スクロールバー分離)
 4. SP-021 Phase D: F-04(メインエリア検索), F-09(ルーペ拡張)
-3. feat(P2): YouTube OAuth 履歴同期 — P2最後の1件
-4. 手動テスト24項目消化 — TESTING.md参照
+5. feat(P2): YouTube OAuth 履歴同期 — P2最後の1件 (P3降格検討)
+6. --color-accent修正後のキュー再生ボタン表示確認 — ブラウザで手動確認
 
 詳細は [docs/ISSUES.md](ISSUES.md) 参照。
 

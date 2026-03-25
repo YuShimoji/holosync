@@ -124,5 +124,6 @@
 - #21 同期グループ, #22 プリセット可視化, #23 キーボードショートカット, #24 オーディオフォーカス
 
 ## E2E Test Runs
+- 2026-03-26: `npx playwright test` passed 15 tests (chromium only). 基本機能6件 + UI回帰9件。レガシーCSS削除+JSデッドコード削除後も全パス。
 - 2026-03-17: `npm run test` (Playwright) passed 15 tests (chromium only). 基本機能6件 + UI回帰9件。
 - 2026-03-08: 初回テスト追加。

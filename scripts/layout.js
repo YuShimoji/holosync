@@ -529,7 +529,6 @@ export function initLayout() {
 }
 
 export {
-  handleLayoutChange,
   setupTileDrag,
   setupTileResize,
   moveVideoOrder,

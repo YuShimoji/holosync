@@ -172,18 +172,8 @@ function renderTopChannels(history) {
 
 // ── Phase 1-C: Session Restore ───────────────────────────────
 
-export async function saveLastSession(videoIds) {
-  if (videoIds.length > 0) {
-    await storageAdapter.setItem('lastSession', videoIds);
-  }
-}
-
 export async function getLastSession() {
   return (await storageAdapter.getItem('lastSession')) || [];
-}
-
-export async function clearLastSession() {
-  await storageAdapter.setItem('lastSession', []);
 }
 
 // ── Phase 3: Smart Suggestions ───────────────────────────────
