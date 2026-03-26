@@ -535,7 +535,7 @@ body.immersive-mode .content {
   color: var(--color-text);
 }
 .sidebar-open-btn:hover {
-  background: #e5e7eb;
+  background: var(--color-hover-bg);
 }
 
 .layout-controls {
@@ -589,8 +589,8 @@ body.immersive-mode .content {
 }
 
 .share-btn:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--color-hover-bg);
+  border-color: var(--color-border);
 }
 
 .share-btn.success {
@@ -619,7 +619,7 @@ body.immersive-mode .content {
 }
 
 .window-control-btn:hover {
-  background: #f3f4f6;
+  background: var(--color-hover-bg);
 }
 
 .window-control-btn.danger:hover {
@@ -1259,7 +1259,7 @@ button {
   cursor: pointer;
   border-radius: 6px;
   border: 1px solid #aaa;
-  background: #f3f4f6;
+  background: var(--color-hover-bg);
   color: #333;
   font-size: 13px;
 }
@@ -1313,19 +1313,19 @@ button:active {
 .small-btn {
   padding: 2px 6px;
   font-size: 11px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--color-hover-bg);
+  border: 1px solid var(--color-border);
   border-radius: 3px;
   cursor: pointer;
 }
 
 .small-btn:hover {
-  background: #e5e7eb;
+  background: var(--color-hover-bg);
 }
 
 .small-btn:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
   cursor: not-allowed;
 }
 /* Preset styles */
@@ -1388,7 +1388,7 @@ button:active {
   padding: 0;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
   font-size: 12px;
   cursor: pointer;
   border-radius: 50%;
@@ -1669,9 +1669,9 @@ button:active {
 .debug-toggle {
   font-size: 12px;
   padding: 4px 8px;
-  background: #e5e7eb;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: var(--color-hover-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 .sidebar-debug-toggle {
   margin-left: auto;
@@ -2038,7 +2038,7 @@ button:active {
 }
 
 .modal-close:hover {
-  background: #f3f4f6;
+  background: var(--color-hover-bg);
 }
 
 .modal-body {
@@ -2118,7 +2118,7 @@ button:active {
 
 .shortcut-table td {
   padding: 8px 4px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .shortcut-table td:first-child {
@@ -2130,10 +2130,10 @@ button:active {
   padding: 2px 6px;
   font-size: 11px;
   font-family: monospace;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--color-hover-bg);
+  border: 1px solid var(--color-border);
   border-radius: 3px;
-  box-shadow: 0 1px 0 #d1d5db;
+  box-shadow: 0 1px 0 var(--color-border);
 }
 
 .modal-hint {
