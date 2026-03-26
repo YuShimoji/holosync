@@ -262,12 +262,6 @@ label {
   color: var(--color-text-secondary);
 }
 
-.url-preview-error {
-  padding: 6px 8px;
-  font-size: 11px;
-  color: var(--color-error, #dc2626);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -401,7 +395,17 @@ label {
 }
 
 .footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   margin-top: 16px;
+  padding: 12px 0 4px;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
   color: var(--color-text-secondary);
 }
 
@@ -538,11 +542,6 @@ body.immersive-mode .content {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.layout-label {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
 }
 .layout-select {
   padding: 4px 8px;
@@ -825,10 +824,6 @@ body.frameless-mode.drag-mode .tile iframe {
 .cell-overlay.drop-target {
   background: rgba(37, 99, 235, 0.15);
   border-color: rgba(37, 99, 235, 0.5);
-}
-
-.cell-overlay.occupied {
-  background: rgba(255, 255, 255, 0.02);
 }
 
 .tile.cell-positioned {
@@ -1334,10 +1329,10 @@ button:active {
   cursor: not-allowed;
 }
 /* Preset styles */
-.preset-panel input {
+#presetNameInput {
   width: 100%;
   padding: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   margin-bottom: 8px;
 }
@@ -1671,29 +1666,12 @@ button:active {
 }
 
 /* Debug panel styles */
-.footer {
-  margin-top: 16px;
-  color: #888;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 .debug-toggle {
   font-size: 12px;
   padding: 4px 8px;
   background: #e5e7eb;
   border: 1px solid #d1d5db;
   color: #374151;
-}
-.toolbar-debug-toggle {
-  margin-left: auto;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.toolbar-debug-toggle:hover {
-  background: #d1d5db;
 }
 .sidebar-debug-toggle {
   margin-left: auto;
@@ -2203,16 +2181,6 @@ button:active {
   .drop-zone-hint {
     order: 8;
   }
-}
-
-.footer {
-  gap: 8px;
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  padding: 12px 0 4px;
 }
 
 /* ========== Fit Mode ========== */

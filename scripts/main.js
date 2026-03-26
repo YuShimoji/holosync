@@ -344,15 +344,10 @@ async function initializeApp() {
       return;
     }
 
-    // Priority 2: Legacy/Storage Fallback
-    // First check URL parameters for shared data (legacy)
-    const urlVideos = await storageAdapter.getItem('videos');
-    const urlVolume = await storageAdapter.getItem('volume');
+    // Priority 2: Storage Fallback
+    const storedVideos = await storageAdapter.getItem('videos');
+    const storedVolume = await storageAdapter.getItem('volume');
     const urlPreset = await storageAdapter.getItem('preset');
-
-    // Fallback to stored data if URL doesn't have the data
-    const storedVideos = urlVideos || (await storageAdapter.getItem('videos'));
-    const storedVolume = urlVolume || (await storageAdapter.getItem('volume'));
 
     const vol = parseInt(storedVolume, 10);
     if (!Number.isNaN(vol)) {
@@ -361,40 +356,25 @@ async function initializeApp() {
     }
     state.isRestoring = true;
     (storedVideos || []).forEach((entry) => {
-      // Support both old format (string) and new format (object)
       const vid = typeof entry === 'string' ? entry : entry?.id;
-      const syncGroupId = typeof entry === 'object' ? (entry.syncGroupId ?? null) : null;
-      const offsetMs = typeof entry === 'object' ? (entry.offsetMs ?? 0) : 0;
-      const cellCol = typeof entry === 'object' ? (entry.cellCol ?? null) : null;
-      const cellRow = typeof entry === 'object' ? (entry.cellRow ?? null) : null;
-      const tileWidth = typeof entry === 'object' ? (entry.tileWidth ?? null) : null;
-      const tileHeight = typeof entry === 'object' ? (entry.tileHeight ?? null) : null;
-      const zoomDiameter = typeof entry === 'object' ? (entry.zoomDiameter ?? null) : null;
-      const zoomScale = typeof entry === 'object' ? (entry.zoomScale ?? null) : null;
-      const zoomOriginX = typeof entry === 'object' ? (entry.zoomOriginX ?? null) : null;
-      const zoomOriginY = typeof entry === 'object' ? (entry.zoomOriginY ?? null) : null;
-      const zoomPanelX = typeof entry === 'object' ? (entry.zoomPanelX ?? null) : null;
-      const zoomPanelY = typeof entry === 'object' ? (entry.zoomPanelY ?? null) : null;
-      const zoomShape = typeof entry === 'object' ? (entry.zoomShape ?? null) : null;
-      const queue = typeof entry === 'object' ? (entry.queue ?? null) : null;
-      const queueIndex = typeof entry === 'object' ? (entry.queueIndex ?? 0) : 0;
+      const opts = typeof entry === 'object' && entry ? entry : {};
       if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
         createTile(vid, {
-          syncGroupId,
-          offsetMs,
-          cellCol,
-          cellRow,
-          tileWidth,
-          tileHeight,
-          zoomDiameter,
-          zoomScale,
-          zoomOriginX,
-          zoomOriginY,
-          zoomPanelX,
-          zoomPanelY,
-          zoomShape,
-          queue,
-          queueIndex,
+          syncGroupId: opts.syncGroupId ?? null,
+          offsetMs: opts.offsetMs ?? 0,
+          cellCol: opts.cellCol ?? null,
+          cellRow: opts.cellRow ?? null,
+          tileWidth: opts.tileWidth ?? null,
+          tileHeight: opts.tileHeight ?? null,
+          zoomDiameter: opts.zoomDiameter ?? null,
+          zoomScale: opts.zoomScale ?? null,
+          zoomOriginX: opts.zoomOriginX ?? null,
+          zoomOriginY: opts.zoomOriginY ?? null,
+          zoomPanelX: opts.zoomPanelX ?? null,
+          zoomPanelY: opts.zoomPanelY ?? null,
+          zoomShape: opts.zoomShape ?? null,
+          queue: opts.queue ?? null,
+          queueIndex: opts.queueIndex ?? 0,
         });
       }
     });
