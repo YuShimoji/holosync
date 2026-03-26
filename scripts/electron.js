@@ -10,7 +10,7 @@ const windowMinBtn = document.getElementById('windowMinBtn');
 const windowMaxBtn = document.getElementById('windowMaxBtn');
 const windowCloseBtn = document.getElementById('windowCloseBtn');
 
-export function hasElectronWindowBridge() {
+function hasElectronWindowBridge() {
   return (
     typeof window.electronWindow === 'object' &&
     window.electronWindow !== null &&

@@ -606,4 +606,4 @@ export function initAccordions() {
   restoreAccordionState();
 }
 
-export { syncEmbedSettingsUI, setSidebarCollapsed, setToolbarCollapsed, updateLeaderIdOptions };
+export { syncEmbedSettingsUI, setSidebarCollapsed, setToolbarCollapsed };

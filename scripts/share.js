@@ -30,7 +30,7 @@ function setShareStatus(message, isError = false) {
   shareStatus.classList.toggle('error', isError);
 }
 
-export function buildShareState() {
+function buildShareState() {
   return {
     videos: videos.map((v) => {
       const win = v.iframe?.contentWindow;
@@ -61,12 +61,12 @@ export function buildShareState() {
   };
 }
 
-export function getShareUrl() {
+function getShareUrl() {
   const shareState = buildShareState();
   return storageAdapter.generateShareUrl(shareState);
 }
 
-export function normalizeShareUrl(input) {
+function normalizeShareUrl(input) {
   const raw = input.trim();
   if (!raw) {
     return null;

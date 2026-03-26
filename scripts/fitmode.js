@@ -217,11 +217,11 @@ function exitFocusMode() {
 }
 
 // ── Public API ─────────────────────────────────────────────
-export function toggleCoverMode() {
+function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
 }
 
-export function toggleFullFit() {
+function toggleFullFit() {
   setFullFit(!fitState.fullFit);
 }
 

@@ -289,7 +289,7 @@ export function requestPlayerSnapshot(win) {
   }
 }
 
-export function initializeSyncForIframe(iframe) {
+function initializeSyncForIframe(iframe) {
   const triggerSnapshot = () => {
     const win = iframe.contentWindow;
     if (win) {
@@ -358,14 +358,14 @@ function renderDescriptionWithTimestamps(desc, videoId) {
 
 // ── Metadata ───────────────────────────────────────────────
 
-export function appendDescriptionHint(bodyEl, message) {
+function appendDescriptionHint(bodyEl, message) {
   const hint = document.createElement('div');
   hint.className = 'info-description-hint';
   hint.textContent = message;
   bodyEl.appendChild(hint);
 }
 
-export async function fetchVideoDescription(videoId, bodyEl) {
+async function fetchVideoDescription(videoId, bodyEl) {
   bodyEl.querySelector('.info-description')?.remove();
   bodyEl.querySelector('.info-description-hint')?.remove();
   if (!youtubeApiKey) {
@@ -399,7 +399,7 @@ export async function fetchVideoDescription(videoId, bodyEl) {
   }
 }
 
-export async function fetchVideoMeta(videoId, titleEl, bodyEl) {
+async function fetchVideoMeta(videoId, titleEl, bodyEl) {
   try {
     const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
     const resp = await fetch(url);
@@ -486,17 +486,13 @@ export function advanceQueue(videoEntry) {
   return true;
 }
 
-export function queuePrev(videoEntry) {
+function queuePrev(videoEntry) {
   if (!videoEntry.queue || videoEntry.queueIndex <= 0) {
     return false;
   }
   videoEntry.queueIndex--;
   loadQueueItem(videoEntry);
   return true;
-}
-
-export function queueNext(videoEntry) {
-  return advanceQueue(videoEntry);
 }
 
 // ── Persistence ────────────────────────────────────────────
@@ -760,7 +756,7 @@ export function createTile(videoId, options = {}) {
     qNextBtn.textContent = '\u25B6';
     qNextBtn.title = '\u6B21\u306E\u52D5\u753B';
     qNextBtn.disabled = videoEntry.queueIndex >= videoEntry.queue.length - 1;
-    qNextBtn.addEventListener('click', () => queueNext(videoEntry));
+    qNextBtn.addEventListener('click', () => advanceQueue(videoEntry));
 
     queueBar.appendChild(qPrevBtn);
     queueBar.appendChild(qIndicator);
@@ -798,7 +794,7 @@ export function createTile(videoId, options = {}) {
   }
 }
 
-export function removeVideo(videoId, tile) {
+function removeVideo(videoId, tile) {
   const idx = videos.findIndex((v) => v.id === videoId);
   if (idx === -1) {
     return;

@@ -11,7 +11,7 @@ const topChannelsList = document.getElementById('topChannelsList');
 const suggestionBar = document.getElementById('suggestionBar');
 const suggestionScroll = document.getElementById('suggestionScroll');
 
-export function formatWatchTime(seconds) {
+function formatWatchTime(seconds) {
   const total = Math.max(0, Math.floor(seconds || 0));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
@@ -25,7 +25,7 @@ export function formatWatchTime(seconds) {
 let _createTile;
 let _onSearchChannel;
 
-export function renderWatchHistory(history) {
+function renderWatchHistory(history) {
   if (!watchHistoryList) {
     return;
   }

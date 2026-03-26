@@ -743,24 +743,15 @@ body.frameless-mode .frameless-drag-handle {
   -webkit-app-region: drag;
   pointer-events: auto;
 }
-body.frameless-mode .grid,
-body.frameless-mode .sidebar {
+body.frameless-mode .grid {
   -webkit-app-region: drag;
+}
+body.frameless-mode .sidebar {
+  -webkit-app-region: no-drag;
 }
 body.frameless-mode .tile,
 body.frameless-mode .content-toolbar,
-body.frameless-mode .cell-overlay-container,
-body.frameless-mode .sidebar button,
-body.frameless-mode .sidebar input,
-body.frameless-mode .sidebar select,
-body.frameless-mode .sidebar textarea,
-body.frameless-mode .sidebar a,
-body.frameless-mode .sidebar label,
-body.frameless-mode .sidebar summary,
-body.frameless-mode .sidebar .url-preview-list,
-body.frameless-mode .sidebar .preset-list,
-body.frameless-mode .sidebar .watch-history-list,
-body.frameless-mode .sidebar ul {
+body.frameless-mode .cell-overlay-container {
   -webkit-app-region: no-drag;
 }
 
