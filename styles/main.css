@@ -482,6 +482,50 @@ body.immersive-mode .content {
   color: var(--color-primary, #3b82f6);
   background: rgba(59, 130, 246, 0.1);
 }
+/* Toolbar separator */
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+/* Toolbar toggle button (distinct from icon-only buttons) */
+.toolbar-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px 2px 5px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+.toolbar-toggle-btn:hover {
+  background: var(--color-hover-bg);
+  color: var(--color-text);
+}
+.toolbar-toggle-btn.success {
+  color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+.toolbar-toggle-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.toolbar-toggle-btn.success svg {
+  transform: rotate(180deg);
+}
+.toolbar-toggle-label {
+  font-size: 11px;
+}
 /* Toolbar dropdown (details/summary) */
 .toolbar-details {
   position: relative;

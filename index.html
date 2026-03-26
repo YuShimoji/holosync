@@ -412,17 +412,19 @@
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
         </button>
-        <button id="toolbarToggleBtn" class="share-btn toolbar-icon-btn" title="ツールバーを隠す">
+        <span class="toolbar-separator"></span>
+        <button id="toolbarToggleBtn" class="toolbar-toggle-btn" title="ツールバーを隠す (T)">
           <svg
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
+            stroke-width="2.5"
           >
-            <path d="M3 3h18v4H3zM3 10h18v11H3z" />
+            <polyline points="18 15 12 9 6 15" />
           </svg>
+          <span class="toolbar-toggle-label">隠す</span>
         </button>
         <button id="immersiveToggleBtn" class="share-btn toolbar-icon-btn" title="没入表示">
           <svg

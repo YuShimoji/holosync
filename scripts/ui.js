@@ -117,6 +117,10 @@ function updateToolbarButtonState(collapsed) {
   setButtonLabel(toolbarToggleBtn, label);
   setButtonLabel(sidebarToolbarToggle, label);
   setButtonLabel(edgeToolbarReveal, UI_LABELS.toolbarShow);
+  const toggleLabel = toolbarToggleBtn?.querySelector('.toolbar-toggle-label');
+  if (toggleLabel) {
+    toggleLabel.textContent = collapsed ? '表示' : '隠す';
+  }
 }
 
 function updateSidebarButtonState(collapsed) {
