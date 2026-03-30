@@ -36,3 +36,4 @@ playwright/.cache/
 # Local / Build
 .serena/
 dist-build/
+.claude/last-compact-snapshot.md
