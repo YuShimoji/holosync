@@ -1,19 +1,2 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm ls:*)",
-      "Bash(cd:*)",
-      "Bash(npx playwright:*)",
-      "Bash(node --version:*)",
-      "Bash(npm --version:*)",
-      "Bash(npm run format:check:*)",
-      "Bash(npx prettier:*)",
-      "Bash(npm run lint)",
-      "mcp__serena__activate_project",
-      "mcp__serena__get_symbols_overview"
-    ],
-    "additionalDirectories": [
-      "C:\\Users\\thank\\Storage\\Game Projects\\Procedural-Urban-Landscape-Generation-System\\.serena"
-    ]
-  }
 }
