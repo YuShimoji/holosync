@@ -801,6 +801,14 @@ body.frameless-mode .cell-overlay-container {
   -webkit-app-region: no-drag;
 }
 
+/* F-01: quick-fit mode indicator on the toolbar button */
+#quickFitBtn.active {
+  color: var(--color-accent);
+}
+body.quick-fit-mode #quickFitBtn {
+  color: var(--color-accent);
+}
+
 /* F-05: scrollbar vs drag region separation — scrollbar operations must
    not bubble up to the frameless window drag handler. */
 body.frameless-mode .grid::-webkit-scrollbar,

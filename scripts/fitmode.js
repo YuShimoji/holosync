@@ -19,6 +19,8 @@ const fitState = {
   fullFit: false, // true = show only 1st video, maximized
   focusVideoId: null, // non-null = focus mode active for this video
   _savedFocusState: null, // sidebar/toolbar/frameless state before focus
+  quickFitActive: false, // SP-021/F-01 quick-fit (all chrome hidden, grid preserved)
+  _savedQuickFitState: null,
 };
 
 // ── Dynamic column calculation ─────────────────────────────
@@ -216,6 +218,55 @@ function exitFocusMode() {
   fitState._savedFocusState = null;
 }
 
+// ── Quick Fit (SP-021/F-01) ────────────────────────────────
+// One-action toggle: hides sidebar/toolbar, enables frameless, preserves grid.
+// Differs from focus mode (F-11) in that all tiles remain visible.
+function enterQuickFit() {
+  fitState._savedQuickFitState = {
+    sidebarCollapsed: document.body.classList.contains('sidebar-collapsed'),
+    toolbarCollapsed: document.body.classList.contains('toolbar-collapsed'),
+    frameless: document.body.classList.contains('frameless-mode'),
+  };
+  fitState.quickFitActive = true;
+  document.body.classList.add('quick-fit-mode');
+
+  if (_uiDeps) {
+    _uiDeps.setSidebarCollapsed(true, { persist: false, source: 'quickfit' });
+    _uiDeps.setToolbarCollapsed(true, { persist: false, source: 'quickfit' });
+  }
+  if (!fitState._savedQuickFitState.frameless && window.electronWindow?.setFramelessMode) {
+    void window.electronWindow.setFramelessMode(true);
+  }
+}
+
+function exitQuickFit() {
+  if (!fitState.quickFitActive) {
+    return;
+  }
+  const saved = fitState._savedQuickFitState;
+  fitState.quickFitActive = false;
+  document.body.classList.remove('quick-fit-mode');
+  if (saved && _uiDeps) {
+    _uiDeps.setSidebarCollapsed(saved.sidebarCollapsed, { persist: false, source: 'quickfit' });
+    _uiDeps.setToolbarCollapsed(saved.toolbarCollapsed, { persist: false, source: 'quickfit' });
+    if (
+      saved.frameless !== document.body.classList.contains('frameless-mode') &&
+      window.electronWindow?.setFramelessMode
+    ) {
+      void window.electronWindow.setFramelessMode(saved.frameless);
+    }
+  }
+  fitState._savedQuickFitState = null;
+}
+
+export function toggleQuickFit() {
+  if (fitState.quickFitActive) {
+    exitQuickFit();
+  } else {
+    enterQuickFit();
+  }
+}
+
 // ── Public API ─────────────────────────────────────────────
 function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
@@ -256,14 +307,25 @@ export function initFitMode(deps) {
   // Full-fit button
   fullFitBtn?.addEventListener('click', toggleFullFit);
 
-  // ESC key exits focus mode
+  // ESC key exits focus mode or quick-fit
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && fitState.focusVideoId) {
+    if (e.key !== 'Escape') {
+      return;
+    }
+    if (fitState.focusVideoId) {
       e.preventDefault();
       e.stopPropagation();
       exitFocusMode();
+    } else if (fitState.quickFitActive) {
+      e.preventDefault();
+      e.stopPropagation();
+      exitQuickFit();
     }
   });
+
+  // Quick-fit button (SP-021/F-01)
+  const quickFitBtn = document.getElementById('quickFitBtn');
+  quickFitBtn?.addEventListener('click', toggleQuickFit);
 
   // ResizeObserver for dynamic auto layout
   const ro = new ResizeObserver(() => {

@@ -7,6 +7,7 @@ import { storageAdapter } from './storage.js';
 import { videos, playerStates, state, SYNC_SETTINGS, EDGE_REVEAL_DISTANCE_PX } from './state.js';
 import { buildEmbedUrl, sanitizeEmbedSettings, persistEmbedSettings } from './player.js';
 import { syncAll, restartSyncLoop } from './sync.js';
+import { toggleQuickFit } from './fitmode.js';
 
 // ── DOM References ─────────────────────────────────────────
 
@@ -516,6 +517,12 @@ export function initUI(deps) {
       case 't':
       case 'T':
         setToolbarCollapsed(!document.body.classList.contains('toolbar-collapsed'));
+        break;
+      case 'f':
+      case 'F':
+        // SP-021/F-01: quick-fit — フィット + 全 chrome 非表示 一括トグル
+        e.preventDefault();
+        toggleQuickFit();
         break;
       case 'Escape':
         if (document.fullscreenElement) {
