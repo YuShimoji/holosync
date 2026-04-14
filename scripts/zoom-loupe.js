@@ -1,4 +1,22 @@
 /* eslint-env browser */
+
+// SP-021/F-09: convert legacy `zoomShape` (circle/rounded/square) to a
+// percentage radius so older saved sessions keep working.
+function resolveRadius(videoEntry) {
+  if (typeof videoEntry.zoomRadius === 'number') {
+    return Math.max(0, Math.min(50, videoEntry.zoomRadius));
+  }
+  switch (videoEntry.zoomShape) {
+    case 'square':
+      return 1;
+    case 'rounded':
+      return 12;
+    case 'circle':
+    default:
+      return 50;
+  }
+}
+
 export function createController(deps) {
   const {
     buildEmbedUrl,
@@ -21,21 +39,22 @@ export function createController(deps) {
       return;
     }
 
-    const diameter = videoEntry.zoomDiameter ?? 250;
+    // SP-021/F-09: default diameter 250 → 375 (1.5x), radius slider replaces shape select.
+    const diameter = videoEntry.zoomDiameter ?? 375;
     const scale = videoEntry.zoomScale ?? 3;
     const originX = videoEntry.zoomOriginX ?? 50;
     const originY = videoEntry.zoomOriginY ?? 30;
-    const shape = videoEntry.zoomShape ?? 'circle';
+    const radius = resolveRadius(videoEntry);
 
     const loupe = document.createElement('div');
     loupe.className = 'zoom-loupe';
-    loupe.dataset.shape = shape;
     const lx = videoEntry.zoomPanelX ?? window.innerWidth - diameter - 40;
     const ly = videoEntry.zoomPanelY ?? 60;
     loupe.style.left = Math.max(0, Math.min(lx, window.innerWidth - 100)) + 'px';
     loupe.style.top = Math.max(0, Math.min(ly, window.innerHeight - 100)) + 'px';
     loupe.style.width = diameter + 'px';
     loupe.style.height = diameter + 'px';
+    loupe.style.borderRadius = radius + '%';
 
     const zoomIframe = document.createElement('iframe');
     zoomIframe.src = buildEmbedUrl(videoEntry.id, { mute: 1, controls: 0 });
@@ -96,33 +115,12 @@ export function createController(deps) {
       persistVideos();
     });
 
-    const shapeRow = document.createElement('div');
-    shapeRow.className = 'zoom-loupe-shape-row';
-    const shapeLabel = document.createElement('label');
-    shapeLabel.textContent = 'Shape';
-    const shapeSelect = document.createElement('select');
-    [
-      { value: 'circle', label: 'Circle' },
-      { value: 'rounded', label: 'Rounded' },
-      { value: 'square', label: 'Square' },
-    ].forEach((item) => {
-      const option = document.createElement('option');
-      option.value = item.value;
-      option.textContent = item.label;
-      shapeSelect.appendChild(option);
-    });
-    shapeSelect.value = shape;
-    shapeSelect.addEventListener('input', (event) => {
-      event.stopPropagation();
-      const nextShape = event.target.value;
-      loupe.dataset.shape = nextShape;
-      videoEntry.zoomShape = nextShape;
+    // SP-021/F-09: radius slider replaces shape select. 0% = square, 50% = circle.
+    addSlider('R', 0, 50, 1, radius, (value) => {
+      videoEntry.zoomRadius = value;
+      loupe.style.borderRadius = value + '%';
       persistVideos();
     });
-    shapeSelect.addEventListener('mousedown', (event) => event.stopPropagation());
-    shapeRow.appendChild(shapeLabel);
-    shapeRow.appendChild(shapeSelect);
-    tray.appendChild(shapeRow);
     loupe.appendChild(tray);
 
     document.body.appendChild(loupe);
@@ -132,8 +130,9 @@ export function createController(deps) {
 
     loupe.addEventListener('wheel', (event) => {
       event.preventDefault();
-      const currentSize = videoEntry.zoomDiameter ?? 250;
-      const nextSize = Math.max(100, Math.min(600, currentSize - Math.sign(event.deltaY) * 30));
+      // SP-021/F-09: size range 100-600 → 100-1000
+      const currentSize = videoEntry.zoomDiameter ?? 375;
+      const nextSize = Math.max(100, Math.min(1000, currentSize - Math.sign(event.deltaY) * 30));
       videoEntry.zoomDiameter = nextSize;
       loupe.style.width = nextSize + 'px';
       loupe.style.height = nextSize + 'px';
