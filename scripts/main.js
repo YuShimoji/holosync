@@ -57,7 +57,6 @@ import {
   initLayout,
   setupTileDrag,
   setupTileResize,
-  moveVideoOrder,
   syncTileOrderDom,
   refreshTileStackOrder,
   loadLayoutSettings,
@@ -91,7 +90,6 @@ const zoomLoupeController = createController({
 // Inject layout callbacks into player.js (function declarations are hoisted)
 initPlayer({
   gridEl,
-  moveVideoOrder,
   syncTileOrderDom,
   setupTileResize,
   setupTileDrag,

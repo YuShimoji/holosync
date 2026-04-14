@@ -9,7 +9,6 @@ import { videos } from './state.js';
 
 const gridEl = document.getElementById('grid');
 const fitModeBtn = document.getElementById('fitModeBtn');
-const fullFitBtn = document.getElementById('fullFitBtn');
 const fitModeIcon = document.getElementById('fitModeIcon');
 const layoutSelect = document.getElementById('layoutSelect');
 
@@ -152,13 +151,6 @@ function setFullFit(enabled) {
   }
 
   storageAdapter.setItem('fitFullFit', enabled);
-
-  if (fullFitBtn) {
-    fullFitBtn.classList.toggle('fullfit-active', enabled);
-    fullFitBtn.title = enabled
-      ? '全画面フィット【有効中】→ クリックで解除'
-      : '全画面フィット（1動画を最大化）';
-  }
 }
 
 // ── Focus Mode (SP-021/F-11) ────────────────────────────────
@@ -315,9 +307,8 @@ function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
 }
 
-function toggleFullFit() {
-  setFullFit(!fitState.fullFit);
-}
+// NOTE: toggleFullFit was removed along with #fullFitBtn (SP-021 UX 整理)。
+// setFullFit は storage 復元経路で残存。F-02 再分類時に再検討。
 
 export function toggleFocusMode(videoId) {
   if (fitState.focusVideoId === videoId) {
@@ -346,9 +337,6 @@ export function initFitMode(deps) {
 
   // Fit/Cover toggle button
   fitModeBtn?.addEventListener('click', toggleCoverMode);
-
-  // Full-fit button
-  fullFitBtn?.addEventListener('click', toggleFullFit);
 
   // ESC key exits focus mode or quick-fit
   document.addEventListener('keydown', (e) => {

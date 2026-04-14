@@ -35,22 +35,6 @@ function refreshTileStackOrder() {
   });
 }
 
-function moveVideoOrder(videoId, direction) {
-  const index = videos.findIndex((video) => video.id === videoId);
-  if (index === -1) {
-    return;
-  }
-  const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= videos.length) {
-    return;
-  }
-  const current = videos[index];
-  videos[index] = videos[nextIndex];
-  videos[nextIndex] = current;
-  syncTileOrderDom();
-  persistVideos();
-}
-
 function bringVideoToFront(videoId) {
   const index = videos.findIndex((video) => video.id === videoId);
   if (index === -1 || index === videos.length - 1) {
@@ -531,7 +515,6 @@ export function initLayout() {
 export {
   setupTileDrag,
   setupTileResize,
-  moveVideoOrder,
   syncTileOrderDom,
   refreshTileStackOrder,
   loadLayoutSettings,
