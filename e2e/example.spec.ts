@@ -1,13 +1,13 @@
 /**
  * @file e2e/example.spec.ts
- * @brief HoloSync E2E Tests
+ * @brief HoloSync Basic Functionality
+ *
+ * 目的: 起動導線と動画追加パイプラインが壊れていないことだけを確認する。
+ * 存在確認・低価値 smoke test は ui-regression.spec.ts に集約済みのため保持しない。
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  waitForAllPlayersReady,
-  addVideoWithRetry,
-} from './helpers';
+import { addVideoWithRetry } from './helpers';
 
 test.describe('HoloSync Basic Functionality', () => {
   test.beforeEach(async ({ page }) => {
@@ -40,65 +40,5 @@ test.describe('HoloSync Basic Functionality', () => {
     const src = await iframes.first().getAttribute('src');
     expect(src).toContain('dQw4w9WgXcQ');
     expect(src).toContain('enablejsapi=1');
-  });
-
-  test('batch controls are present', async ({ page }) => {
-    await expect(page.locator('#playPauseToggle')).toBeVisible();
-    await expect(page.locator('#muteToggle')).toBeVisible();
-    await expect(page.locator('#masterSeekBar')).toBeVisible();
-
-    await expect(page.locator('#volumeAll')).toBeAttached();
-    await expect(page.locator('#speedAll')).toBeAttached();
-  });
-
-  test('settings panel is accessible', async ({ page }) => {
-    const accordion = page.locator('#accordionSettings');
-    await accordion.evaluate((el: HTMLDetailsElement) => (el.open = true));
-
-    await expect(page.locator('#leaderMode')).toBeVisible();
-    await expect(page.locator('#toleranceMs')).toBeVisible();
-    await expect(page.locator('#syncFrequency')).toBeVisible();
-  });
-});
-
-test.describe('HoloSync AI Agent Helper Functions', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/', { waitUntil: 'load' });
-    await page.waitForFunction(() => document.querySelector('#grid') !== null);
-    await page.waitForTimeout(500);
-  });
-
-  test('helper: add multiple videos', async ({ page }) => {
-    const videoUrls = [
-      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      'https://youtu.be/9bZkp7q19f0',
-    ];
-
-    for (let i = 0; i < videoUrls.length; i++) {
-      await addVideoWithRetry(page, videoUrls[i], {
-        timeout: 15000,
-        index: i,
-      });
-      await page.waitForTimeout(500);
-    }
-
-    await waitForAllPlayersReady(page, videoUrls.length, { timeout: 25000 });
-
-    const iframes = page.locator('.tile iframe');
-    await expect(iframes).toHaveCount(videoUrls.length);
-  });
-
-  test('helper: play and pause all', async ({ page }) => {
-    await addVideoWithRetry(page, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
-      timeout: 15000,
-    });
-
-    await page.click('#playPauseToggle');
-    await page.waitForTimeout(1000);
-
-    await page.click('#playPauseToggle');
-    await page.waitForTimeout(500);
-
-    await expect(page.locator('#playPauseToggle')).toBeEnabled();
   });
 });

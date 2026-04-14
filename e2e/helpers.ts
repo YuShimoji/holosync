@@ -36,26 +36,6 @@ async function waitForYouTubePlayerReady(
 }
 
 /**
- * 複数プレイヤーの初期化待機
- */
-export async function waitForAllPlayersReady(
-  page: Page,
-  expectedCount: number,
-  options: { timeout?: number } = {}
-): Promise<void> {
-  const { timeout = 20000 } = options;
-
-  await page.waitForFunction(
-    (count) => document.querySelectorAll('.tile iframe').length >= count,
-    expectedCount,
-    { timeout }
-  );
-
-  const waitTime = Math.max(2000, expectedCount * 1000);
-  await page.waitForTimeout(waitTime);
-}
-
-/**
  * YouTube 動画追加（リトライ付き）
  */
 export async function addVideoWithRetry(

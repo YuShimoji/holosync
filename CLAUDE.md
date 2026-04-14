@@ -12,14 +12,14 @@
 
 - SP-021 UI/UX洗練 Phase 1: 3/11件実装済み (F-03ツールバーアイコン化, F-06情報オーバーレイ, F-11フォーカスモード)
 - レガシー根絶: 孤立CSS 286行削除, デッドJS削除, getChromeStorageバグ修正, --color-accent未定義修正
-- E2E 15/15 PASS, ESLint clean
+- E2E 10件 (2026-04-14 低価値5件削除), ESLint clean
 - 仕様: 21エントリ (18 done + 1 deprecated + 1 superseded + 1 partial/SP-021 pct30)
 - docs: feature-audit.md (機能状態テーブル), runtime-state.md 新設
 
 ## CURRENT DEVELOPMENT AXIS
 
 - 主軸: UI/UX洗練 Phase 1 (SP-021)
-- この軸を優先する理由: 基本機能は安定(E2E 15/15)だが、YouTube視聴体験としての洗練度にギャップ。11件のUX摩擦をユーザーが明示
+- この軸を優先する理由: 基本機能は安定だが、YouTube視聴体験としての洗練度にギャップ。11件のUX摩擦をユーザーが明示
 - 今ここで避けるべき脱線: OAuth / Electron配布 / 新規コア機能
 
 ## CURRENT LANE

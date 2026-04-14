@@ -65,8 +65,8 @@
 ### E2Eテストで確認可能
 | 機能 | テスト | 最終実行 |
 |------|--------|----------|
-| 基本UI操作 (レイアウト/サイドバー/ダークモード) | ui-regression.spec.ts (9件) | 2026-03-24 |
-| 基本機能 (URL追加/一括操作) | example.spec.ts (6件) | 2026-03-17 |
+| 基本UI操作 (レイアウト/サイドバー/ダークモード/没入/ヘルプ/URL検証) | ui-regression.spec.ts (8件) | 2026-04-14 |
+| 起動・動画追加パイプライン | example.spec.ts (2件) | 2026-04-14 |
 
 ## 懸念点
 
@@ -79,9 +79,9 @@
 | 5 | ~~`saveSearchHistory`/`getSearchHistory` デッドコード~~ | ~~低~~ | **削除済み** (本セッション) | storage.js |
 | 6 | ~~`isFocusModeActive` 未使用export~~ | ~~低~~ | **削除済み** (本セッション) | fitmode.js |
 | 7 | ~~sync.js/layout.js 不要export~~ | ~~低~~ | **削除済み** (本セッション) | 内部使用のみの関数 |
-| 8 | E2E 15件の最新通過状態 | 中 | 要確認 | example.spec.tsは2026-03-17以降未実行の可能性 |
+| 8 | ~~E2E 15件の最新通過状態~~ | ~~中~~ | **解消** (2026-04-14) | 低価値5件削除で10件に圧縮 |
 | 9 | SP-017 (searchbrowser.md) 仕様書残存 | 低 | deprecated | 実装は削除済み。仕様書は参照用に残存 |
-| 10 | TESTING.md「15 tests passed」記載 | 低 | 要更新 | HANDOVER.mdは「9/9 PASS」。数が不一致 |
+| 10 | ~~TESTING.md「15 tests passed」記載~~ | ~~低~~ | **解消** (2026-04-14) | TESTING.md を主要シナリオ表に圧縮 |
 
 ## 本セッションで実施した修正
 

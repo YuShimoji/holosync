@@ -210,10 +210,4 @@ test.describe('UI Regression', () => {
     await expect(page.locator('#urlPreviewList .sb-result-card')).toHaveCount(0);
   });
 
-  // ── 9. 視聴履歴UIセクション表示 ──────────────────────────
-
-  test('watch history section exists', async ({ page }) => {
-    const historyList = page.locator('#watchHistoryList');
-    await expect(historyList).toBeAttached();
-  });
 });

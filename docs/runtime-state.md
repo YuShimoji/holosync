@@ -17,8 +17,8 @@
 - source_files: 16 (scripts/*.js)
 - test_files: 3 (e2e/)
 - css_lines: ~2500 (セパレータ+トグルボタンCSS追加)
-- e2e_tests: 15 (9 ui-regression + 6 example)
-- e2e_last_run: 2026-03-26 (15/15 all PASS, ~22s)
+- e2e_tests: 10 (8 ui-regression + 2 example) — 2026-04-14 低価値5件削除
+- e2e_last_run: 2026-04-14 (削減後の再実行で確認)
 - eslint: clean
 - specs: 21 (18 done + 1 deprecated + 1 superseded + 1 partial)
 - TODO_FIXME_HACK: 0
