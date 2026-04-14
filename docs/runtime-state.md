@@ -8,9 +8,9 @@
 - phase: Phase A完了 / Phase B 部分完了 (F-01/F-10) / Phase C 部分完了 (F-05/F-08) / Phase D 部分完了 (F-09)
 
 ## カウンター
-- block_count: 8
+- block_count: 9
 - blocks_since_user_visible_change: 0
-- blocks_since_visual_audit: 2
+- blocks_since_visual_audit: 3
 - blocks_since_unlock: 0
 
 ## 量的指標
@@ -26,7 +26,7 @@
 ## Active Artifact
 - artifact: HoloSync Web App (index.html + scripts/ + styles/)
 - surface: Browser / Electron
-- last_change_relation: direct (F-01/F-05/F-08 実装、SP-021 成功条件「3操作以内で最大化」達成)
+- last_change_relation: direct (ユーザー実機フィードバック反映: ドラッグ領域再構成でスクロールバー救済, ツールバー6ボタンに縮減, タイル4ボタンに縮減)
 
 ## 視覚証拠
 - visual_evidence_status: fresh
@@ -41,6 +41,7 @@
 5. feat(SP-021/F-01): Electron自動ウィンドウサイズ (オプション/既定OFF)
 6. feat(SP-021/F-09): ルーペ拡張 (サイズ大型化 + 角丸slider)
 7. feat(SP-021/F-10): 双方向フィット 動画→ウィンドウ (Electron)
+8. fix(SP-021 UX): スクロールバー救済+ツールバー過密解消+タイル密度削減
 
 ## HUMAN_AUTHORITY 待ち項目
 - サイドバー構造の再設計（検索/プレイリストを外に出す案）
