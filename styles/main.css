@@ -801,6 +801,21 @@ body.frameless-mode .cell-overlay-container {
   -webkit-app-region: no-drag;
 }
 
+/* F-05: scrollbar vs drag region separation — scrollbar operations must
+   not bubble up to the frameless window drag handler. */
+body.frameless-mode .grid::-webkit-scrollbar,
+body.frameless-mode .grid::-webkit-scrollbar-track,
+body.frameless-mode .grid::-webkit-scrollbar-thumb,
+body.frameless-mode .grid::-webkit-scrollbar-corner,
+body.frameless-mode .sidebar::-webkit-scrollbar,
+body.frameless-mode .sidebar::-webkit-scrollbar-track,
+body.frameless-mode .sidebar::-webkit-scrollbar-thumb,
+body.frameless-mode .content-toolbar::-webkit-scrollbar,
+body.frameless-mode .content-toolbar::-webkit-scrollbar-track,
+body.frameless-mode .content-toolbar::-webkit-scrollbar-thumb {
+  -webkit-app-region: no-drag;
+}
+
 /* Alt+Drag mode: full-screen drag overlay */
 .drag-overlay {
   position: absolute;
