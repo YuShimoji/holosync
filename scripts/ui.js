@@ -443,6 +443,18 @@ export function initUI(deps) {
       input.addEventListener('change', handleEmbedSettingsChange);
     });
 
+  // SP-021/F-01: quick-fit auto-aspect option (Electron only)
+  const quickFitAutoAspect = document.getElementById('quickFitAutoAspect');
+  if (quickFitAutoAspect) {
+    void (async () => {
+      const stored = await storageAdapter.getItem('quickFitAutoAspect');
+      quickFitAutoAspect.checked = stored === true;
+    })();
+    quickFitAutoAspect.addEventListener('change', (e) => {
+      storageAdapter.setItem('quickFitAutoAspect', e.target.checked);
+    });
+  }
+
   // Recovery settings
   retryOnErrorCheckbox.addEventListener('change', (e) => {
     SYNC_SETTINGS.retryOnError = e.target.checked;

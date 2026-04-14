@@ -304,9 +304,29 @@ ipcMain.on('window:close', () => {
 });
 
 ipcMain.on('shell:open-external', (_, url) => {
-  if (typeof url !== 'string') return;
-  if (!/^https?:\/\//i.test(url)) return;
+  if (typeof url !== 'string') {
+    return;
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    return;
+  }
   void shell.openExternal(url);
+});
+
+// SP-021/F-01: quick-fit optional auto-window aspect. Keeps current width,
+// resizes content height to match the requested aspect ratio (default 16:9).
+ipcMain.on('window:set-content-aspect', (_, payload) => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  const width = Number(payload?.width);
+  const height = Number(payload?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return;
+  }
+  const [curW] = mainWindow.getContentSize();
+  const targetH = Math.round((curW * height) / width);
+  mainWindow.setContentSize(curW, targetH);
 });
 
 app.whenReady().then(startServer);

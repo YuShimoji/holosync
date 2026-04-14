@@ -23,6 +23,12 @@ contextBridge.exposeInMainWorld('electronWindow', {
   close() {
     ipcRenderer.send('window:close');
   },
+  setContentAspect(width, height) {
+    ipcRenderer.send('window:set-content-aspect', {
+      width: Number(width),
+      height: Number(height),
+    });
+  },
 });
 
 contextBridge.exposeInMainWorld('electronShell', {

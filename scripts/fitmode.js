@@ -237,6 +237,14 @@ function enterQuickFit() {
   if (!fitState._savedQuickFitState.frameless && window.electronWindow?.setFramelessMode) {
     void window.electronWindow.setFramelessMode(true);
   }
+
+  // SP-021/F-01 optional: match window aspect to 16:9 when enabled in settings.
+  void (async () => {
+    const enabled = await storageAdapter.getItem('quickFitAutoAspect');
+    if (enabled === true && window.electronWindow?.setContentAspect) {
+      window.electronWindow.setContentAspect(16, 9);
+    }
+  })();
 }
 
 function exitQuickFit() {
