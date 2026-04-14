@@ -275,6 +275,41 @@ export function toggleQuickFit() {
   }
 }
 
+// ── Fit Window to Videos (SP-021/F-10) ─────────────────────
+// Electron only. Resizes window height to match current grid aspect,
+// assuming every video is 16:9. Manual one-shot trigger (not a toggle).
+export function fitWindowToVideos() {
+  if (!window.electronWindow?.setContentAspect) {
+    return;
+  }
+  const count = videos.length;
+  if (count === 0) {
+    return;
+  }
+  const cols = resolveCurrentCols(count);
+  const rows = Math.ceil(count / cols);
+  window.electronWindow.setContentAspect(cols * 16, rows * 9);
+}
+
+function resolveCurrentCols(count) {
+  const classes = Array.from(gridEl.classList);
+  if (classes.includes('layout-theater') || classes.includes('layout-fullfit')) {
+    return 1;
+  }
+  const fixed = classes.find((c) => /^layout-\d+$/.test(c));
+  if (fixed) {
+    return parseInt(fixed.slice('layout-'.length), 10) || 1;
+  }
+  const autoCols = parseInt(gridEl.style.getPropertyValue('--auto-cols'), 10);
+  if (Number.isFinite(autoCols) && autoCols > 0) {
+    return autoCols;
+  }
+  const contentEl = gridEl.parentElement;
+  const w = contentEl ? contentEl.clientWidth : gridEl.clientWidth;
+  const h = contentEl ? contentEl.clientHeight : gridEl.clientHeight;
+  return calcOptimalLayout(w, h, count).cols;
+}
+
 // ── Public API ─────────────────────────────────────────────
 function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
@@ -334,6 +369,16 @@ export function initFitMode(deps) {
   // Quick-fit button (SP-021/F-01)
   const quickFitBtn = document.getElementById('quickFitBtn');
   quickFitBtn?.addEventListener('click', toggleQuickFit);
+
+  // Fit-window button (SP-021/F-10) — resizes window to match video grid aspect.
+  const fitWindowBtn = document.getElementById('fitWindowBtn');
+  if (fitWindowBtn) {
+    if (!window.electronWindow?.setContentAspect) {
+      fitWindowBtn.hidden = true; // Electron 専用。Web 環境では非表示
+    } else {
+      fitWindowBtn.addEventListener('click', fitWindowToVideos);
+    }
+  }
 
   // ResizeObserver for dynamic auto layout
   const ro = new ResizeObserver(() => {
