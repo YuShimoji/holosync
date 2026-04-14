@@ -1,10 +1,10 @@
 # SP-021: UI/UX洗練 Phase 1
 
-**Status**: in-progress (Phase A 完了 / Phase B 部分実装 / Phase C 部分実装)
+**Status**: in-progress (Phase A 完了 / Phase B 部分実装 / Phase C 部分実装 / Phase D 部分実装)
 **Priority**: P1
 **Category**: ui
 **Created**: 2026-03-23
-**Last updated**: 2026-04-14
+**Last updated**: 2026-04-15
 
 ## 概要
 
@@ -116,26 +116,23 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 
 ### F-09: ルーペ(ズームパネル)の拡張
 
-**優先度**: 低
-**現状**: ルーペは固定サイズ、3形状(circle/rounded/square)。サイズが小さい。
-**目標**: ルーペ自体を大きくし、形状の柔軟性を向上。
-**仕様**:
-- デフォルトサイズを拡大(現在の初期値から1.5倍程度)
-- 角丸の半径をスライダーで調整可能(0px=四角形 ~ 50%=円形)
-- サイズ範囲を拡大(現在100-600px → 100-1000px)
-- アスペクト比の変更(正方形固定→任意比率)は将来検討
+**Status**: done (2026-04-15)
+**実装**:
+- デフォルト直径 250 → 375 (1.5 倍)
+- wheel ズーム範囲 100-600 → 100-1000
+- shape select (circle/rounded/square) を radius slider (0-50%) に置換
+- `resolveRadius()` で旧 `zoomShape` を radius 値に自動変換 (後方互換)
+- アスペクト比変更は将来検討 (未実装)
 
 ### F-10: ウィンドウ-動画サイズの双方向フィット
 
-**現状**: フィットモードは動画をウィンドウ内に収めるが、ウィンドウサイズは変わらない。
-**目標**: 動画サイズにウィンドウ枠をフィットさせる機能と、その逆の機能を明確に分離して提供。
-**仕様**:
-- **動画→ウィンドウ**: 動画のアスペクト比と解像度に基づいてウィンドウサイズを調整(Electron専用)
-  - 1動画: そのアスペクト比に合わせる
-  - 複数動画: グリッドレイアウトに基づく最適サイズを計算
-- **ウィンドウ→動画**: 現在のウィンドウサイズに動画レイアウトをフィット(既存のFull-Fit/Cover Modeの改良)
-  - 黒枠を最小化するアスペクト比計算
-- ショートカットキーまたはツールバーボタンで切替
+**Status**: done (2026-04-15)
+**実装**:
+- `#fitWindowBtn` ツールバーボタン追加 (Electron 専用、Web 環境では hidden)
+- `fitWindowToVideos()` in [scripts/fitmode.js](../../scripts/fitmode.js):
+  - `resolveCurrentCols()` で現在レイアウトから実質列数を判定 (固定列/theater/fullfit/auto-dynamic)
+  - 各セルを 16:9 と仮定、`cols*16 : rows*9` の比率を `setContentAspect` で適用
+- 逆方向 (ウィンドウ→動画) は既存の Full-Fit/Cover/auto-dynamic で十分カバー済み
 
 ### F-11: ワンアクション動画最大化
 
