@@ -12,6 +12,13 @@
 - blocks_since_user_visible_change: 0
 - blocks_since_visual_audit: 3
 - blocks_since_unlock: 0
+- blocks_since_electron_build: 0  # Build Checkpoint Policy (docs/OPERATOR_WORKFLOW.md)
+
+## 最終ビルド
+- date: 2026-04-15
+- path: dist/HoloSync-win32-x64/HoloSync.exe
+- includes: SP-021 全 Phase A/B/C/D の実装 8件 + UX 改善バッチ + テスト規律
+- build_command: npm run build
 
 ## 量的指標
 - source_files: 16 (scripts/*.js)

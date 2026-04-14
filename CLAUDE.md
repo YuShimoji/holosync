@@ -106,6 +106,7 @@
 | 2026-04-15 | ツールバー常時ボタンを 9+ から 6 に削減                                | 全維持 / dropdown移動 / 完全廃止                                 | ユーザー明示要望「ボタン減らして配置限定」。fullFit廃止+fitWindow/immersive/frameless を詳細設定内に移動                |
 | 2026-04-15 | タイル常時アクションを 7 から 4 に削減                                 | 全維持 / 削減                                                    | 並び替えはtile-drag-handle D&Dで代替、YTで開くは情報パネル内へ移動                                                      |
 | 2026-04-15 | Playwright 設定 HOLOSYNC_E2E_PORT で上書き可能に                       | 固定8080 / env可変                                               | 他プロジェクトが 8080 占有時の退避手段。reuseExistingServer で別アプリを誤検出する事故を回避                            |
+| 2026-04-15 | Build Checkpoint Policy 策定 (バッチ単位で再ビルド)                    | 毎コミット / 手動のみ / バッチ policy                            | Electron パッケージ版は npm run build なしでは反映されない。毎回ビルドは 1-2分で高コスト。スライス/UXバッチ単位で自動化 |
 
 ## Done条件（P2バックログ消化フェーズ）
 
