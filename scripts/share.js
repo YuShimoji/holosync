@@ -170,9 +170,13 @@ export function initShare() {
         setShareStatus('Invalid URL.', true);
         return;
       }
-      const opened = window.open(url, '_blank', 'noopener');
-      if (!opened) {
-        window.location.href = url;
+      if (window.electronShell?.openExternal) {
+        window.electronShell.openExternal(url);
+      } else {
+        const opened = window.open(url, '_blank', 'noopener');
+        if (!opened) {
+          window.location.href = url;
+        }
       }
     });
   }

@@ -24,3 +24,9 @@ contextBridge.exposeInMainWorld('electronWindow', {
     ipcRenderer.send('window:close');
   },
 });
+
+contextBridge.exposeInMainWorld('electronShell', {
+  openExternal(url) {
+    ipcRenderer.send('shell:open-external', String(url));
+  },
+});

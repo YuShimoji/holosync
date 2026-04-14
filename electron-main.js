@@ -135,12 +135,10 @@ function createWindow(port) {
   windowRef.removeMenu();
   windowRef.loadURL(`http://localhost:${port}`);
 
-  windowRef.webContents.setWindowOpenHandler(({ url }) => {
-    if (typeof url === 'string' && /^https?:\/\//.test(url)) {
-      void shell.openExternal(url);
-    }
-    return { action: 'deny' };
-  });
+  // SP-021/F-08: iframe (YouTube) 内クリックからの外部ブラウザ遷移を完全ブロックする。
+  // ユーザーが明示的に外部を開きたい操作 (共有リンク / YouTube で開く) は
+  // renderer 側で `window.electronShell.openExternal(url)` を経由して行う。
+  windowRef.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
   const appOrigin = `http://localhost:${port}`;
   windowRef.webContents.on('will-navigate', (event, url) => {
@@ -148,9 +146,6 @@ function createWindow(port) {
       return;
     }
     event.preventDefault();
-    if (/^https?:\/\//.test(url)) {
-      void shell.openExternal(url);
-    }
   });
 
   if (windowPrefs.isMaximized) {
@@ -306,6 +301,12 @@ ipcMain.on('window:close', () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.close();
   }
+});
+
+ipcMain.on('shell:open-external', (_, url) => {
+  if (typeof url !== 'string') return;
+  if (!/^https?:\/\//i.test(url)) return;
+  void shell.openExternal(url);
 });
 
 app.whenReady().then(startServer);

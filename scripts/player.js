@@ -571,11 +571,17 @@ export function createTile(videoId, options = {}) {
   popoutBtn.title = 'YouTubeで開く';
   popoutBtn.addEventListener('click', () => {
     const embedUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    window.open(
-      embedUrl,
-      `holosync-${videoId}`,
-      'width=960,height=720,menubar=no,toolbar=no,location=no'
-    );
+    // Electron 環境では iframe 内クリックの外部遷移を完全ブロックしているため、
+    // 明示的な外部起動は preload API 経由で shell.openExternal を呼ぶ。
+    if (window.electronShell?.openExternal) {
+      window.electronShell.openExternal(embedUrl);
+    } else {
+      window.open(
+        embedUrl,
+        `holosync-${videoId}`,
+        'width=960,height=720,menubar=no,toolbar=no,location=no'
+      );
+    }
   });
 
   const movePrevBtn = document.createElement('button');
