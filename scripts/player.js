@@ -565,36 +565,9 @@ export function createTile(videoId, options = {}) {
   const actions = document.createElement('div');
   actions.className = 'tile-actions';
 
-  const popoutBtn = document.createElement('button');
-  popoutBtn.className = 'tile-action-btn';
-  popoutBtn.textContent = 'YT';
-  popoutBtn.title = 'YouTubeで開く';
-  popoutBtn.addEventListener('click', () => {
-    const embedUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    // Electron 環境では iframe 内クリックの外部遷移を完全ブロックしているため、
-    // 明示的な外部起動は preload API 経由で shell.openExternal を呼ぶ。
-    if (window.electronShell?.openExternal) {
-      window.electronShell.openExternal(embedUrl);
-    } else {
-      window.open(
-        embedUrl,
-        `holosync-${videoId}`,
-        'width=960,height=720,menubar=no,toolbar=no,location=no'
-      );
-    }
-  });
-
-  const movePrevBtn = document.createElement('button');
-  movePrevBtn.className = 'tile-action-btn';
-  movePrevBtn.textContent = '←';
-  movePrevBtn.title = '前へ移動';
-  movePrevBtn.addEventListener('click', () => _deps.moveVideoOrder(videoId, -1));
-
-  const moveNextBtn = document.createElement('button');
-  moveNextBtn.className = 'tile-action-btn';
-  moveNextBtn.textContent = '→';
-  moveNextBtn.title = '次へ移動';
-  moveNextBtn.addEventListener('click', () => _deps.moveVideoOrder(videoId, 1));
+  // NOTE: タイル並び替えは既存の tile-drag-handle (D&D) が担当するため
+  // ← / → ボタンは廃止 (アクション数削減)。
+  // YouTube で開くボタンは低頻度のため動画情報パネル(展開時)からアクセス可能。
 
   const zoomBtn = document.createElement('button');
   zoomBtn.className = 'tile-action-btn';
@@ -632,9 +605,6 @@ export function createTile(videoId, options = {}) {
   actions.appendChild(focusBtn);
   actions.appendChild(audioBtn);
   actions.appendChild(zoomBtn);
-  actions.appendChild(movePrevBtn);
-  actions.appendChild(moveNextBtn);
-  actions.appendChild(popoutBtn);
   actions.appendChild(removeBtn);
 
   // Info header (collapsible, Phase 2-1)
@@ -656,6 +626,29 @@ export function createTile(videoId, options = {}) {
   infoBody.className = 'tile-info-body';
   infoBody.innerHTML = '<em>読み込み中...</em>';
   infoPanel.appendChild(infoBody);
+
+  // Low-frequency action: YouTubeで開く (情報パネル内に配置してタイル常時表示から除外)
+  const infoActions = document.createElement('div');
+  infoActions.className = 'tile-info-actions';
+  const popoutLink = document.createElement('button');
+  popoutLink.type = 'button';
+  popoutLink.className = 'tile-info-action-btn';
+  popoutLink.textContent = 'YouTubeで開く';
+  popoutLink.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const embedUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    if (window.electronShell?.openExternal) {
+      window.electronShell.openExternal(embedUrl);
+    } else {
+      window.open(
+        embedUrl,
+        `holosync-${videoId}`,
+        'width=960,height=720,menubar=no,toolbar=no,location=no'
+      );
+    }
+  });
+  infoActions.appendChild(popoutLink);
+  infoPanel.appendChild(infoActions);
 
   infoHeader.addEventListener('click', () => {
     const isOpen = infoPanel.classList.toggle('open');

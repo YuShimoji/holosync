@@ -3,7 +3,13 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright Configuration for HoloSync E2E Testing
  * Chromium only — speed-first policy per CLAUDE.md TEST POLICY
+ *
+ * HOLOSYNC_E2E_PORT 環境変数でポートを上書き可能 (既定 8080)。
+ * 他プロジェクトの dev server と衝突した時の退避用。
  */
+const port = process.env.HOLOSYNC_E2E_PORT || '8080';
+const baseURL = `http://localhost:${port}`;
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 60000,
@@ -16,7 +22,7 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -33,8 +39,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev:background',
-    url: 'http://localhost:8080',
+    command: `npx http-server . -p ${port} -c-1 -s`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     stdout: 'pipe',

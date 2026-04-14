@@ -448,9 +448,10 @@ body.immersive-mode .content {
   border-bottom: 1px solid var(--color-border);
   min-height: var(--toolbar-height);
   flex-shrink: 0;
-  overflow-x: auto;
-  overflow-y: visible;
-  scrollbar-width: thin;
+  /* NOTE: overflow must stay visible so the 間隔調整 dropdown
+     (details popover) can render outside the toolbar. Any horizontal
+     overflow is prevented by keeping the button count minimal. */
+  overflow: visible;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -560,7 +561,23 @@ body.immersive-mode .content {
   border-radius: 6px;
   padding: 8px 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 180px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toolbar-dropdown-action {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.toolbar-dropdown-action:hover {
+  background: var(--color-hover-bg);
 }
 
 .content-toolbar > * {
@@ -747,10 +764,7 @@ body.immersive-mode .edge-reveal {
   }
 }
 
-body.frameless-mode .content-toolbar {
-  -webkit-app-region: no-drag;
-}
-
+/* content-toolbar itself is drag (see rule below) — children must remain no-drag */
 body.frameless-mode .content-toolbar button,
 body.frameless-mode .content-toolbar input,
 body.frameless-mode .content-toolbar select,
@@ -789,14 +803,17 @@ body.frameless-mode .frameless-drag-handle {
   -webkit-app-region: drag;
   pointer-events: auto;
 }
-body.frameless-mode .grid {
+/* SP-021 UX fix: .grid is intentionally NOT a drag region. Chromium does not
+   reliably honor `-webkit-app-region: no-drag` on ::-webkit-scrollbar, so
+   keeping .grid as drag makes both the right-edge scrollbar and the sidebar's
+   right-edge scrollbar unusable. Drag is limited to the toolbar empty area,
+   the explicit drag handle, and Alt+ドラッグ. */
+body.frameless-mode .content-toolbar {
   -webkit-app-region: drag;
 }
-body.frameless-mode .sidebar {
-  -webkit-app-region: no-drag;
-}
+body.frameless-mode .sidebar,
+body.frameless-mode .grid,
 body.frameless-mode .tile,
-body.frameless-mode .content-toolbar,
 body.frameless-mode .cell-overlay-container {
   -webkit-app-region: no-drag;
 }
@@ -807,21 +824,6 @@ body.frameless-mode .cell-overlay-container {
 }
 body.quick-fit-mode #quickFitBtn {
   color: var(--color-accent);
-}
-
-/* F-05: scrollbar vs drag region separation — scrollbar operations must
-   not bubble up to the frameless window drag handler. */
-body.frameless-mode .grid::-webkit-scrollbar,
-body.frameless-mode .grid::-webkit-scrollbar-track,
-body.frameless-mode .grid::-webkit-scrollbar-thumb,
-body.frameless-mode .grid::-webkit-scrollbar-corner,
-body.frameless-mode .sidebar::-webkit-scrollbar,
-body.frameless-mode .sidebar::-webkit-scrollbar-track,
-body.frameless-mode .sidebar::-webkit-scrollbar-thumb,
-body.frameless-mode .content-toolbar::-webkit-scrollbar,
-body.frameless-mode .content-toolbar::-webkit-scrollbar-track,
-body.frameless-mode .content-toolbar::-webkit-scrollbar-thumb {
-  -webkit-app-region: no-drag;
 }
 
 /* Alt+Drag mode: full-screen drag overlay */
@@ -1302,6 +1304,24 @@ body.frameless-mode.drag-mode .tile iframe {
   margin-top: 6px;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.6);
+}
+.tile-info-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.tile-info-action-btn {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  cursor: pointer;
+}
+.tile-info-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 .ts-link {
   color: var(--color-accent, #3b82f6);

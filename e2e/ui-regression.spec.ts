@@ -75,13 +75,19 @@ test.describe('UI Regression', () => {
     await page.click('#sidebarToolbarToggle');
     await expect(body).not.toHaveClass(/toolbar-collapsed/);
 
+    // SP-021 UX 整理で immersive ボタンは toolbar の "詳細設定" details 内に移動。
+    // <details open> を直接切替えてアクセス可能にする。
+    await page
+      .locator('.toolbar-details')
+      .evaluate((el: HTMLDetailsElement) => (el.open = true));
+
     // headless環境ではrequestFullscreenの失敗→fullscreenchangeで
     // immersive-modeが即解除されるため、fullscreen APIをスタブ化
     await page.evaluate(() => {
       document.documentElement.requestFullscreen = async () => {};
     });
 
-    // 初期状態 (SP-021/F-03: icon button — check title instead of text)
+    // 初期状態
     await expect(body).not.toHaveClass(/immersive-mode/);
     await expect(btn).toHaveAttribute('title', '\u6ca1\u5165\u8868\u793a');
 
@@ -118,6 +124,11 @@ test.describe('UI Regression', () => {
     await page.evaluate(() => {
       document.documentElement.requestFullscreen = async () => {};
     });
+
+    // immersive ボタンは詳細設定 details 内にある
+    await page
+      .locator('.toolbar-details')
+      .evaluate((el: HTMLDetailsElement) => (el.open = true));
 
     await page.click('#immersiveToggleBtn');
     await expect(body).toHaveClass(/immersive-mode/);

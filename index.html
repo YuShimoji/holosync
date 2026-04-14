@@ -361,19 +361,6 @@
               <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
             </svg>
           </button>
-          <button id="fullFitBtn" class="share-btn fit-btn" title="全画面フィット（1動画を最大化）">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M9 3v18M3 9h6" />
-            </svg>
-          </button>
           <button
             id="quickFitBtn"
             class="share-btn fit-btn"
@@ -390,25 +377,8 @@
               <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" />
             </svg>
           </button>
-          <button
-            id="fitWindowBtn"
-            class="share-btn fit-btn"
-            title="ウィンドウを動画に合わせる (Electron) — グリッド比率に基づいて高さ調整"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="5" width="18" height="14" rx="1" />
-              <path d="M3 12h18" />
-            </svg>
-          </button>
         </div>
-        <details class="toolbar-details" title="間隔調整">
+        <details class="toolbar-details" title="詳細設定">
           <summary class="toolbar-more-btn">
             <svg
               width="16"
@@ -437,6 +407,25 @@
               />
               <span id="gridGapVal">8</span>px
             </div>
+            <button id="fitWindowBtn" class="toolbar-dropdown-action" type="button">
+              ウィンドウを動画に合わせる (Electron)
+            </button>
+            <button
+              id="immersiveToggleBtn"
+              class="toolbar-dropdown-action"
+              type="button"
+              title="没入表示"
+            >
+              没入表示
+            </button>
+            <button
+              id="windowFrameToggleBtn"
+              class="toolbar-dropdown-action"
+              type="button"
+              title="ウィンドウ枠の有無を切替"
+            >
+              フレームレス切替
+            </button>
           </div>
         </details>
         <button id="shareBtn" class="share-btn toolbar-icon-btn" title="共有">
@@ -465,34 +454,6 @@
             <polyline points="18 15 12 9 6 15" />
           </svg>
           <span class="toolbar-toggle-label">隠す</span>
-        </button>
-        <button id="immersiveToggleBtn" class="share-btn toolbar-icon-btn" title="没入表示">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <polyline points="15 3 21 3 21 9" />
-            <polyline points="9 21 3 21 3 15" />
-            <line x1="21" y1="3" x2="14" y2="10" />
-            <line x1="3" y1="21" x2="10" y2="14" />
-          </svg>
-        </button>
-        <button id="windowFrameToggleBtn" class="share-btn toolbar-icon-btn" title="フレームレス">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect x="2" y="3" width="20" height="18" rx="2" />
-            <line x1="2" y1="9" x2="22" y2="9" />
-          </svg>
         </button>
         <div id="windowControls" class="window-controls" hidden>
           <button id="windowMinBtn" class="window-control-btn" title="最小化">-</button>
