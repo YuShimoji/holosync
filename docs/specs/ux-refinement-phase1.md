@@ -1,9 +1,10 @@
 # SP-021: UI/UX洗練 Phase 1
 
-**Status**: draft
+**Status**: in-progress (Phase A 完了 / Phase B 部分実装 / Phase C 部分実装)
 **Priority**: P1
 **Category**: ui
 **Created**: 2026-03-23
+**Last updated**: 2026-04-14
 
 ## 概要
 
@@ -14,12 +15,32 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 
 ### F-01: 動画読込からウィンドウフィット/最大化までの手数削減
 
+**Status**: done (2026-04-14)
 **現状**: 動画追加後、ウィンドウにフィットさせるまでに複数の操作(フィットモード切替、ウィンドウ枠切替等)が必要。
-**目標**: 動画追加時に自動でウィンドウフィット。または1アクションでフィット状態に到達。
-**仕様**:
-- 動画追加時、現在のフィットモードに応じて自動レイアウト調整(SP-020/F-1の延長)
-- 「クイックフィット」ショートカット: 1キー/1ボタンでフィットモード+ウィンドウ枠非表示を同時適用
-- Electron時: ウィンドウサイズを動画アスペクト比に合わせて自動調整するオプション
+**目標**: 1アクションでフィット状態に到達。
+**決定事項** (2026-04-14 user 協議):
+
+| # | 決定 | 内容 |
+|---|---|---|
+| 1 | 動画追加時デフォルト | 現状維持 (自動フィットしない) |
+| 2 | クイックフィットトリガー | 1キー (F) + 1ツールバーボタン (#quickFitBtn) の両方 |
+| 3 | 同時適用範囲 | フィットモード維持 + サイドバー/ツールバー/ウィンドウ枠非表示 |
+| 4 | Electron 自動ウィンドウサイズ | オプション実装 (既定 OFF) / 16:9 固定 |
+| 5 | 3操作カウント | URL添付=1操作として算入 (URL貼付→Enter→F で 3操作) |
+
+**実装**:
+- `toggleQuickFit()` in [scripts/fitmode.js](../../scripts/fitmode.js)
+- F キーバインド in [scripts/ui.js](../../scripts/ui.js) (既存入力要素ガード継承)
+- `#quickFitBtn` in [index.html](../../index.html)
+- ESC または再トグルで元の chrome 状態に完全復帰
+- F-11 フォーカスモード(1タイル最大化)との違い: 全タイル表示を維持
+
+**オプション (自動ウィンドウサイズ)**:
+- `electronWindow.setContentAspect(w, h)` preload API
+- `window:set-content-aspect` IPC handler
+- 設定項目: サイドバー「クイックフィット (F)」セクションのチェックボックス
+- 既定 OFF。有効時はクイックフィット発動毎に 16:9 へ調整
+- 動画実比の取得は cross-origin で不可能なため 16:9 固定 (YouTube 動画ほぼ全てに該当)
 
 ### F-02: 動画最大化モードの再分類
 
@@ -53,12 +74,10 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 
 ### F-05: スクロールバーとウィンドウドラッグの衝突解消
 
+**Status**: done (2026-04-14)
 **現状**: SP-020/F-4でdrag領域を.gridに移動したが、スクロールバー領域でドラッグが発動する場合がある。
 **目標**: スクロールバー操作とウィンドウドラッグが完全に分離される。
-**仕様**:
-- スクロールバー幅(約17px)の領域をdrag除外ゾーンに設定
-- CSS `-webkit-app-region: no-drag` をスクロールバー領域に適用
-- Alt+ドラッグはスクロールバー上でも有効(明示的操作のため衝突なし)
+**実装**: [styles/main.css](../../styles/main.css) に `::-webkit-scrollbar` / `::-webkit-scrollbar-track` / `::-webkit-scrollbar-thumb` / `::-webkit-scrollbar-corner` へ `-webkit-app-region: no-drag` を付与。`.grid` / `.sidebar` / `.content-toolbar` を対象。Alt+ドラッグは `.drag-overlay` 側で drag 化済みのため両立。
 
 ### F-06: 動画情報パネルの面積最適化
 
@@ -83,15 +102,17 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 
 ### F-08: 動画クリック時のブラウザ遷移防止
 
-**現状**: 動画終了時や途中でクリックすると外部ブラウザが開いてしまう。
-**目標**: 同一動画の場合は遷移しない。別の動画なら HoloSync 内で再生を継続。
-**仕様**:
-- 同一動画のクリック(YouTube iframe内リンク): 外部ブラウザを開かず、iframe内で処理
-- 関連動画/おすすめ動画のクリック:
-  - 再生中の動画がある場合: 新しいタイルとして追加(ウィンドウ複製ではなくタイル追加)
-  - 再生完了済みの場合: 同じタイル内で新しい動画を読み込み
-- Electron環境: `will-navigate` / `new-window` イベントをインターセプトして制御
-- Web環境: iframe sandbox属性で外部遷移を制限、postMessageで動画IDをキャプチャ
+**Status**: done (最小版 / 2026-04-14)
+**現状 (修正前)**: 動画終了時や途中でクリックすると外部ブラウザが開いてしまう。
+**目標**: 外部ブラウザを開かない。
+**実装 (最小版)**:
+- `setWindowOpenHandler` を全 deny に変更 ([electron-main.js](../../electron-main.js))
+- `will-navigate` も preventDefault のみ (shell.openExternal 呼び出し削除)
+- 明示的な外部遷移 (「YTで開く」/「共有URLを開く」) は preload の `electronShell.openExternal(url)` → `shell:open-external` IPC → `shell.openExternal` ルートに変更
+- iframe 内 YouTube ロゴ/関連動画クリック → 外部ブラウザは開かず無反応 (iframe 内で何も起きない)
+**縮退**:
+- 「関連動画クリック → 新タイル追加」「再生完了時の同タイル差替」は iframe cross-origin で URL 捕捉不能のため未実装
+- iframe `sandbox` 属性は既存 cross-origin 境界で同等効果が得られるため未付与
 
 ### F-09: ルーペ(ズームパネル)の拡張
 
@@ -165,5 +186,8 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 ## 未決定事項
 
 - F-07 YouTube風コントロール: iframe APIの制約でどこまで実現可能か要調査
-- F-08 ブラウザ遷移防止: YouTube iframe sandbox制約の詳細調査が必要
 - F-04 メインエリア検索: 検索結果のレイアウトをグリッドと分離するか、グリッド内に混在させるか
+
+## 消化済み未決定事項
+
+- F-08 ブラウザ遷移防止: iframe sandbox 調査 → 付与不要と判定 (2026-04-14)。既存 cross-origin 境界で十分。関連動画の新タイル追加は縮退
