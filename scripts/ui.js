@@ -7,7 +7,7 @@ import { storageAdapter } from './storage.js';
 import { videos, playerStates, state, SYNC_SETTINGS, EDGE_REVEAL_DISTANCE_PX } from './state.js';
 import { buildEmbedUrl, sanitizeEmbedSettings, persistEmbedSettings } from './player.js';
 import { syncAll, restartSyncLoop } from './sync.js';
-import { toggleQuickFit } from './fitmode.js';
+import { toggleQuickFit, isFocusModeActive, exitFocusMode } from './fitmode.js';
 
 // ── DOM References ─────────────────────────────────────────
 
@@ -306,13 +306,22 @@ export function initUI(deps) {
   });
   if (edgeToolbarReveal) {
     edgeToolbarReveal.addEventListener('click', () => {
-      setToolbarCollapsed(false);
+      // In focus mode, exit focus (which restores chrome) instead of toggling toolbar alone
+      if (isFocusModeActive()) {
+        exitFocusMode();
+      } else {
+        setToolbarCollapsed(false);
+      }
       clearEdgeRevealProximity();
     });
   }
   if (edgeSidebarReveal) {
     edgeSidebarReveal.addEventListener('click', () => {
-      setSidebarCollapsed(false);
+      if (isFocusModeActive()) {
+        exitFocusMode();
+      } else {
+        setSidebarCollapsed(false);
+      }
       clearEdgeRevealProximity();
     });
   }

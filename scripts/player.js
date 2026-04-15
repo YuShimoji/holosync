@@ -588,9 +588,28 @@ export function createTile(videoId, options = {}) {
 
   const focusBtn = document.createElement('button');
   focusBtn.className = 'tile-action-btn tile-focus-btn';
-  focusBtn.textContent = '\u26F6';
+  focusBtn.innerHTML =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>' +
+    '<line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
   focusBtn.title = 'フォーカスモード（この動画を最大化）';
-  focusBtn.addEventListener('click', () => {
+  focusBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_deps.toggleFocusMode) {
+      _deps.toggleFocusMode(videoId);
+    }
+  });
+
+  // Double-click on tile → focus mode (SP-021/F-11)
+  tile.addEventListener('dblclick', (e) => {
+    // Ignore double-click on action buttons, inputs, or info panels
+    if (
+      e.target.closest(
+        '.tile-actions, .tile-info, .tile-info-header, .tile-offset-control, .tile-drag-handle, .tile-resize-handle, .tile-control-bar'
+      )
+    ) {
+      return;
+    }
     if (_deps.toggleFocusMode) {
       _deps.toggleFocusMode(videoId);
     }
@@ -732,6 +751,12 @@ export function createTile(videoId, options = {}) {
     queueIndex: options.queueIndex ?? 0,
   };
   videos.push(videoEntry);
+
+  // Per-tile YouTube-style control bar (F-07)
+  if (_deps.createTileControlBar) {
+    _deps.createTileControlBar(videoEntry);
+  }
+
   _deps.syncTileOrderDom();
 
   // Queue navigation bar (only for queue-enabled tiles)
@@ -813,6 +838,7 @@ function removeVideo(videoId, tile) {
   if (state.audioFocusVideoId === videoId) {
     _deps.clearAudioFocus?.(videoId);
   }
+  _deps.destroyTileControlBar?.(video);
   video.iframe.src = '';
   tile.remove();
   videos.splice(idx, 1);

@@ -1,7 +1,7 @@
 /**
  * @file scripts/fitmode.js
  * @brief Fit mode controller: dynamic auto-column layout, cover/contain toggle,
- *        and full-fit (single video maximized) toggle — all independent of
+ *        focus mode (single video maximized), and quick-fit — all independent of
  *        the regular layout select.
  */
 import { storageAdapter } from './storage.js';
@@ -15,7 +15,6 @@ const layoutSelect = document.getElementById('layoutSelect');
 // ── State ──────────────────────────────────────────────────
 const fitState = {
   coverMode: false, // true = fill (cover), false = standard (contain + aspect-ratio)
-  fullFit: false, // true = show only 1st video, maximized
   focusVideoId: null, // non-null = focus mode active for this video
   _savedFocusState: null, // sidebar/toolbar/frameless state before focus
   quickFitActive: false, // SP-021/F-01 quick-fit (all chrome hidden, grid preserved)
@@ -69,7 +68,7 @@ function calcOptimalLayout(containerW, containerH, count) {
 
 // Apply dynamic columns (and row height) to the grid CSS variables
 function applyDynamicColumns() {
-  if (fitState.fullFit || !gridEl.classList.contains('layout-auto-dynamic')) {
+  if (!gridEl.classList.contains('layout-auto-dynamic')) {
     return;
   }
   const contentEl = gridEl.parentElement;
@@ -123,38 +122,10 @@ function updateFitIcon() {
   }
 }
 
-// ── Full-Fit Mode (single video maximized) ─────────────────
-function setFullFit(enabled) {
-  fitState.fullFit = enabled;
-
-  if (enabled) {
-    // Save current layout class
-    fitState._savedLayoutClass = Array.from(gridEl.classList).find(
-      (c) => c.startsWith('layout-') && c !== 'layout-auto-dynamic'
-    );
-    // Remove all layout classes and auto-fit state
-    [...gridEl.classList]
-      .filter((c) => c.startsWith('layout-'))
-      .forEach((c) => gridEl.classList.remove(c));
-    gridEl.classList.remove('auto-fit-rows');
-    gridEl.style.removeProperty('--auto-row-height');
-    gridEl.classList.add('layout-fullfit');
-  } else {
-    gridEl.classList.remove('layout-fullfit');
-    if (fitState._savedLayoutClass) {
-      gridEl.classList.add(fitState._savedLayoutClass);
-    }
-    // Restore auto-dynamic layout if applicable
-    if (gridEl.classList.contains('layout-auto-dynamic')) {
-      applyDynamicColumns();
-    }
-  }
-
-  storageAdapter.setItem('fitFullFit', enabled);
-}
-
-// ── Focus Mode (SP-021/F-11) ────────────────────────────────
-// Single video maximized, all chrome hidden. Double-click tile to enter, ESC to exit.
+// ── Focus Mode (SP-021/F-02+F-11) ─────────────────────────────
+// Single video maximized, all chrome hidden.
+// Entry: tile double-click, tile focus button, or toggleFocusMode(videoId).
+// Exit: ESC, or edge-hover reveal buttons (top/left) to temporarily show chrome.
 let _uiDeps = null; // { setSidebarCollapsed, setToolbarCollapsed }
 
 function setFocusMode(videoId) {
@@ -167,7 +138,6 @@ function setFocusMode(videoId) {
     sidebarCollapsed: document.body.classList.contains('sidebar-collapsed'),
     toolbarCollapsed: document.body.classList.contains('toolbar-collapsed'),
     frameless: document.body.classList.contains('frameless-mode'),
-    fullFit: fitState.fullFit,
   };
 
   fitState.focusVideoId = videoId;
@@ -186,7 +156,7 @@ function setFocusMode(videoId) {
   }
 }
 
-function exitFocusMode() {
+export function exitFocusMode() {
   if (!fitState.focusVideoId) {
     return;
   }
@@ -208,6 +178,11 @@ function exitFocusMode() {
     _uiDeps.setToolbarCollapsed(saved.toolbarCollapsed, { persist: false, source: 'focus' });
   }
   fitState._savedFocusState = null;
+}
+
+/** @returns {boolean} Whether focus mode is currently active */
+export function isFocusModeActive() {
+  return fitState.focusVideoId !== null;
 }
 
 // ── Quick Fit (SP-021/F-01) ────────────────────────────────
@@ -285,7 +260,7 @@ export function fitWindowToVideos() {
 
 function resolveCurrentCols(count) {
   const classes = Array.from(gridEl.classList);
-  if (classes.includes('layout-theater') || classes.includes('layout-fullfit')) {
+  if (classes.includes('layout-theater')) {
     return 1;
   }
   const fixed = classes.find((c) => /^layout-\d+$/.test(c));
@@ -307,9 +282,6 @@ function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
 }
 
-// NOTE: toggleFullFit was removed along with #fullFitBtn (SP-021 UX 整理)。
-// setFullFit は storage 復元経路で残存。F-02 再分類時に再検討。
-
 export function toggleFocusMode(videoId) {
   if (fitState.focusVideoId === videoId) {
     exitFocusMode();
@@ -321,7 +293,6 @@ export function toggleFocusMode(videoId) {
 export function onVideosChanged() {
   if (
     !fitState.coverMode &&
-    !fitState.fullFit &&
     (layoutSelect?.value === 'auto' || gridEl.classList.contains('layout-auto-dynamic'))
   ) {
     applyDynamicColumns();
@@ -380,13 +351,11 @@ export function initFitMode(deps) {
   // Restore state
   (async () => {
     const cover = await storageAdapter.getItem('fitCoverMode');
-    const full = await storageAdapter.getItem('fitFullFit');
     if (cover === true) {
       setCoverMode(true);
     }
-    if (full === true) {
-      setFullFit(true);
-    }
+    // Clean up legacy fullFit storage key (Full-Fit abolished in F-02)
+    storageAdapter.setItem('fitFullFit', null);
   })();
 
   // Layout select changes — sync dynamic mode

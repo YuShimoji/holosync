@@ -65,6 +65,11 @@ import {
 import { initInput } from './input.js';
 import { initChannel } from './channel.js';
 import { initFitMode, toggleFocusMode } from './fitmode.js';
+import {
+  createTileControlBar,
+  updateTileControlBar,
+  destroyTileControlBar,
+} from './tile-controls.js';
 
 const gridEl = document.getElementById('grid');
 
@@ -99,6 +104,8 @@ initPlayer({
   toggleFocusMode,
   onTileIframeLoaded: () => applyAudioFocus(),
   clearAudioFocus: () => setAudioFocus(null),
+  createTileControlBar,
+  destroyTileControlBar,
 });
 
 function trackPlayerState(win, info) {
@@ -560,6 +567,10 @@ function updateMasterSeekbar() {
       masterSeekTime.textContent = formatTime(rec.time);
       masterSeekDuration.textContent = formatTime(rec.duration);
     }
+  }
+  // Update per-tile control bars (F-07)
+  for (const v of videos) {
+    updateTileControlBar(v);
   }
   requestAnimationFrame(updateMasterSeekbar);
 }

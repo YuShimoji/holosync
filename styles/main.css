@@ -1333,6 +1333,156 @@ body.frameless-mode.drag-mode .tile iframe {
   background: rgba(59, 130, 246, 0.1);
 }
 
+/* ── Tile Control Bar (F-07) ── */
+.tile-control-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 14;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  padding-top: 16px;
+  border-radius: 0 0 4px 4px;
+}
+.tile:hover .tile-control-bar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Seek bar */
+.tile-seek-wrap {
+  padding: 0 4px;
+  height: 3px;
+  transition: height 0.15s;
+  display: flex;
+  align-items: center;
+}
+.tile:hover .tile-seek-wrap {
+  height: 6px;
+}
+.tile-seek {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+.tile-seek::-webkit-slider-runnable-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  transition: height 0.15s;
+}
+.tile:hover .tile-seek::-webkit-slider-runnable-track {
+  height: 5px;
+}
+.tile-seek::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f00;
+  margin-top: -4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tile:hover .tile-seek::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+/* Control row */
+.tile-ctrl-row {
+  display: flex;
+  align-items: center;
+  padding: 2px 6px 4px;
+  gap: 4px;
+  color: #fff;
+  font-size: 11px;
+}
+.tile-ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.tile-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.tile-ctrl-btn svg {
+  pointer-events: none;
+}
+.tile-ctrl-time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  user-select: none;
+  opacity: 0.9;
+}
+.tile-ctrl-spacer {
+  flex: 1;
+}
+
+/* Volume wrap: slider expands on hover */
+.tile-ctrl-vol-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.tile-ctrl-vol {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    width 0.2s,
+    opacity 0.2s;
+  opacity: 0;
+  margin: 0;
+  accent-color: #fff;
+}
+.tile-ctrl-vol-wrap:hover .tile-ctrl-vol {
+  width: 52px;
+  opacity: 1;
+}
+.tile-ctrl-vol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* Focus mode: always show controls on focused tile */
+.focus-mode .tile.focus-target .tile-control-bar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Coexistence: push tile-info-header up when control bar is visible */
+.tile:hover .tile-info-header {
+  bottom: 38px;
+}
+.tile:hover .tile-info-header.info-open {
+  bottom: 38px;
+}
+
 /* Drop overlay on grid */
 .grid.drag-over {
   outline: 3px dashed var(--color-primary);
@@ -2254,21 +2404,8 @@ button:active {
 .fit-btn svg {
   display: block;
 }
-.fullfit-active {
-  background: var(--color-primary);
-  color: #fff;
-  border-color: var(--color-primary);
-}
 .grid.fit-cover .tile iframe {
   object-fit: cover;
-}
-.grid.layout-fullfit .tile {
-  display: none;
-}
-.grid.layout-fullfit .tile:first-child {
-  display: block;
-  grid-column: 1 / -1;
-  grid-row: 1 / -1;
 }
 .grid.layout-auto-dynamic {
   grid-template-columns: repeat(var(--auto-cols, 2), 1fr);
@@ -2283,8 +2420,9 @@ button:active {
   height: 100%;
 }
 
-/* ========== Focus Mode (SP-021/F-11) ========== */
-/* Hide all tiles except the focused one; full viewport, no chrome */
+/* ========== Focus Mode (SP-021/F-02+F-11) ========== */
+/* Single video maximized, all chrome hidden.
+   Edge-reveal buttons remain accessible for instant toolbar/sidebar restore. */
 .focus-mode .grid {
   display: block !important;
   position: fixed;
@@ -2310,13 +2448,21 @@ button:active {
   height: 100%;
 }
 .focus-mode .content-toolbar,
-.focus-mode .edge-reveal,
 .focus-mode .debug-panel {
   display: none !important;
+}
+/* Edge-reveal stays accessible in focus mode (unlike immersive).
+   z-index must beat the grid overlay (1000). */
+.focus-mode .edge-reveal {
+  z-index: 1010;
 }
 /* Focus button highlight */
 .tile-focus-btn:hover {
   background: rgba(59, 130, 246, 0.85) !important;
+}
+/* SVG icon inside focus button */
+.tile-focus-btn svg {
+  pointer-events: none;
 }
 
 /* ========== Search Results ========== */
