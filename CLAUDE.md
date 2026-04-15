@@ -10,7 +10,7 @@
 現フェーズ: SP-021 UI/UX洗練 Phase 1
 直近の状態 (2026-03-26):
 
-- SP-021 UI/UX洗練 Phase 1: 8/11件実装済み (F-03/F-06/F-11 + F-01/F-05/F-08 + F-09ルーペ拡張 + F-10双方向フィット)
+- SP-021 UI/UX洗練 Phase 1: 10/11件実装済み (F-04 メインエリア検索のみ未着手)
 - レガシー根絶: 孤立CSS 286行削除, デッドJS削除, getChromeStorageバグ修正, --color-accent未定義修正
 - E2E 10件 (2026-04-14 低価値5件削除), ESLint clean
 - 仕様: 21エントリ (18 done + 1 deprecated + 1 superseded + 1 partial/SP-021 pct30)
