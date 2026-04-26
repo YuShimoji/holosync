@@ -1,29 +1,24 @@
 # Invariants
-# 破ってはいけない条件・責務境界・UX不変量を保持する正本。
 
-## Systemic Diagnosis
-- [例] 重要なのは個々の症状でなく、全体の傾向。
+Non-negotiable project constraints for HoloSync.
 
-## UX / Algorithmic Invariants
-- [例] スキップ時は本文表示完了後に次バブルへ進む。
-- [例] モードごとに状態が分裂しない。
+## Product Boundaries
 
-## Responsibility Boundaries
-- [例] 音声合成は YMM4 側の責務。
-- [例] `.ymmp` 直接編集では正常な音声読み上げを保証できない。
+- HoloSync is a local YouTube multi-video viewing and synchronization app.
+- YouTube iframe cross-origin restrictions are treated as hard constraints.
+- Do not implement features that require reading iframe internals unless a verified API path exists.
+- External browser navigation must remain blocked unless the user uses an explicit open-external action.
 
-## Prohibited Interpretations / Shortcuts
-- [例] rejected を「工程不要」と解釈しない。
-- [例] ユーザー未指定の固有名詞・方式を勝手に採用しない。
+## UX Invariants
 
-## Test Discipline (テスト過剰禁止)
-- テスト追加は「検証目的が明確」かつ「回帰リスクが顕在化している」ときだけ行う。
-- 成功済みパスの定期再実行・確認目的の手動チェックリスト拡張は行わない。
-- 存在確認 (`toBeAttached` / `toBeVisible` のみで挙動未検証) テストは書かない。
-- ドキュメントで「全項目確認」「テスト計画」「追加予定の自動テスト」のような網羅ゴールを設定しない。
-- E2E・手動チェックリストの件数増加は凍結（`CLAUDE.md` 選別規則 D）。削減は可。
-- テスト失敗時の対応: 原因調査 → 修正 or テスト削除。片方しか正当化できなければ削除側を選ぶ。
+- Video viewing space has priority over control density.
+- Focus / Quick Fit / Immersive / Theater modes must remain distinct and reversible.
+- User-visible controls should reduce clutter, not add parallel ways to perform the same frequent action.
+- Manual visual judgment and operation feel remain user-owned.
 
-## 運用ルール
-- ユーザーが一度説明した非交渉条件は、同一ブロック内でここへ固定する。
-- `project-context.md` の DECISION LOG には理由を短く残し、ここには条件そのものを残す。
+## Test Discipline
+
+- Add tests only when the verification purpose is clear and regression risk is concrete.
+- Do not add existence-only tests that check attachment or visibility without behavior.
+- Do not expand E2E or manual checklists as routine maintenance.
+- If a low-value test fails, choose between fixing the underlying behavior or deleting the test; do not preserve noise.

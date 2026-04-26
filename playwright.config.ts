@@ -1,11 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright Configuration for HoloSync E2E Testing
- * Chromium only — speed-first policy per CLAUDE.md TEST POLICY
+ * Playwright configuration for HoloSync E2E testing.
+ * Chromium only; keep E2E coverage focused on concrete regression risk.
  *
- * HOLOSYNC_E2E_PORT 環境変数でポートを上書き可能 (既定 8080)。
- * 他プロジェクトの dev server と衝突した時の退避用。
+ * HOLOSYNC_E2E_PORT can override the default port when another local app uses 8080.
  */
 const port = process.env.HOLOSYNC_E2E_PORT || '8080';
 const baseURL = `http://localhost:${port}`;

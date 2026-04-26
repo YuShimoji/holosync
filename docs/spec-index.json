@@ -1,111 +1,102 @@
 [
   {
     "id": "SP-001",
-    "title": "同期アルゴリズム仕様",
+    "title": "Sync algorithm",
     "status": "done",
     "pct": 100,
     "cat": "core",
     "file": "docs/SYNC_ALGO.md",
-    "summary": "3段階drift補正、リーダー選出4モード、同期グループ、動画間オフセット、Live Edge Sync(ライブ配信時seekTo抑制)"
-  },
-  {
-    "id": "SP-002",
-    "title": "検索導線とプリセット機能",
-    "status": "superseded",
-    "pct": 100,
-    "cat": "ui",
-    "file": "docs/specs/phase-alpha-search-preset.md",
-    "summary": "フェーズα初期原案。機能はSP-007(検索拡張)、SP-010(ESModule/storage)、SP-018(動画追加UX)、SP-019(サイドバーUI)に分散実装済み"
+    "summary": "Three-stage drift correction, leader selection, sync groups, offsets, and Live Edge Sync."
   },
   {
     "id": "SP-003",
-    "title": "永続化ストレージ",
+    "title": "Persistence storage",
     "status": "done",
     "pct": 100,
     "cat": "data",
     "file": "docs/PERSISTENCE.md",
-    "summary": "StorageAdapter抽象化、chrome.storage/IndexedDB/localStorage/URLパラメータの4段階フォールバック、URL共有"
+    "summary": "StorageAdapter fallback through chrome.storage, IndexedDB, localStorage, and URL parameters."
   },
   {
     "id": "SP-004",
-    "title": "postMessageセキュリティ",
+    "title": "postMessage security",
     "status": "done",
     "pct": 100,
     "cat": "system",
     "file": "docs/SECURITY_POSTMESSAGE.md",
-    "summary": "origin検証(youtube-nocookie対応)、ALLOWED_COMMANDS 8種、sanitizeArgs引数バリデーション、受信側イベントタイプホワイトリスト"
+    "summary": "Origin validation, command allowlist, argument sanitization, and event type filtering."
   },
   {
     "id": "SP-005",
-    "title": "オーディオマスター固定",
+    "title": "Audio master pinning",
     "status": "done",
     "pct": 100,
     "cat": "core",
     "file": "docs/specs/audio-master-pinning.md",
-    "summary": "Audio Focus堅牢化: sync回復後の音声状態復元、lazy-load時のfocus適用、タイル削除時のクリーンアップ"
+    "summary": "Audio focus durability across sync recovery, lazy loading, and tile deletion."
   },
   {
     "id": "SP-006",
-    "title": "プレイリスト一括追加",
+    "title": "Playlist batch add",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/playlist-batch-add.md",
-    "summary": "プレイリストURL検出・playlistItems.list API呼び出し・単体/一括/D&D対応（チャンネル対応は別機能として分離）"
+    "summary": "Playlist URL detection, playlistItems API loading, and batch tile creation."
   },
   {
     "id": "SP-007",
-    "title": "検索拡張（履歴/フィルタ）",
+    "title": "Search enhancements",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/search-enhancements.md",
-    "summary": "検索履歴ドロップダウン、長さ/並び順フィルタ、MRU 5件保持"
+    "summary": "Search history, length filters, order filters, and MRU retention."
   },
   {
     "id": "SP-008",
-    "title": "タイムスタンプ抽出・ジャンプ",
+    "title": "Timestamp extraction",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/timestamp-extraction.md",
-    "summary": "説明文からタイムスタンプ自動検出、クリックでseekTo、XSSエスケープ付きHTML描画"
+    "summary": "Extract timestamps from descriptions and seek on click."
   },
   {
     "id": "SP-009",
-    "title": "パフォーマンス最適化（iframe遅延ロード）",
+    "title": "Performance optimization",
     "status": "done",
     "pct": 100,
     "cat": "infra",
     "file": "docs/specs/performance-optimization.md",
-    "summary": "IntersectionObserver + staggered loading（最大2並列）、サムネイルプレースホルダ、CSS content-visibility、同期ループの未ロードタイル自動スキップ"
+    "summary": "IntersectionObserver loading, thumbnails, content-visibility, and unloaded tile sync skipping."
   },
   {
     "id": "SP-010",
-    "title": "ES Module アーキテクチャ",
+    "title": "ES Module architecture",
     "status": "done",
     "pct": 100,
     "cat": "infra",
     "file": "docs/specs/es-module-architecture.md",
-    "summary": "全16モジュール構成（storage→state→player→sync→main + layout/ui/debug/electron/input/channel/search/share/history/zoom-loupe/fitmode）、循環依存なし。searchbrowser.jsは統合入力に一本化し削除"
+    "summary": "Modular JavaScript structure with storage, state, player, sync, UI, and feature modules."
   },
   {
     "id": "SP-011",
-    "title": "プレイリストキューモード",
+    "title": "Playlist queue mode",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/playlist-queue-mode.md",
-    "summary": "1タイルで順次再生、loadVideoById postMessage対応、playerState===0自動進行、次/前ボタン、キューインジケーター、永続化/URL共有"
+    "summary": "Single-tile playlist queue playback with controls, persistence, and share URL support."
   },
   {
     "id": "SP-012",
-    "title": "チャンネルLive監視",
+    "title": "Channel live monitor",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/channel-live-monitor.md",
-    "summary": "チャンネル登録、search.list eventType=live、15分間隔ポーリング(設定可能)、新規ライブ自動追加、Page Visibility API、クォータ管理"
+    "summary": "Channel registration, live polling, auto-add, visibility handling, and quota management."
   },
   {
     "id": "SP-013",
@@ -114,25 +105,25 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/layout-fit-relayout.md",
-    "summary": "UI chrome changes trigger safe relayout for fit mode without architecture changes."
+    "summary": "Safe relayout for fit mode after UI chrome changes."
   },
   {
     "id": "SP-014",
-    "title": "Frameless drag stabilization and inventory",
+    "title": "Frameless drag stabilization",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/frameless-drag-stabilization.md",
-    "summary": "Adopt explicit drag handle and record inventory-only improvements for channel/playlist/history."
+    "summary": "Explicit drag handle and stable frameless-window behavior."
   },
   {
     "id": "SP-015",
-    "title": "Sidebar / toolbar cleanup stabilization",
+    "title": "Sidebar and toolbar cleanup",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/sidebar-toolbar-cleanup.md",
-    "summary": "Stabilize immersive/sidebar/toolbar state persistence, recovery paths, and narrow-width control priority."
+    "summary": "Stable sidebar, toolbar, immersive state, and recovery paths."
   },
   {
     "id": "SP-016",
@@ -141,51 +132,42 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/fitmode.md",
-    "summary": "動的列数計算(auto dynamic)、Cover Mode(余白なし)、Full-Fit Mode(1動画最大化)の3機能。ツールバーに2ボタン配置。"
-  },
-  {
-    "id": "SP-017",
-    "title": "Search Browser Panel",
-    "status": "deprecated",
-    "pct": 0,
-    "cat": "ui",
-    "file": "docs/specs/searchbrowser.md",
-    "summary": "廃止: searchbrowser.jsを削除。検索機能はinput.jsの統合入力欄に一本化。"
+    "summary": "Dynamic layout, cover behavior, and fit controls."
   },
   {
     "id": "SP-018",
-    "title": "動画追加UX改善",
+    "title": "Video add UX",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/video-add-ux.md",
-    "summary": "3Phase構成: (1)履歴ワンクリック再追加+チャンネルピン+セッション復元 (2)検索複数選択一括追加+履歴統合 (3)チャンネル最新動画フィード+共視聴提案"
+    "summary": "History, channel pins, session restore, batch search add, and video-add UX improvements."
   },
   {
     "id": "SP-019",
-    "title": "サイドバーUI再設計",
+    "title": "Sidebar UI redesign",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/sidebar-ui-redesign.md",
-    "summary": "Phase 1: searchbrowser.js削除+統合入力一本化。Phase 2: 3アコーディオン化+セクション並替+開閉永続化。Phase 3: 一括操作をトグルアイコン+シークバー分離+詳細折りたたみにコンパクト化"
+    "summary": "Unified input, accordion sidebar, compact bulk controls, and persistent section state."
   },
   {
     "id": "SP-020",
-    "title": "レイアウトUX摩擦の解消",
+    "title": "Layout UX friction fixes",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/layout-ux-friction.md",
-    "summary": "5件のUX摩擦修正: (F-1)動画追加後の自動レイアウト (F-2)リサイズ追従 (F-3)1列時の高さ制限 (F-4)スクロールバーvsドラッグ (F-5)ツールバーsticky固定"
+    "summary": "Video-add relayout, resize tracking, single-column height, scroll/drag separation, and sticky toolbar."
   },
   {
     "id": "SP-021",
-    "title": "UI/UX洗練 Phase 1",
+    "title": "UI/UX refinement Phase 1",
     "status": "partial",
-    "pct": 30,
+    "pct": 91,
     "cat": "ui",
     "file": "docs/specs/ux-refinement-phase1.md",
-    "summary": "11件のUX改善: (F-01)フィット手数削減 (F-02)最大化モード再分類 (F-03)ツールバー簡素化 (F-04)メインエリア検索 (F-05)スクロールバー/ドラッグ分離 (F-06)動画情報折りたたみ (F-07)YouTube風コントロール (F-08)ブラウザ遷移防止 (F-09)ルーペ拡張 (F-10)双方向フィット (F-11)ワンアクション最大化"
+    "summary": "10 of 11 UX items are implemented. F-04 main-area search is the only not-started item."
   }
 ]

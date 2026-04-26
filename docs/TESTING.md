@@ -1,36 +1,22 @@
-# 手動確認メモ（HoloSync）
+# Testing Notes
 
-## 方針
+## Policy
 
-- テストは検証目的が明確なときだけ実施する。既に安定している経路の定期再実行は不要。
-- 新機能・回帰リスクが高い変更がある場合のみ以下から必要項目を選んで確認する。
-- 網羅チェックリスト化・件数拡大は行わない（`CLAUDE.md` 選別規則 D：テスト拡充は凍結）。
+- Run tests when they answer a specific risk.
+- Do not expand checklists or E2E count by default.
+- Documentation-only changes require formatting checks only.
 
-## 起動
-- ブラウザで `index.html` を開く（サーバ経由推奨）
-- または `npm run dev` / `npm start` (Electron)
+## Useful Commands
 
-## 主要シナリオ（必要に応じて確認）
+- `npm run lint`
+- `npm run format:check`
+- `npx playwright test`
 
-| 区分 | シナリオ | 期待 |
-|---|---|---|
-| 追加 | 有効な YouTube URL を入力 | タイル生成・タイトル表示 |
-| 追加 | 無効URL | エラー表示 or プレビュー出現なし |
-| 同期 | 2本以上追加し「すべて再生」 | 同期監視開始 |
-| 同期 | 手動「同期」ボタン | リーダー時刻に他がシーク |
-| 同期 | ライブ配信混在 | ライブ側は seekTo 抑制（Live Edge Sync） |
-| レイアウト | プリセット切替 (1/2/3/4/シアター/自動) | グリッド即時変更、再生維持 |
-| UI | サイドバー/ツールバー/没入モード切替 | 状態が永続化しリロード後復元 |
-| オーディオ | タイルクリック | クリック動画のみ音声、他ミュート |
-| 削除 | タイルの ✕ | プレイヤー破棄 + ストレージ更新 |
+## Manual Checks
 
-## 自動テスト
+Use manual checks only when behavior or visual feel changed:
 
-- `npx playwright test` (Chromium のみ)
-- 対象: 起動 + 動画追加 + 主要UI回帰 (`e2e/ui-regression.spec.ts`)
-- CI: `.github/workflows/e2e.yml` が PR / push 時にのみ実行
-
-## 既知の制約
-
-- ブラウザ自動再生制限によりユーザー操作が必須になる場合がある
-- ネットワーク遅延により完全同期は保証されない（許容差内での同期が目標）
+- Add a valid YouTube URL and confirm a tile is created.
+- Add multiple videos and confirm sync controls still work.
+- Toggle sidebar, toolbar, Quick Fit, Focus, and Immersive modes.
+- Confirm packaged-app behavior through `dist/HoloSync-win32-x64/HoloSync.exe` after a rebuild.
