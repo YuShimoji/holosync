@@ -701,7 +701,7 @@ export function createTile(videoId, options = {}) {
   const dragHandle = document.createElement('div');
   dragHandle.className = 'tile-drag-handle';
   dragHandle.textContent = '⋮⋮';
-  dragHandle.title = 'ドラッグで移動';
+  dragHandle.title = 'ドラッグで並び替え / free mode で移動';
 
   // Size badge (shown during resize)
   const sizeBadge = document.createElement('div');
@@ -837,6 +837,12 @@ function removeVideo(videoId, tile) {
   }
   if (state.audioFocusVideoId === videoId) {
     _deps.clearAudioFocus?.(videoId);
+  }
+  // Tear down zoom loupe before tile is detached. Otherwise its setInterval
+  // keeps running against a Window that has been GCed and its DOM node
+  // (appended to document.body) leaks across the session.
+  if (video.zoomPanel) {
+    _deps.destroyZoomPanel?.(video);
   }
   _deps.destroyTileControlBar?.(video);
   video.iframe.src = '';

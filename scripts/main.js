@@ -99,6 +99,7 @@ initPlayer({
   setupTileResize,
   setupTileDrag,
   toggleZoomPanel,
+  destroyZoomPanel: (videoEntry) => zoomLoupeController?.destroyZoomPanel(videoEntry),
   refreshTileStackOrder,
   setAudioFocus,
   toggleFocusMode,
@@ -547,32 +548,73 @@ function getLeaderRecord() {
   return null;
 }
 
-function updateMasterSeekbar() {
-  if (_seekDragging) {
+// Seekbar/tile-control bar updates run at ~5Hz (200ms) instead of 60fps.
+// playerStates only update when YouTube reports them (~1Hz), so 60fps is wasted
+// work that monopolizes the main thread and starves mouse-event handling
+// (notably the edge-reveal mousemove handler) on long-running sessions.
+const SEEKBAR_UPDATE_INTERVAL_MS = 200;
+let _seekbarRafScheduled = false;
+function scheduleSeekbarUpdate() {
+  if (_seekbarRafScheduled) {
+    return;
+  }
+  _seekbarRafScheduled = true;
+  setTimeout(() => {
+    _seekbarRafScheduled = false;
     requestAnimationFrame(updateMasterSeekbar);
+  }, SEEKBAR_UPDATE_INTERVAL_MS);
+}
+
+function updateMasterSeekbar() {
+  // Bail out cheaply when the window is hidden — the OS already throttles us,
+  // but we don't need to thrash the DOM either.
+  if (document.hidden) {
+    scheduleSeekbarUpdate();
+    return;
+  }
+  if (_seekDragging) {
+    scheduleSeekbarUpdate();
     return;
   }
   const rec = getLeaderRecord();
   if (rec && typeof rec.time === 'number') {
     if (isLikelyLive(rec)) {
-      masterSeekBar.max = '1';
-      masterSeekBar.value = '1';
-      masterSeekBar.disabled = true;
-      masterSeekTime.textContent = 'LIVE';
-      masterSeekDuration.textContent = '';
+      if (masterSeekBar.max !== '1') {
+        masterSeekBar.max = '1';
+        masterSeekBar.value = '1';
+        masterSeekBar.disabled = true;
+      }
+      if (masterSeekTime.textContent !== 'LIVE') {
+        masterSeekTime.textContent = 'LIVE';
+        masterSeekDuration.textContent = '';
+      }
     } else {
-      masterSeekBar.disabled = false;
-      masterSeekBar.max = String(rec.duration);
-      masterSeekBar.value = String(rec.time);
-      masterSeekTime.textContent = formatTime(rec.time);
-      masterSeekDuration.textContent = formatTime(rec.duration);
+      const nextMax = String(rec.duration);
+      const nextVal = String(rec.time);
+      if (masterSeekBar.disabled) {
+        masterSeekBar.disabled = false;
+      }
+      if (masterSeekBar.max !== nextMax) {
+        masterSeekBar.max = nextMax;
+      }
+      if (masterSeekBar.value !== nextVal) {
+        masterSeekBar.value = nextVal;
+      }
+      const t = formatTime(rec.time);
+      const d = formatTime(rec.duration);
+      if (masterSeekTime.textContent !== t) {
+        masterSeekTime.textContent = t;
+      }
+      if (masterSeekDuration.textContent !== d) {
+        masterSeekDuration.textContent = d;
+      }
     }
   }
   // Update per-tile control bars (F-07)
   for (const v of videos) {
     updateTileControlBar(v);
   }
-  requestAnimationFrame(updateMasterSeekbar);
+  scheduleSeekbarUpdate();
 }
 
 masterSeekBar.addEventListener('mousedown', () => {
@@ -600,7 +642,7 @@ masterSeekBar.addEventListener('change', () => {
   }
 });
 
-requestAnimationFrame(updateMasterSeekbar);
+scheduleSeekbarUpdate();
 
 function setAudioFocus(videoId) {
   // Toggle off if same video

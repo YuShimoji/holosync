@@ -35,6 +35,44 @@ function refreshTileStackOrder() {
   });
 }
 
+export function getReorderedItems(items, oldIndex, targetIndex) {
+  if (!Array.isArray(items) || oldIndex < 0 || oldIndex >= items.length) {
+    return Array.isArray(items) ? items.slice() : [];
+  }
+
+  let normalizedTarget = Math.max(0, Math.min(targetIndex, items.length));
+  if (normalizedTarget > oldIndex) {
+    normalizedTarget -= 1;
+  }
+
+  const nextItems = items.slice();
+  if (normalizedTarget === oldIndex) {
+    return nextItems;
+  }
+
+  const [item] = nextItems.splice(oldIndex, 1);
+  nextItems.splice(normalizedTarget, 0, item);
+  return nextItems;
+}
+
+export function getGridReorderIndexFromRects(candidateRects, clientX, clientY, itemCount) {
+  const fallbackIndex = Number.isFinite(itemCount) ? itemCount : candidateRects.length;
+  let insertIndex = fallbackIndex;
+
+  for (const candidate of candidateRects) {
+    const rect = candidate.rect;
+    const beforeRow = clientY < rect.top;
+    const inRow = clientY >= rect.top && clientY <= rect.bottom;
+    const beforeMidpoint = clientX < rect.left + rect.width / 2;
+    if (beforeRow || (inRow && beforeMidpoint)) {
+      insertIndex = candidate.index;
+      break;
+    }
+  }
+
+  return insertIndex;
+}
+
 function bringVideoToFront(videoId) {
   const index = videos.findIndex((video) => video.id === videoId);
   if (index === -1 || index === videos.length - 1) {
@@ -44,6 +82,35 @@ function bringVideoToFront(videoId) {
   videos.push(video);
   syncTileOrderDom();
   persistVideos();
+}
+
+function getGridReorderIndex(videoEntry, clientX, clientY) {
+  const candidateRects = [];
+  for (const [candidateIndex, candidate] of videos.entries()) {
+    if (candidate === videoEntry || !candidate.tile) {
+      continue;
+    }
+    candidateRects.push({
+      index: candidateIndex,
+      rect: candidate.tile.getBoundingClientRect(),
+    });
+  }
+  return getGridReorderIndexFromRects(candidateRects, clientX, clientY, videos.length);
+}
+
+function reorderVideoInGrid(videoEntry, targetIndex) {
+  const oldIndex = videos.indexOf(videoEntry);
+  if (oldIndex === -1) {
+    return false;
+  }
+  const nextVideos = getReorderedItems(videos, oldIndex, targetIndex);
+  if (nextVideos.every((video, index) => video === videos[index])) {
+    return false;
+  }
+  videos.splice(0, videos.length, ...nextVideos);
+  syncTileOrderDom();
+  persistVideos();
+  return true;
 }
 
 // ── Layout / Grid ──────────────────────────────────────────
@@ -318,17 +385,55 @@ function setupTileResize(tile, videoEntry, resizeHandle, sizeBadge) {
 function setupTileDrag(tile, videoEntry, dragHandle) {
   let isDragging = false;
   let startX, startY, startLeft, startTop;
+  const dragThresholdPx = 6;
 
   dragHandle.addEventListener('mousedown', (e) => {
-    if (!state.cellModeEnabled) {
-      return;
-    }
-    bringVideoToFront(videoEntry.id);
     e.preventDefault();
     e.stopPropagation();
     isDragging = true;
     startX = e.clientX;
     startY = e.clientY;
+
+    if (!state.cellModeEnabled) {
+      let hasMoved = false;
+      tile.classList.add('dragging');
+      gridEl.classList.add('grid-reordering');
+
+      const onMove = (ev) => {
+        if (!isDragging) {
+          return;
+        }
+        const moved =
+          Math.abs(ev.clientX - startX) > dragThresholdPx ||
+          Math.abs(ev.clientY - startY) > dragThresholdPx;
+        if (moved) {
+          hasMoved = true;
+        }
+      };
+
+      const onUp = (ev) => {
+        if (!isDragging) {
+          return;
+        }
+        isDragging = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        tile.classList.remove('dragging');
+        gridEl.classList.remove('grid-reordering');
+
+        if (!hasMoved) {
+          return;
+        }
+        const targetIndex = getGridReorderIndex(videoEntry, ev.clientX, ev.clientY);
+        reorderVideoInGrid(videoEntry, targetIndex);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      return;
+    }
+
+    bringVideoToFront(videoEntry.id);
     startLeft = tile.offsetLeft;
     startTop = tile.offsetTop;
     tile.classList.add('dragging');
@@ -478,38 +583,17 @@ export function initLayout() {
     scheduleCellRelayout(100);
   });
 
-  // UI chrome change event (if emitted by UI module)
+  // UI chrome change event — emitted by ui.js whenever sidebar / toolbar /
+  // immersive state changes. This is the single source of truth; we used to
+  // additionally run a MutationObserver on body[class] which fired the same
+  // relayout twice per change (and amplified work in cell mode).
   window.addEventListener('holosync:ui-chrome-changed', () => {
+    if (!state.cellModeEnabled) {
+      return;
+    }
     relayoutCellModeTiles();
     scheduleCellRelayout(280);
   });
-
-  // Fallback: observe body class changes for sidebar/toolbar/immersive toggles.
-  const bodyEl = document.body;
-  if (bodyEl) {
-    let prevKey = [
-      bodyEl.classList.contains('sidebar-collapsed'),
-      bodyEl.classList.contains('toolbar-collapsed'),
-      bodyEl.classList.contains('immersive-mode'),
-    ].join('|');
-
-    const observer = new MutationObserver(() => {
-      const nextKey = [
-        bodyEl.classList.contains('sidebar-collapsed'),
-        bodyEl.classList.contains('toolbar-collapsed'),
-        bodyEl.classList.contains('immersive-mode'),
-      ].join('|');
-
-      if (nextKey === prevKey) {
-        return;
-      }
-      prevKey = nextKey;
-      relayoutCellModeTiles();
-      scheduleCellRelayout(280);
-    });
-
-    observer.observe(bodyEl, { attributes: true, attributeFilter: ['class'] });
-  }
 }
 
 export {

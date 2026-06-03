@@ -13,6 +13,16 @@ const ICON_VOL = '<path d="M3 9v6h4l5 5V4L7 9H3z"/>';
 const ICON_MUTED =
   '<path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="23" y1="1" x2="1" y2="23" stroke="currentColor" stroke-width="2"/>';
 
+// Cache the master volume slider once. updateTileControlBar runs in a tight
+// loop, so calling getElementById per call per tile is measurable overhead.
+let _masterVolSliderEl = null;
+function getMasterVolumeSlider() {
+  if (!_masterVolSliderEl || !_masterVolSliderEl.isConnected) {
+    _masterVolSliderEl = document.getElementById('volumeAll');
+  }
+  return _masterVolSliderEl;
+}
+
 function formatTime(seconds) {
   const s = Math.floor(seconds);
   const h = Math.floor(s / 3600);
@@ -61,7 +71,8 @@ export function createTileControlBar(videoEntry) {
   // Play/Pause
   const playBtn = document.createElement('button');
   playBtn.className = 'tile-ctrl-btn tile-ctrl-play';
-  playBtn.title = '再生/一時停止';
+  playBtn.title = 'この動画を再生';
+  playBtn.setAttribute('aria-label', 'この動画を再生');
   playBtn.appendChild(makeSvg(ICON_PLAY));
 
   // Volume wrap (mute + slider)
@@ -105,15 +116,12 @@ export function createTileControlBar(videoEntry) {
     e.stopPropagation();
     const rec = playerStates.get(videoEntry.iframe?.contentWindow);
     const isPlaying = rec && rec.state === 1;
-    // Toggle all videos (sync-consistent)
-    for (const v of videos) {
-      sendCommand(v.iframe, isPlaying ? 'pauseVideo' : 'playVideo');
-    }
+    sendCommand(videoEntry.iframe, isPlaying ? 'pauseVideo' : 'playVideo');
   });
 
   muteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const masterVolSlider = document.getElementById('volumeAll');
+    const masterVolSlider = getMasterVolumeSlider();
     const currentVol = masterVolSlider ? parseInt(masterVolSlider.value, 10) : 50;
     if (currentVol > 0) {
       // Mute: store current volume, set to 0
@@ -196,6 +204,9 @@ export function updateTileControlBar(videoEntry) {
   if (playIcon) {
     playIcon.innerHTML = isPlaying ? ICON_PAUSE : ICON_PLAY;
   }
+  const playLabel = isPlaying ? 'この動画を一時停止' : 'この動画を再生';
+  cb.playBtn.title = playLabel;
+  cb.playBtn.setAttribute('aria-label', playLabel);
 
   if (isLikelyLive(rec)) {
     cb.seekBar.max = '1';
@@ -212,7 +223,7 @@ export function updateTileControlBar(videoEntry) {
   }
 
   // Sync volume slider with master
-  const masterVolSlider = document.getElementById('volumeAll');
+  const masterVolSlider = getMasterVolumeSlider();
   if (masterVolSlider) {
     const masterVol = parseInt(masterVolSlider.value, 10);
     if (parseInt(cb.volSlider.value, 10) !== masterVol) {
@@ -248,7 +259,7 @@ function seekAllTo(time) {
 }
 
 function _setMasterVolume(val) {
-  const masterVolSlider = document.getElementById('volumeAll');
+  const masterVolSlider = getMasterVolumeSlider();
   const volumeValEl = document.getElementById('volumeVal');
   if (masterVolSlider) {
     masterVolSlider.value = String(val);

@@ -1,8 +1,0 @@
-# Minimal Codex project config scaffold.
-# Behavioral rules live in docs/AI_RULES.md.
-
-model = "gpt-5-codex"
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
-
-# Add project-specific hooks or tool restrictions here if needed.

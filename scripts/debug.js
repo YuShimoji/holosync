@@ -10,16 +10,47 @@ const debugPanel = document.getElementById('debugPanel');
 const debugClose = document.getElementById('debugClose');
 const debugContent = document.getElementById('debugContent');
 
+// Debug panel polling — only runs while the panel is visible. The polling
+// loop used to fire every 500ms forever which kept the suspendedPlayers Map
+// being mutated even when the panel was hidden, and added GC pressure across
+// long-running sessions.
+let _debugPollerId = null;
+function startDebugPoller() {
+  if (_debugPollerId !== null) {
+    return;
+  }
+  _debugPollerId = setInterval(updateDebugPanel, 500);
+  updateDebugPanel();
+}
+function stopDebugPoller() {
+  if (_debugPollerId !== null) {
+    clearInterval(_debugPollerId);
+    _debugPollerId = null;
+  }
+}
+
 function setupDebugPanel() {
   debugToggle.addEventListener('click', () => {
     debugPanel.hidden = !debugPanel.hidden;
-    if (!debugPanel.hidden) {
-      updateDebugPanel();
+    if (debugPanel.hidden) {
+      stopDebugPoller();
+    } else {
+      startDebugPoller();
     }
   });
 
   debugClose.addEventListener('click', () => {
     debugPanel.hidden = true;
+    stopDebugPoller();
+  });
+
+  // Stop polling when the window is hidden (further reduces background work).
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopDebugPoller();
+    } else if (!debugPanel.hidden) {
+      startDebugPoller();
+    }
   });
 }
 
@@ -152,7 +183,5 @@ export function initDebugPanel() {
   } else {
     setupDebugPanel();
   }
-
-  // Periodic update
-  setInterval(updateDebugPanel, 500);
+  // Polling starts on demand when the user opens the panel.
 }

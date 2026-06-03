@@ -327,24 +327,31 @@ export function initUI(deps) {
   }
 
   // Edge reveal proximity
-  document.addEventListener(
-    'mousemove',
-    (event) => {
-      if (document.body.classList.contains('immersive-mode')) {
-        clearEdgeRevealProximity();
-        return;
-      }
-      const toolbarHidden = document.body.classList.contains('toolbar-collapsed');
-      const sidebarHidden = document.body.classList.contains('sidebar-collapsed');
-      const nearTop = toolbarHidden && event.clientY <= EDGE_REVEAL_DISTANCE_PX;
-      const nearLeft = sidebarHidden && event.clientX <= EDGE_REVEAL_DISTANCE_PX;
-      document.body.classList.toggle('edge-near-top', nearTop);
-      document.body.classList.toggle('edge-near-left', nearLeft);
-    },
-    { passive: true }
-  );
+  // Note: pointermove fires for both mouse and pen/touch and behaves more
+  // consistently than mousemove during iframe transitions on Electron, where
+  // long-running sessions occasionally see mousemove starve.
+  const handleEdgeProximity = (event) => {
+    if (document.body.classList.contains('immersive-mode')) {
+      clearEdgeRevealProximity();
+      return;
+    }
+    const toolbarHidden = document.body.classList.contains('toolbar-collapsed');
+    const sidebarHidden = document.body.classList.contains('sidebar-collapsed');
+    const nearTop = toolbarHidden && event.clientY <= EDGE_REVEAL_DISTANCE_PX;
+    const nearLeft = sidebarHidden && event.clientX <= EDGE_REVEAL_DISTANCE_PX;
+    document.body.classList.toggle('edge-near-top', nearTop);
+    document.body.classList.toggle('edge-near-left', nearLeft);
+  };
+  document.addEventListener('mousemove', handleEdgeProximity, { passive: true });
+  document.addEventListener('pointermove', handleEdgeProximity, { passive: true });
+  // mouseout fires when the pointer crosses into a child element (including
+  // iframes). When the relatedTarget is an iframe we still want to clear the
+  // edge classes — otherwise the reveal can stick visible while the cursor
+  // is parked over a YouTube tile and the next genuine edge approach won't
+  // re-trigger the fade-in animation.
   document.addEventListener('mouseout', (event) => {
-    if (!event.relatedTarget) {
+    const rt = event.relatedTarget;
+    if (!rt || rt.tagName === 'IFRAME') {
       clearEdgeRevealProximity();
     }
   });

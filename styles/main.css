@@ -1140,6 +1140,7 @@ body.frameless-mode.drag-mode .tile iframe {
   font-size: 11px;
   letter-spacing: 3px;
   z-index: 12;
+  pointer-events: auto;
   user-select: none;
 }
 
@@ -1154,8 +1155,20 @@ body.frameless-mode.drag-mode .tile iframe {
 .tile-drag-handle:active {
   cursor: grabbing;
 }
-.grid:not(.cell-mode) .tile-drag-handle {
-  display: none;
+.grid:not(.cell-mode).grid-reordering .tile-drag-handle {
+  opacity: 1;
+}
+
+.grid:not(.cell-mode) .tile.dragging {
+  opacity: 0.65;
+  outline: 2px solid rgba(37, 99, 235, 0.7);
+  outline-offset: -2px;
+}
+
+.grid.grid-reordering iframe,
+.grid.show-cells iframe,
+.tile.dragging iframe {
+  pointer-events: none;
 }
 
 /* Size badge during resize */

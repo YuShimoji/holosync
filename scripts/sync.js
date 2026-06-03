@@ -412,6 +412,11 @@ function groupAwareReconcile() {
     if (!videos.length) {
       return;
     }
+    if (document.hidden) {
+      // The window is hidden; YouTube iframes pause/throttle anyway, and
+      // continuing to iterate state here just wastes CPU on long sessions.
+      return;
+    }
     const now = Date.now();
 
     // Group videos by syncGroupId
