@@ -277,7 +277,14 @@ function updateGridGap(gap) {
 
 function handleLayoutChange(layout) {
   // Remove all layout classes
-  gridEl.classList.remove('layout-1', 'layout-2', 'layout-3', 'layout-4', 'layout-theater');
+  gridEl.classList.remove(
+    'layout-1',
+    'layout-2',
+    'layout-3',
+    'layout-4',
+    'layout-dense',
+    'layout-theater'
+  );
 
   if (layout === 'free') {
     state.cellColumns = 4; // Default for free mode
@@ -295,6 +302,8 @@ function handleLayoutChange(layout) {
       state.cellColumns = 3;
     } else if (layout === '4') {
       state.cellColumns = 4;
+    } else if (layout === 'dense') {
+      state.cellColumns = 6;
     } else {
       state.cellColumns = 2;
     }

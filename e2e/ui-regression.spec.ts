@@ -32,6 +32,9 @@ test.describe('UI Regression', () => {
     await page.selectOption('#layoutSelect', '2');
     await expect(grid).toHaveClass('grid layout-2');
 
+    await page.selectOption('#layoutSelect', 'dense');
+    await expect(grid).toHaveClass('grid layout-dense');
+
     // シアターに切替
     await page.selectOption('#layoutSelect', 'theater');
     await expect(grid).toHaveClass('grid layout-theater');
@@ -39,6 +42,66 @@ test.describe('UI Regression', () => {
     // 自動に戻す (fitmode.js が auto-dynamic クラスを付与する)
     await page.selectOption('#layoutSelect', 'auto');
     await expect(grid).toHaveClass(/grid/);
+  });
+
+  test('dense gallery fits more tiles when chrome is collapsed and persists', async ({ page }) => {
+    await page.route(/(youtube|ytimg|googlevideo)\.com/, (route) => route.abort());
+
+    await page.evaluate(async () => {
+      const { videos, playerStates } = await import('/scripts/state.js');
+      const { storageAdapter } = await import('/scripts/storage.js');
+      videos.splice(0, videos.length);
+      playerStates.clear();
+      document.querySelector('#grid')?.replaceChildren();
+      await storageAdapter.setItem('videos', []);
+      await storageAdapter.setItem('lastSession', []);
+      await storageAdapter.setItem('layoutSettings', { layout: 'auto', gap: 8 });
+    });
+
+    const ids = [
+      'DenseDemo01',
+      'DenseDemo02',
+      'DenseDemo03',
+      'DenseDemo04',
+      'DenseDemo05',
+      'DenseDemo06',
+      'DenseDemo07',
+      'DenseDemo08',
+      'DenseDemo09',
+      'DenseDemo10',
+      'DenseDemo11',
+      'DenseDemo12',
+    ];
+
+    await page.evaluate(async (videoIds) => {
+      const { createTile, persistVideos } = await import('/scripts/player.js');
+      const { setLayout } = await import('/scripts/layout.js');
+      const { storageAdapter } = await import('/scripts/storage.js');
+      setLayout('dense');
+      videoIds.forEach((id) => createTile(id));
+      persistVideos();
+      await storageAdapter.setItem('layoutSettings', { layout: 'dense', gap: 8 });
+      await storageAdapter.setItem(
+        'videos',
+        videoIds.map((id) => ({ id, syncGroupId: null, offsetMs: 0 }))
+      );
+    }, ids);
+
+    await expect(page.locator('#grid')).toHaveClass('grid layout-dense');
+    await expect(page.locator('.tile')).toHaveCount(ids.length);
+
+    await page.click('#sidebarToggle');
+    await expect(page.locator('body')).toHaveClass(/sidebar-collapsed/);
+    await page.waitForTimeout(350);
+
+    const columnCount = await page.locator('#grid').evaluate((grid) => {
+      return getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
+    });
+    expect(columnCount).toBeGreaterThanOrEqual(6);
+
+    await page.reload({ waitUntil: 'load' });
+    await expect(page.locator('#layoutSelect')).toHaveValue('dense');
+    await expect(page.locator('#grid')).toHaveClass('grid layout-dense');
   });
 
   // ── 2. サイドバー折りたたみ ──────────────────────────────
@@ -77,9 +140,7 @@ test.describe('UI Regression', () => {
 
     // SP-021 UX 整理で immersive ボタンは toolbar の "詳細設定" details 内に移動。
     // <details open> を直接切替えてアクセス可能にする。
-    await page
-      .locator('.toolbar-details')
-      .evaluate((el: HTMLDetailsElement) => (el.open = true));
+    await page.locator('.toolbar-details').evaluate((el: HTMLDetailsElement) => (el.open = true));
 
     // headless環境ではrequestFullscreenの失敗→fullscreenchangeで
     // immersive-modeが即解除されるため、fullscreen APIをスタブ化
@@ -126,9 +187,7 @@ test.describe('UI Regression', () => {
     });
 
     // immersive ボタンは詳細設定 details 内にある
-    await page
-      .locator('.toolbar-details')
-      .evaluate((el: HTMLDetailsElement) => (el.open = true));
+    await page.locator('.toolbar-details').evaluate((el: HTMLDetailsElement) => (el.open = true));
 
     await page.click('#immersiveToggleBtn');
     await expect(body).toHaveClass(/immersive-mode/);
@@ -220,5 +279,4 @@ test.describe('UI Regression', () => {
     // No preview cards should appear for invalid URL
     await expect(page.locator('#urlPreviewList .sb-result-card')).toHaveCount(0);
   });
-
 });

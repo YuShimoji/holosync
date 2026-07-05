@@ -10,6 +10,8 @@
   --sidebar-collapsed-width: 0px;
   --sidebar-transition: 0.25s ease;
   --toolbar-height: 40px;
+  --dense-tile-min: 190px;
+  --dense-tile-min-compact: 180px;
   --color-primary: #2563eb;
   --color-primary-dark: #1d4ed8;
   --color-bg: #f5f5f5;
@@ -934,6 +936,17 @@ body.frameless-mode.drag-mode .tile iframe {
 .grid.layout-4 {
   grid-template-columns: repeat(4, 1fr);
 }
+.grid.layout-dense {
+  gap: 6px;
+  padding: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--dense-tile-min), 1fr));
+  align-content: start;
+}
+body.quick-fit-mode .grid.layout-dense,
+body.immersive-mode .grid.layout-dense,
+body.sidebar-collapsed.toolbar-collapsed .grid.layout-dense {
+  grid-template-columns: repeat(auto-fill, minmax(var(--dense-tile-min-compact), 1fr));
+}
 .grid.layout-theater {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   align-items: start;
@@ -953,6 +966,14 @@ body.frameless-mode.drag-mode .tile iframe {
   overflow: hidden;
   content-visibility: auto;
   contain-intrinsic-size: auto 320px auto 180px;
+}
+.grid.layout-dense .tile {
+  border-radius: 6px;
+}
+.grid.layout-dense .frame-wrap {
+  border-radius: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
 }
 
 /* Audio master indicator */
@@ -1005,6 +1026,9 @@ body.frameless-mode.drag-mode .tile iframe {
 .tile:hover .tile-actions {
   opacity: 1;
 }
+.grid.layout-dense .tile:focus-within .tile-actions {
+  opacity: 1;
+}
 
 .tile-action-btn {
   width: 28px;
@@ -1043,6 +1067,9 @@ body.frameless-mode.drag-mode .tile iframe {
   transition: opacity 0.15s;
 }
 .tile:hover .tile-sync-badge {
+  opacity: 1;
+}
+.grid.layout-dense .tile:focus-within .tile-sync-badge {
   opacity: 1;
 }
 .tile-sync-badge.no-sync {
@@ -1279,6 +1306,9 @@ body.frameless-mode.drag-mode .tile iframe {
 .tile:hover .tile-info-header {
   opacity: 1;
 }
+.grid.layout-dense .tile:focus-within .tile-info-header {
+  opacity: 1;
+}
 .tile-info-header.info-open {
   opacity: 1;
   background: rgba(0, 0, 0, 0.8);
@@ -1361,6 +1391,10 @@ body.frameless-mode.drag-mode .tile iframe {
   border-radius: 0 0 4px 4px;
 }
 .tile:hover .tile-control-bar {
+  opacity: 1;
+  pointer-events: auto;
+}
+.grid.layout-dense .tile:focus-within .tile-control-bar {
   opacity: 1;
   pointer-events: auto;
 }

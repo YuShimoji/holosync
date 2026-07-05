@@ -169,5 +169,14 @@
     "cat": "ui",
     "file": "docs/specs/ux-refinement-phase1.md",
     "summary": "10 of 11 UX items are implemented. F-04 main-area search is the only not-started item."
+  },
+  {
+    "id": "SP-022",
+    "title": "Dense Gallery Canvas Phase 1",
+    "status": "done",
+    "pct": 100,
+    "cat": "ui",
+    "file": "docs/specs/dense-gallery-canvas.md",
+    "summary": "Dense multi-view layout option for scanning 8-12 streams with tighter grid spacing and review screenshot evidence."
   }
 ]

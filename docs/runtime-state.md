@@ -6,8 +6,8 @@
 - branch: main
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - surface: Browser / Electron
-- slice: SP-021 UI/UX refinement Phase 1
-- state: remote-resume handoff refreshed on 2026-06-08; real multi-live playback verification remains
+- slice: SP-022 Dense Gallery Canvas Phase 1
+- state: SP-022 dense gallery implemented, verified, and ready for remote handoff on 2026-07-06; real multi-live playback verification remains
 - Codex startup config: inherits user-level Codex defaults; no project-local `.codex/config.toml` overrides
 
 ## SP-021 Status
@@ -15,6 +15,15 @@
 - done: F-01, F-02, F-03, F-05, F-06, F-07, F-08, F-09, F-10, F-11
 - not started: F-04 main-area search
 - current bottleneck: verify real multi-live playback behavior before starting F-04 or broad redesign
+
+## SP-022 Status
+
+- done: Dense layout option in the main layout selector.
+- done: `.layout-dense` grid preset with compact desktop tile minimums and a tighter collapsed-chrome variant.
+- done: hover and focus-within visibility for dense tile controls.
+- done: Playwright regression and review screenshot path for a 12-tile dense canvas.
+- evidence: `docs/verification/2026-07-06/sp-022-dense-gallery-1280x720.png` after `npx playwright test e2e/dense-gallery.spec.ts`.
+- next move: human visual review of the dense gallery screenshot, then real multi-live playback verification before F-04.
 
 ## Last Package Build
 
@@ -34,19 +43,19 @@
 ## Quantitative State
 
 - source files: 17 under `scripts/`
-- test files: 4 under `e2e/`
-- E2E tests: 14
-- last E2E run: 2026-06-03
-- specs: 19 tracked specs (18 done + 1 partial)
+- test files: 5 under `e2e/`
+- E2E tests: 16
+- last E2E run: 2026-07-06
+- specs: 20 tracked specs (19 done + 1 partial)
 
-## Resume Snapshot 2026-06-08
+## Resume Snapshot 2026-07-06
 
-- purpose: preserve the current working context in the project and make `origin/main` immediately resumable from another terminal.
-- effect: remote parity was confirmed before this docs-only refresh; the active implementation state remains SP-021 Phase 1 with F-04 not started and real multi-live playback verification still pending.
-- requirements: after pulling this branch, read `docs/AI_RULES.md`, this file, and `docs/ISSUES.md`; use `git rev-list --left-right --count HEAD...origin/main` to confirm parity; run `npm test` before code changes if local browser/test dependencies are available; close any running packaged app before `npm run build` because the previous `dist/HoloSync-win32-x64` directory was locked.
-- state: maintenance checks last passed on 2026-06-03 (`git diff --check`, `npm run lint`, `npm test`, and changed-file Prettier check); this 2026-06-08 handoff is documentation-only; `npm run format:check` still fails on existing format debt outside the maintenance slice.
+- purpose: preserve the SP-022 dense gallery implementation, verification evidence, and next review edge inside the repo so another terminal can resume immediately after pulling `origin/main`.
+- effect: the current branch contains a new `Dense` layout option, dense grid CSS, persistence/regression coverage, a Playwright screenshot artifact, and concise navigation docs. SP-021/F-04 remains not started, and real multi-live playback verification is still pending.
+- requirements: after pulling this branch, read `docs/AI_RULES.md`, this file, `docs/ISSUES.md`, and `docs/specs/dense-gallery-canvas.md`; confirm parity with `git rev-list --left-right --count HEAD...origin/main`; open `docs/verification/2026-07-06/sp-022-dense-gallery-1280x720.png` for visual review.
+- state: checks passed on 2026-07-06: `npm run lint`, changed-file `npx prettier --check ...`, `git diff --check`, `npx playwright test e2e/ui-regression.spec.ts --workers=1`, and `npx playwright test e2e/dense-gallery.spec.ts`. A parallel `ui-regression` rerun had one existing help-modal timeout, then passed sequentially.
 - owner: next operator / Codex session.
-- next move: manually verify real multi-live playback with multiple live videos before starting SP-021/F-04 or broad UI modernization.
+- next move: visually approve or tune Dense spacing from the screenshot, then manually verify real multi-live playback before starting F-04 main-area search.
 
 ## Human Decision Items
 
