@@ -6,7 +6,7 @@ Current project issue board for HoloSync. Keep this file short and actionable.
 
 - [ ] UI modernization / icon consistency.
   - User concern: current layout and icons do not feel modern, familiar, or visually unified.
-  - Current state: SP-022 advanced the main canvas with a Dense layout option, tighter spacing, modernized dense tile surface, and hover/focus-visible control access. Broad icon unification still needs a separate design pass.
+  - Current state: SP-022 now uses a height-aware Dense mosaic with a dark video-stage canvas, centered 12-tile 4x3 fit at 1280x720, and hover/focus-visible control access. Broad icon unification still needs a separate design pass.
   - Inventory: global controls, tile controls, layout controls, destructive/reset controls, secondary utilities, icon-only buttons.
   - Mixed surfaces: emoji, inline SVG, text icons, 32px toolbar buttons, 28px tile buttons, and lower-contrast transparent buttons.
   - Next candidates: design tokens, inline SVG unification beyond touched dense surfaces, disabled states, and WCAG AA contrast checks.

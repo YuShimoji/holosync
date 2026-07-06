@@ -33,7 +33,7 @@ test.describe('UI Regression', () => {
     await expect(grid).toHaveClass('grid layout-2');
 
     await page.selectOption('#layoutSelect', 'dense');
-    await expect(grid).toHaveClass('grid layout-dense');
+    await expect(grid).toHaveClass(/layout-dense/);
 
     // シアターに切替
     await page.selectOption('#layoutSelect', 'theater');
@@ -87,21 +87,23 @@ test.describe('UI Regression', () => {
       );
     }, ids);
 
-    await expect(page.locator('#grid')).toHaveClass('grid layout-dense');
+    await expect(page.locator('#grid')).toHaveClass(/layout-dense/);
     await expect(page.locator('.tile')).toHaveCount(ids.length);
 
     await page.click('#sidebarToggle');
     await expect(page.locator('body')).toHaveClass(/sidebar-collapsed/);
     await page.waitForTimeout(350);
 
+    await expect(page.locator('#grid')).toHaveAttribute('data-dense-cols', '4');
+    await expect(page.locator('#grid')).toHaveAttribute('data-dense-rows', '3');
     const columnCount = await page.locator('#grid').evaluate((grid) => {
       return getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
     });
-    expect(columnCount).toBeGreaterThanOrEqual(6);
+    expect(columnCount).toBe(4);
 
     await page.reload({ waitUntil: 'load' });
     await expect(page.locator('#layoutSelect')).toHaveValue('dense');
-    await expect(page.locator('#grid')).toHaveClass('grid layout-dense');
+    await expect(page.locator('#grid')).toHaveClass(/layout-dense/);
   });
 
   // ── 2. サイドバー折りたたみ ──────────────────────────────

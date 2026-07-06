@@ -1,4 +1,4 @@
-# SP-022: Dense Gallery Canvas Phase 1
+# SP-022: Dense Gallery Canvas Phase 1.5
 
 **Status**: done
 **Priority**: P1
@@ -14,8 +14,12 @@ Make HoloSync more comfortable for scanning many simultaneous streams by adding 
 
 - `layoutSelect` includes `Dense`.
 - `Dense` uses the normal grid path with `.layout-dense`, not free/cell positioning.
-- The preset uses smaller tile minimums than `auto` and tight default spacing so 8-12 tiles can be scanned at desktop sizes.
-- When sidebar and toolbar chrome are collapsed, quick-fit is active, or immersive-like chrome is hidden, the dense grid can use a more compact tile minimum.
+- Dense now uses a height-aware mosaic fit instead of a fixed `auto-fill` strip:
+  - input: tile count, visible canvas width, visible canvas height, current gap, and 16:9 tile aspect.
+  - candidate column counts are scored by useful visible tile area while staying inside the visible canvas.
+  - the selected column count and tile width are applied through `.dense-mosaic-ready` and CSS variables.
+- For 12 tiles at 1280x720 with sidebar and toolbar collapsed, the expected layout is 4 columns x 3 rows, centered on a dark video-stage canvas.
+- With sidebar and toolbar visible, the same algorithm may choose a narrower/taller mosaic, such as 3 columns x 4 rows, to keep the visible app chrome in context.
 - Existing controls remain reachable: tile action buttons, sync badge, info header, and playback controls appear on hover and on keyboard focus within the tile.
 - Existing modes remain separate: `auto`, `1`, `2`, `3`, `4`, `theater`, and `free` keep their previous class paths.
 
@@ -23,7 +27,16 @@ Make HoloSync more comfortable for scanning many simultaneous streams by adding 
 
 - Regression check: `npx playwright test e2e/ui-regression.spec.ts --workers=1`
 - Review screenshot command: `npx playwright test e2e/dense-gallery.spec.ts`
-- Screenshot artifact: `docs/verification/2026-07-06/sp-022-dense-gallery-1280x720.png`
+- Screenshot artifacts:
+  - `docs/verification/2026-07-06/sp-022-dense-gallery-normal-1280x720.png`
+  - `docs/verification/2026-07-06/sp-022-dense-gallery-hover-controls-1280x720.png`
+  - `docs/verification/2026-07-06/sp-022-dense-gallery-chrome-1280x720.png`
+
+## Visual Acceptance Correction
+
+- The earlier Phase 1 screenshot failed review because 12 tiles collapsed into a top-aligned wide strip with large blank bottom space.
+- Phase 1.5 corrects that by centering a height-aware mosaic on a dark neutral stage and by guarding the 1280x720 12-tile case in Playwright.
+- Review debt remains subjective: real fan scanning comfort and density should still be judged by a human using the generated screenshots and, later, real multi-live playback.
 
 ## Boundaries
 

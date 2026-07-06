@@ -10,6 +10,8 @@ const gridEl = document.getElementById('grid');
 const layoutSelect = document.getElementById('layoutSelect');
 const gridGapInput = document.getElementById('gridGap');
 const gridGapVal = document.getElementById('gridGapVal');
+const DENSE_MIN_TILE_WIDTH = 120;
+const DENSE_VIEWPORT_HEIGHT_GUARD = 24;
 
 // ── Tile Order ─────────────────────────────────────────────
 
@@ -20,6 +22,7 @@ function syncTileOrderDom() {
     }
   });
   refreshTileStackOrder();
+  scheduleDenseMosaicLayout();
 }
 
 function refreshTileStackOrder() {
@@ -130,6 +133,130 @@ function persistLayoutSettings() {
     gap: state.cellGap,
   });
 }
+
+function clearDenseMosaicLayout() {
+  gridEl.classList.remove('dense-mosaic-ready');
+  gridEl.style.removeProperty('--dense-cols');
+  gridEl.style.removeProperty('--dense-tile-width');
+  gridEl.style.removeProperty('--dense-template-columns');
+  gridEl.removeAttribute('data-dense-cols');
+  gridEl.removeAttribute('data-dense-rows');
+}
+
+function chooseDenseMosaicLayout({ width, height, count, gap }) {
+  let best = null;
+
+  for (let cols = 1; cols <= count; cols++) {
+    const rows = Math.ceil(count / cols);
+    const widthAfterGaps = width - gap * (cols - 1);
+    const heightAfterGaps = height - gap * (rows - 1);
+    if (widthAfterGaps <= 0 || heightAfterGaps <= 0) {
+      continue;
+    }
+
+    const maxWidthFromContainer = widthAfterGaps / cols;
+    const maxWidthFromHeight = heightAfterGaps / rows / ASPECT_RATIO;
+    const tileWidth = Math.floor(Math.min(maxWidthFromContainer, maxWidthFromHeight));
+    if (tileWidth <= 0) {
+      continue;
+    }
+
+    const tileHeight = tileWidth * ASPECT_RATIO;
+    const stageWidth = tileWidth * cols + gap * (cols - 1);
+    const stageHeight = tileHeight * rows + gap * (rows - 1);
+    const usefulArea = tileWidth * tileHeight * count;
+    const compactnessPenalty =
+      tileWidth < DENSE_MIN_TILE_WIDTH ? DENSE_MIN_TILE_WIDTH - tileWidth : 0;
+    const balanceBonus = Math.min(stageWidth / width, stageHeight / height);
+    const score = usefulArea + balanceBonus - compactnessPenalty * 1000;
+
+    if (!best || score > best.score || (score === best.score && stageHeight > best.stageHeight)) {
+      best = {
+        cols,
+        rows,
+        score,
+        tileWidth,
+        tileHeight,
+        stageWidth,
+        stageHeight,
+      };
+    }
+  }
+
+  return best;
+}
+
+function updateDenseMosaicLayout() {
+  if (!gridEl.classList.contains('layout-dense') || state.cellModeEnabled) {
+    clearDenseMosaicLayout();
+    return;
+  }
+
+  const count = videos.filter((video) => video.tile?.parentElement === gridEl).length;
+  if (count === 0) {
+    clearDenseMosaicLayout();
+    return;
+  }
+
+  const computed = getComputedStyle(gridEl);
+  const gap = Math.max(
+    parseFloat(computed.columnGap) || state.cellGap || 0,
+    parseFloat(computed.rowGap) || state.cellGap || 0
+  );
+  const paddingX =
+    (parseFloat(computed.paddingLeft) || 0) + (parseFloat(computed.paddingRight) || 0);
+  const paddingY =
+    (parseFloat(computed.paddingTop) || 0) + (parseFloat(computed.paddingBottom) || 0);
+  const gridRect = gridEl.getBoundingClientRect();
+  const contentRect = gridEl.parentElement?.getBoundingClientRect() || gridRect;
+  const availableWidth = Math.max(0, contentRect.width - paddingX);
+  const availableHeight = Math.max(
+    0,
+    Math.min(contentRect.bottom, window.innerHeight) -
+      gridRect.top -
+      paddingY -
+      DENSE_VIEWPORT_HEIGHT_GUARD
+  );
+  const best = chooseDenseMosaicLayout({
+    width: availableWidth,
+    height: availableHeight,
+    count,
+    gap,
+  });
+
+  if (!best) {
+    clearDenseMosaicLayout();
+    return;
+  }
+
+  gridEl.classList.add('dense-mosaic-ready');
+  gridEl.style.setProperty('--dense-cols', String(best.cols));
+  gridEl.style.setProperty('--dense-tile-width', `${best.tileWidth}px`);
+  gridEl.style.setProperty(
+    '--dense-template-columns',
+    `repeat(${best.cols}, minmax(0, ${best.tileWidth}px))`
+  );
+  gridEl.dataset.denseCols = String(best.cols);
+  gridEl.dataset.denseRows = String(best.rows);
+  state.cellColumns = best.cols;
+}
+
+const scheduleDenseMosaicLayout = (() => {
+  let timeoutId;
+  let rafId;
+  return (delayMs = 0) => {
+    clearTimeout(timeoutId);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+    }
+    timeoutId = setTimeout(() => {
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updateDenseMosaicLayout();
+      });
+    }, delayMs);
+  };
+})();
 
 // ── Cell Mode ──────────────────────────────────────────────
 
@@ -273,6 +400,7 @@ function updateGridGap(gap) {
   gridEl.style.gap = gap + 'px';
   gridEl.style.padding = gap + 'px';
   relayoutCellModeTiles();
+  scheduleDenseMosaicLayout();
 }
 
 function handleLayoutChange(layout) {
@@ -285,6 +413,7 @@ function handleLayoutChange(layout) {
     'layout-dense',
     'layout-theater'
   );
+  clearDenseMosaicLayout();
 
   if (layout === 'free') {
     state.cellColumns = 4; // Default for free mode
@@ -309,6 +438,7 @@ function handleLayoutChange(layout) {
     }
   }
 
+  updateDenseMosaicLayout();
   persistLayoutSettings();
 }
 
@@ -590,6 +720,7 @@ export function initLayout() {
   // Window resize for cell mode
   window.addEventListener('resize', () => {
     scheduleCellRelayout(100);
+    scheduleDenseMosaicLayout(100);
   });
 
   // UI chrome change event — emitted by ui.js whenever sidebar / toolbar /
@@ -597,12 +728,24 @@ export function initLayout() {
   // additionally run a MutationObserver on body[class] which fired the same
   // relayout twice per change (and amplified work in cell mode).
   window.addEventListener('holosync:ui-chrome-changed', () => {
-    if (!state.cellModeEnabled) {
-      return;
+    if (state.cellModeEnabled) {
+      relayoutCellModeTiles();
+      scheduleCellRelayout(280);
     }
-    relayoutCellModeTiles();
-    scheduleCellRelayout(280);
+    scheduleDenseMosaicLayout();
+    scheduleDenseMosaicLayout(280);
   });
+
+  const resizeObserver = new ResizeObserver(() => {
+    scheduleDenseMosaicLayout();
+  });
+  resizeObserver.observe(gridEl.parentElement || gridEl);
+  resizeObserver.observe(gridEl);
+
+  const tileObserver = new MutationObserver(() => {
+    scheduleDenseMosaicLayout();
+  });
+  tileObserver.observe(gridEl, { childList: true });
 }
 
 export {

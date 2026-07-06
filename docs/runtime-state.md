@@ -6,8 +6,8 @@
 - branch: main
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - surface: Browser / Electron
-- slice: SP-022 Dense Gallery Canvas Phase 1
-- state: SP-022 dense gallery implemented, verified, and ready for remote handoff on 2026-07-06; real multi-live playback verification remains
+- slice: SP-022 Dense Gallery Canvas Phase 1.5
+- state: SP-022 dense gallery visual acceptance correction implemented locally on 2026-07-06 after review failure; real multi-live playback verification remains
 - Codex startup config: inherits user-level Codex defaults; no project-local `.codex/config.toml` overrides
 
 ## SP-021 Status
@@ -19,11 +19,13 @@
 ## SP-022 Status
 
 - done: Dense layout option in the main layout selector.
-- done: `.layout-dense` grid preset with compact desktop tile minimums and a tighter collapsed-chrome variant.
+- done: `.layout-dense` now uses a height-aware mosaic fit instead of a fixed `auto-fill` strip.
+- done: 12 tiles at 1280x720 with sidebar/toolbar collapsed resolve to a centered 4x3 canvas rather than a 6x2 top strip.
+- done: app chrome changes, window resize, tile count changes, layout mode changes, and gap changes trigger Dense recalculation.
 - done: hover and focus-within visibility for dense tile controls.
-- done: Playwright regression and review screenshot path for a 12-tile dense canvas.
-- evidence: `docs/verification/2026-07-06/sp-022-dense-gallery-1280x720.png` after `npx playwright test e2e/dense-gallery.spec.ts`.
-- next move: human visual review of the dense gallery screenshot, then real multi-live playback verification before F-04.
+- done: Playwright regression and review screenshot paths for normal, hover/control, and app chrome states.
+- evidence: `docs/verification/2026-07-06/sp-022-dense-gallery-normal-1280x720.png`, `docs/verification/2026-07-06/sp-022-dense-gallery-hover-controls-1280x720.png`, and `docs/verification/2026-07-06/sp-022-dense-gallery-chrome-1280x720.png` after `npx playwright test e2e/dense-gallery.spec.ts --workers=1`.
+- next move: human visual review of the corrected Dense screenshots, then real multi-live playback verification before F-04.
 
 ## Last Package Build
 
@@ -48,12 +50,13 @@
 - last E2E run: 2026-07-06
 - specs: 20 tracked specs (19 done + 1 partial)
 
-## Resume Snapshot 2026-07-06
+## Resume Snapshot 2026-07-06 SP-022 Phase 1.5
 
-- purpose: preserve the SP-022 dense gallery implementation, verification evidence, and next review edge inside the repo so another terminal can resume immediately after pulling `origin/main`.
-- effect: the current branch contains a new `Dense` layout option, dense grid CSS, persistence/regression coverage, a Playwright screenshot artifact, and concise navigation docs. SP-021/F-04 remains not started, and real multi-live playback verification is still pending.
-- requirements: after pulling this branch, read `docs/AI_RULES.md`, this file, `docs/ISSUES.md`, and `docs/specs/dense-gallery-canvas.md`; confirm parity with `git rev-list --left-right --count HEAD...origin/main`; open `docs/verification/2026-07-06/sp-022-dense-gallery-1280x720.png` for visual review.
-- state: checks passed on 2026-07-06: `npm run lint`, changed-file `npx prettier --check ...`, `git diff --check`, `npx playwright test e2e/ui-regression.spec.ts --workers=1`, and `npx playwright test e2e/dense-gallery.spec.ts`. A parallel `ui-regression` rerun had one existing help-modal timeout, then passed sequentially.
+- purpose: preserve the SP-022 Dense visual acceptance correction, verification evidence, and next review edge inside the repo so another terminal can resume immediately after pulling `github/main`.
+- effect: the current branch contains the height-aware Dense mosaic algorithm, dark video-stage CSS, normal/hover/chrome Playwright screenshots, regression coverage, and concise navigation docs. SP-021/F-04 remains not started, and real multi-live playback verification is still pending.
+- requirements: after pulling this branch, read `docs/AI_RULES.md`, this file, `docs/ISSUES.md`, and `docs/specs/dense-gallery-canvas.md`; confirm parity with `git rev-list --left-right --count HEAD...github/main`; open the three `docs/verification/2026-07-06/sp-022-dense-gallery-*-1280x720.png` screenshots for visual review.
+- state: checks passed on 2026-07-06 for Phase 1.5: `npm run lint`, changed-file `npx prettier --check ...`, `git diff --check`, `npx playwright test e2e/dense-gallery.spec.ts --workers=1`, and `npx playwright test e2e/ui-regression.spec.ts --workers=1`.
+- local transfer note: before fast-forwarding to `github/main`, tracked local edits against the older `ec3a3f3` base were preserved in this workstation as `stash@{0}: codex-preserve-before-remote-ff-2026-07-06`. They were not re-applied because the fetched GitHub commits superseded the old AI-rule cleanup context.
 - owner: next operator / Codex session.
 - next move: visually approve or tune Dense spacing from the screenshot, then manually verify real multi-live playback before starting F-04 main-area search.
 
