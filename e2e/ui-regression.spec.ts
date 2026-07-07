@@ -94,12 +94,12 @@ test.describe('UI Regression', () => {
     await expect(page.locator('body')).toHaveClass(/sidebar-collapsed/);
     await page.waitForTimeout(350);
 
-    await expect(page.locator('#grid')).toHaveAttribute('data-dense-cols', '4');
-    await expect(page.locator('#grid')).toHaveAttribute('data-dense-rows', '3');
+    await expect(page.locator('#grid')).toHaveAttribute('data-dense-cols', '3');
+    await expect(page.locator('#grid')).toHaveAttribute('data-dense-rows', '4');
     const columnCount = await page.locator('#grid').evaluate((grid) => {
       return getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
     });
-    expect(columnCount).toBe(4);
+    expect(columnCount).toBe(3);
 
     await page.reload({ waitUntil: 'load' });
     await expect(page.locator('#layoutSelect')).toHaveValue('dense');

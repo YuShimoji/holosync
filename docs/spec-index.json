@@ -172,11 +172,11 @@
   },
   {
     "id": "SP-022",
-    "title": "Dense Gallery Canvas Phase 1",
+    "title": "Objective Dense Gallery Canvas",
     "status": "done",
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/dense-gallery-canvas.md",
-    "summary": "Dense multi-view layout option for scanning 8-12 streams with height-aware mosaic fit, hover/control proof, and review screenshot evidence."
+    "summary": "Dense multi-view layout option for scanning 8-12 streams with objective candidate scoring, planner readback artifacts, selected 3x4 proof, hover/control proof, and review screenshot evidence."
   }
 ]

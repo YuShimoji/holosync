@@ -5,13 +5,14 @@
 import { storageAdapter } from './storage.js';
 import { videos, state, MIN_TILE_WIDTH, ASPECT_RATIO, SYNC_GROUPS } from './state.js';
 import { persistVideos } from './player.js';
+import { planDenseLayout } from './dense-layout-planner.js';
 
 const gridEl = document.getElementById('grid');
 const layoutSelect = document.getElementById('layoutSelect');
 const gridGapInput = document.getElementById('gridGap');
 const gridGapVal = document.getElementById('gridGapVal');
-const DENSE_MIN_TILE_WIDTH = 120;
 const DENSE_VIEWPORT_HEIGHT_GUARD = 24;
+const DENSE_TILE_ASPECT_RATIO = 1 / ASPECT_RATIO;
 
 // ── Tile Order ─────────────────────────────────────────────
 
@@ -141,49 +142,25 @@ function clearDenseMosaicLayout() {
   gridEl.style.removeProperty('--dense-template-columns');
   gridEl.removeAttribute('data-dense-cols');
   gridEl.removeAttribute('data-dense-rows');
+  gridEl.removeAttribute('data-dense-planner-version');
+  gridEl.removeAttribute('data-dense-planner-score');
+  window.__holoSyncDenseLayoutPlan = null;
 }
 
-function chooseDenseMosaicLayout({ width, height, count, gap }) {
-  let best = null;
+function getDenseChromeMode() {
+  const body = document.body;
+  const sidebarCollapsed =
+    body.classList.contains('sidebar-collapsed') || body.classList.contains('immersive-mode');
+  const toolbarCollapsed =
+    body.classList.contains('toolbar-collapsed') || body.classList.contains('immersive-mode');
 
-  for (let cols = 1; cols <= count; cols++) {
-    const rows = Math.ceil(count / cols);
-    const widthAfterGaps = width - gap * (cols - 1);
-    const heightAfterGaps = height - gap * (rows - 1);
-    if (widthAfterGaps <= 0 || heightAfterGaps <= 0) {
-      continue;
-    }
-
-    const maxWidthFromContainer = widthAfterGaps / cols;
-    const maxWidthFromHeight = heightAfterGaps / rows / ASPECT_RATIO;
-    const tileWidth = Math.floor(Math.min(maxWidthFromContainer, maxWidthFromHeight));
-    if (tileWidth <= 0) {
-      continue;
-    }
-
-    const tileHeight = tileWidth * ASPECT_RATIO;
-    const stageWidth = tileWidth * cols + gap * (cols - 1);
-    const stageHeight = tileHeight * rows + gap * (rows - 1);
-    const usefulArea = tileWidth * tileHeight * count;
-    const compactnessPenalty =
-      tileWidth < DENSE_MIN_TILE_WIDTH ? DENSE_MIN_TILE_WIDTH - tileWidth : 0;
-    const balanceBonus = Math.min(stageWidth / width, stageHeight / height);
-    const score = usefulArea + balanceBonus - compactnessPenalty * 1000;
-
-    if (!best || score > best.score || (score === best.score && stageHeight > best.stageHeight)) {
-      best = {
-        cols,
-        rows,
-        score,
-        tileWidth,
-        tileHeight,
-        stageWidth,
-        stageHeight,
-      };
-    }
+  if (sidebarCollapsed && toolbarCollapsed) {
+    return 'chrome-collapsed';
   }
-
-  return best;
+  if (!sidebarCollapsed && !toolbarCollapsed) {
+    return 'chrome-visible';
+  }
+  return 'chrome-partial';
 }
 
 function updateDenseMosaicLayout() {
@@ -217,12 +194,17 @@ function updateDenseMosaicLayout() {
       paddingY -
       DENSE_VIEWPORT_HEIGHT_GUARD
   );
-  const best = chooseDenseMosaicLayout({
-    width: availableWidth,
-    height: availableHeight,
-    count,
+  const plan = planDenseLayout({
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    stageWidth: availableWidth,
+    stageHeight: availableHeight,
+    tileCount: count,
+    tileAspectRatio: DENSE_TILE_ASPECT_RATIO,
     gap,
+    chromeMode: getDenseChromeMode(),
   });
+  const best = plan.selectedCandidate;
 
   if (!best) {
     clearDenseMosaicLayout();
@@ -230,15 +212,18 @@ function updateDenseMosaicLayout() {
   }
 
   gridEl.classList.add('dense-mosaic-ready');
-  gridEl.style.setProperty('--dense-cols', String(best.cols));
+  gridEl.style.setProperty('--dense-cols', String(best.columns));
   gridEl.style.setProperty('--dense-tile-width', `${best.tileWidth}px`);
   gridEl.style.setProperty(
     '--dense-template-columns',
-    `repeat(${best.cols}, minmax(0, ${best.tileWidth}px))`
+    `repeat(${best.columns}, minmax(0, ${best.tileWidth}px))`
   );
-  gridEl.dataset.denseCols = String(best.cols);
+  gridEl.dataset.denseCols = String(best.columns);
   gridEl.dataset.denseRows = String(best.rows);
-  state.cellColumns = best.cols;
+  gridEl.dataset.densePlannerVersion = plan.version;
+  gridEl.dataset.densePlannerScore = String(best.score);
+  window.__holoSyncDenseLayoutPlan = plan;
+  state.cellColumns = best.columns;
 }
 
 const scheduleDenseMosaicLayout = (() => {
