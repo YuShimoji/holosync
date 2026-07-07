@@ -65,6 +65,7 @@ import {
 import { initInput } from './input.js';
 import { initChannel } from './channel.js';
 import { initFitMode, toggleFocusMode } from './fitmode.js';
+import { initLiveProbe, recordProbeAction, recordProbeEvent } from './live-probe.js';
 import {
   createTileControlBar,
   updateTileControlBar,
@@ -124,6 +125,12 @@ function trackPlayerState(win, info) {
   if (Number.isFinite(nextDuration) && nextDuration > 0) {
     record.duration = nextDuration;
   }
+  const nextErrorCode = Number(info?.errorCode);
+  if (Number.isFinite(nextErrorCode)) {
+    record.errorCode = nextErrorCode;
+  } else if (typeof info?.errorCode === 'string') {
+    record.errorCode = info.errorCode;
+  }
   record.lastUpdate = Date.now();
   playerStates.set(win, record);
 
@@ -131,6 +138,28 @@ function trackPlayerState(win, info) {
   if (!video) {
     return;
   }
+  recordProbeEvent('player-state', {
+    tileId: video.id,
+    previousState,
+    playerState: record.state ?? null,
+    playerStateLabel:
+      record.state === 1
+        ? 'playing'
+        : record.state === 2
+          ? 'paused'
+          : record.state === 3
+            ? 'buffering'
+            : record.state === 0
+              ? 'ended'
+              : record.state === 5
+                ? 'cued'
+                : record.state === -1
+                  ? 'unstarted'
+                  : 'unknown',
+    currentTime: record.time ?? null,
+    duration: record.duration ?? null,
+    errorCode: record.errorCode ?? null,
+  });
 
   // Restore saved playback position from shared URL
   if (video.pendingSeekTime !== null && video.pendingSeekTime !== undefined) {
@@ -194,10 +223,19 @@ function updateMuteIcon() {
 }
 
 function playAll() {
+  const pausedCount = videos.filter((v) => {
+    const rec = playerStates.get(v.iframe?.contentWindow);
+    return rec?.state === 2 || rec?.state === 0;
+  }).length;
+  recordProbeAction(pausedCount > 0 ? 'resume-all' : 'play-all', {
+    tileCount: videos.length,
+    pausedCount,
+  });
   videos.forEach((v) => sendCommand(v.iframe, 'playVideo'));
 }
 
 function pauseAll() {
+  recordProbeAction('pause-all', { tileCount: videos.length });
   videos.forEach((v) => sendCommand(v.iframe, 'pauseVideo'));
 }
 
@@ -205,6 +243,7 @@ const DUCKING_RATIO = 0.2;
 
 function muteAll() {
   setAudioFocus(null);
+  recordProbeAction('mute-all', { tileCount: videos.length });
   videos.forEach((v) => sendCommand(v.iframe, 'mute'));
   isMuted = true;
   updateMuteIcon();
@@ -212,16 +251,19 @@ function muteAll() {
 
 function unmuteAll() {
   setAudioFocus(null);
+  recordProbeAction('unmute-all', { tileCount: videos.length });
   videos.forEach((v) => sendCommand(v.iframe, 'unMute'));
   isMuted = false;
   updateMuteIcon();
 }
 
 function setSpeedAll(rate) {
+  recordProbeAction('speed-all', { tileCount: videos.length, rate });
   videos.forEach((v) => sendCommand(v.iframe, 'setPlaybackRate', [rate]));
 }
 
 function setVolumeAll(val) {
+  recordProbeAction('volume-all', { tileCount: videos.length, volume: val });
   const masterVid = state.audioFocusVideoId;
   for (const v of videos) {
     if (state.audioMode === 'ducking' && masterVid && v.id !== masterVid) {
@@ -476,6 +518,7 @@ initHistory({
 initInput();
 initUI({ playAll, pauseAll, muteAll, unmuteAll });
 initDebugPanel();
+initLiveProbe();
 initElectron();
 initTileObserver();
 initializeApp();

@@ -178,5 +178,14 @@
     "cat": "ui",
     "file": "docs/specs/dense-gallery-canvas.md",
     "summary": "Dense multi-view layout option for scanning 8-12 streams with objective candidate scoring, planner readback artifacts, selected 3x4 proof, hover/control proof, and review screenshot evidence."
+  },
+  {
+    "id": "SP-023",
+    "title": "Real Multi-Live Playback Reliability Probe",
+    "status": "partial",
+    "pct": 70,
+    "cat": "core",
+    "file": "docs/specs/live-reliability-probe.md",
+    "summary": "Local probe mode and debug readback for multi-live add/play/pause/resume/sync observation. Mocked validation exists; real live operator evidence remains pending."
   }
 ]

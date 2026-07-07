@@ -15,6 +15,7 @@ import {
   DEFAULT_EMBED_SETTINGS,
   youtubeApiKey,
 } from './state.js';
+import { getTileIdForIframe, recordProbeEvent } from './live-probe.js';
 
 // Layout callbacks injected from main.js via initPlayer()
 let _deps = {};
@@ -84,6 +85,7 @@ function _processLoadQueue() {
 
 function _loadTileIframe(videoEntry) {
   const { iframe, id, tile } = videoEntry;
+  recordProbeEvent('iframe-load-start', { tileId: id });
   iframe.src = buildEmbedUrl(id, { mute: 0 });
   initializeSyncForIframe(iframe);
 
@@ -97,6 +99,7 @@ function _loadTileIframe(videoEntry) {
         thumb.classList.add('loaded');
       }
       _tileObserver?.unobserve(tile);
+      recordProbeEvent('iframe-loaded', { tileId: id });
       _deps.onTileIframeLoaded?.(videoEntry);
       setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
     },
@@ -265,6 +268,11 @@ export function sendCommand(iframe, func, args = []) {
   const safeArgs = sanitizeArgs(func, args);
   const message = JSON.stringify({ event: 'command', func, args: safeArgs });
   win.postMessage(message, getIframeOrigin(iframe));
+  recordProbeEvent('command', {
+    tileId: getTileIdForIframe(iframe),
+    func,
+    args: safeArgs,
+  });
   // Track seekTo for least-buffered leader mode
   if (func === 'seekTo') {
     const record = playerStates.get(win);
@@ -284,6 +292,10 @@ export function requestPlayerSnapshot(win) {
       { event: 'command', func: 'getCurrentTime', args: [] },
     ];
     commands.forEach((cmd) => win.postMessage(JSON.stringify(cmd), origin));
+    recordProbeEvent('snapshot-request', {
+      tileId: entry?.id || null,
+      commandCount: commands.length,
+    });
   } catch (_) {
     // ignore
   }
@@ -751,6 +763,11 @@ export function createTile(videoId, options = {}) {
     queueIndex: options.queueIndex ?? 0,
   };
   videos.push(videoEntry);
+  recordProbeEvent('tile-added', {
+    tileId: videoId,
+    tileCount: videos.length,
+    syncGroupId: videoEntry.syncGroupId,
+  });
 
   // Per-tile YouTube-style control bar (F-07)
   if (_deps.createTileControlBar) {
@@ -848,6 +865,10 @@ function removeVideo(videoId, tile) {
   video.iframe.src = '';
   tile.remove();
   videos.splice(idx, 1);
+  recordProbeEvent('tile-removed', {
+    tileId: videoId,
+    tileCount: videos.length,
+  });
   _deps.refreshTileStackOrder();
   persistVideos();
 }

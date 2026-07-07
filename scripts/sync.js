@@ -10,6 +10,7 @@ import {
   SYNC_SETTINGS,
 } from './state.js';
 import { sendCommand, requestPlayerSnapshot } from './player.js';
+import { recordProbeAction, recordProbeEvent } from './live-probe.js';
 
 // ---------------------------------------------------------------------------
 // Internal state
@@ -65,12 +66,17 @@ function normalizePlayerInfoMessage(payload) {
   if (
     eventType !== 'infoDelivery' &&
     eventType !== 'initialDelivery' &&
-    eventType !== 'onStateChange'
+    eventType !== 'onStateChange' &&
+    eventType !== 'onError'
   ) {
     return null;
   }
 
   const info = payload.info;
+  if (eventType === 'onError') {
+    const errorCode = Number(info);
+    return Number.isFinite(errorCode) ? { errorCode } : { errorCode: 'unknown' };
+  }
   if (info && typeof info === 'object') {
     const normalized = {};
     const currentTime = Number(info.currentTime);
@@ -84,6 +90,10 @@ function normalizePlayerInfoMessage(payload) {
     const duration = Number(info.duration);
     if (Number.isFinite(duration) && duration > 0) {
       normalized.duration = duration;
+    }
+    const errorCode = Number(info.errorCode);
+    if (Number.isFinite(errorCode)) {
+      normalized.errorCode = errorCode;
     }
     return Object.keys(normalized).length ? normalized : null;
   }
@@ -191,6 +201,13 @@ function attemptRecovery(video, reason, leaderRecord) {
   if (!iframe) {
     return;
   }
+  recordProbeEvent('recovery-attempt', {
+    tileId: video.id,
+    reason,
+    fallbackMode: SYNC_SETTINGS.fallbackMode,
+    leaderState: leaderRecord?.state ?? null,
+    leaderTime: leaderRecord?.time ?? null,
+  });
 
   // Reason-based recovery strategy
   switch (reason) {
@@ -445,6 +462,7 @@ function syncAll() {
   if (!videos.length) {
     return;
   }
+  recordProbeAction('sync-all', { tileCount: videos.length });
   const now = Date.now();
 
   // Group videos by syncGroupId (null = independent, skip)

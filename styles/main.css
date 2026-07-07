@@ -2065,6 +2065,44 @@ button:active {
   font-family: monospace;
 }
 
+.probe-summary {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.probe-summary[data-probe-enabled='true'] {
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+.probe-heading {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.probe-metrics {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.probe-table {
+  table-layout: fixed;
+}
+
+.probe-table th:first-child,
+.probe-table td:first-child {
+  width: 56px;
+}
+
+.probe-table th:nth-child(2),
+.probe-table td:nth-child(2) {
+  width: 120px;
+}
+
 /* Health indicators */
 .health-summary {
   margin-bottom: 16px;

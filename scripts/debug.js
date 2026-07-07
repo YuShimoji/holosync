@@ -4,6 +4,7 @@
  */
 import { videos, playerStates, suspendedPlayers, SYNC_SETTINGS } from './state.js';
 import { getSuspensionReason, pickLeader, getStateLabel } from './sync.js';
+import { getLiveProbeSnapshot, renderLiveProbeDebugHtml } from './live-probe.js';
 
 const debugToggle = document.getElementById('debugToggle');
 const debugPanel = document.getElementById('debugPanel');
@@ -60,7 +61,8 @@ function updateDebugPanel() {
   }
 
   const now = Date.now();
-  let html = '<div class="health-summary">';
+  let html = renderLiveProbeDebugHtml(getLiveProbeSnapshot());
+  html += '<div class="health-summary">';
 
   // Calculate overall sync health
   const activeEntries = [];

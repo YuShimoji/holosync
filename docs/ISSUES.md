@@ -12,7 +12,7 @@ Current project issue board for HoloSync. Keep this file short and actionable.
   - Next candidates: design tokens, inline SVG unification beyond touched dense surfaces, disabled states, and WCAG AA contrast checks.
 - [ ] Multi-live playback stalls after adding additional live videos.
   - User concern: previously added live videos stop, and resume icon may not recover playback.
-  - Current state: tile play/pause is now isolated to the clicked iframe and covered by regression test; real multi-live playback still needs manual validation.
+  - Current state: SP-023 adds a local probe/readback path for add/play/pause/resume/sync state observation, with mocked Playwright evidence. Real multi-live playback still needs a bounded operator run with current live URLs.
 - [ ] Tile reordering does not apply reliably.
   - User concern: drag appears to react, but the order does not persist/apply.
   - Current state: standard grid drag now reorders `videos` and DOM order, persists after reload, and is covered by regression test. Free mode still uses cell positioning.

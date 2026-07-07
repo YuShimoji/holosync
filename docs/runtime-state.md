@@ -6,8 +6,8 @@
 - branch: main
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - surface: Browser / Electron
-- slice: SP-022 Objective Dense Layout Planner
-- state: SP-022 dense gallery now uses an objective candidate-scoring planner with machine/human readback artifacts; real multi-live playback verification remains
+- slice: SP-023 Real Multi-Live Playback Reliability Probe
+- state: SP-023 local probe/readback is implemented for multi-video add/play/pause/resume/sync observation; real multi-live playback verification remains
 - Codex startup config: inherits user-level Codex defaults; no project-local `.codex/config.toml` overrides
 
 ## SP-021 Status
@@ -27,6 +27,16 @@
 - evidence: `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.json`, `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.md`, `docs/verification/2026-07-06/sp-022-dense-gallery-normal-selected-3x4-1280x720.png`, `docs/verification/2026-07-06/sp-022-dense-gallery-hover-controls-selected-3x4-1280x720.png`, and `docs/verification/2026-07-06/sp-022-dense-gallery-chrome-selected-3x4-1280x720.png` after `npx playwright test e2e/dense-gallery.spec.ts --workers=1`.
 - next move: review the objective planner readback first, then visually review the generated Dense screenshots, then manually verify real multi-live playback before F-04.
 
+## SP-023 Status
+
+- done: local probe mode can be enabled with `?sp023Probe=1`, `?liveProbe=1`, or `?probe=live`.
+- done: `window.holosyncProbe` exposes start/stop/clear/mark/snapshot/exportJson/download for local operator readback.
+- done: probe timeline records tile add/remove, iframe load attempts, iframe commands, player state/currentTime/duration/errorCode, play/pause/resume/sync actions, and recovery attempts.
+- done: debug panel shows a compact Live Probe strip above the existing sync health table.
+- evidence: `docs/verification/2026-07-07/sp-023-live-reliability-probe.json`, `docs/verification/2026-07-07/sp-023-live-reliability-probe.md`, and `docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png` after `npx playwright test e2e/live-reliability-probe.spec.ts --workers=1`.
+- not done: real public YouTube multi-live playback reliability has not been accepted; the current automated evidence uses mocked player postMessage events with YouTube network blocked.
+- next move: run a bounded local operator probe with 3-6 current live URLs, then decide whether a playback reliability fix is needed before F-04.
+
 ## Last Package Build
 
 - date: 2026-04-15
@@ -44,11 +54,21 @@
 
 ## Quantitative State
 
-- source files: 18 under `scripts/`
-- test files: 5 under `e2e/`
-- E2E tests: 16
+- source files: 19 under `scripts/`
+- test files: 6 under `e2e/`
+- E2E tests: 17
 - last E2E run: 2026-07-07
-- specs: 20 tracked specs (19 done + 1 partial)
+- specs: 21 tracked specs (19 done + 2 partial)
+
+## Resume Snapshot 2026-07-07 SP-023 Probe
+
+- purpose: preserve a repeatable local readback surface for multi-live playback reliability before SP-021/F-04 search work resumes.
+- effect: the current branch can record whether existing tiles keep receiving player state updates after adding more tiles, and whether play/pause/resume/sync/recovery actions are observable without devtools.
+- requirements: for real-live acceptance, open `http://localhost:8080/?sp023Probe=1`, paste current live URLs locally, keep Debug open, perform add/play/pause/resume/sync, then export `window.holosyncProbe.snapshot()` or download JSON.
+- state: checks passed on 2026-07-07 for the probe slice: `npm run lint`, changed-file `npx prettier --check ...`, `git diff --check`, `npx playwright test e2e/live-reliability-probe.spec.ts --workers=1`, and `npx playwright test e2e/ui-regression.spec.ts --workers=1`. Mocked local validation covers add/play/pause/resume/sync timeline and readback artifact generation; real live playback remains environment-dependent and unverified.
+- transfer note: after pulling the remote branch, read `docs/AI_RULES.md`, this file, `docs/ISSUES.md`, and `docs/specs/live-reliability-probe.md`; confirm parity with `git rev-list --left-right --count HEAD...github/main`; open the SP-023 JSON/Markdown/PNG artifacts before starting a real-live operator run.
+- owner: next operator / Codex session.
+- next move: run the bounded real-live probe or use the generated JSON/MD as the review template for a human observation pass.
 
 ## Resume Snapshot 2026-07-07 SP-022 Objective Planner
 
