@@ -1,11 +1,21 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const artifactDir = path.join(process.cwd(), 'docs', 'verification', '2026-07-07');
-const jsonPath = path.join(artifactDir, 'sp-023-live-reliability-probe.json');
-const mdPath = path.join(artifactDir, 'sp-023-live-reliability-probe.md');
-const screenshotPath = path.join(artifactDir, 'sp-023-live-reliability-probe-debug-panel.png');
+const reviewArtifactDir = path.join(process.cwd(), 'docs', 'verification', '2026-07-07');
+const updateReviewArtifacts = process.env.UPDATE_REVIEW_ARTIFACTS === '1';
+
+function getArtifactPaths(testInfo: TestInfo) {
+  const outputPath = (filename: string) =>
+    updateReviewArtifacts ? path.join(reviewArtifactDir, filename) : testInfo.outputPath(filename);
+
+  return {
+    directory: updateReviewArtifacts ? reviewArtifactDir : testInfo.outputDir,
+    json: outputPath('sp-023-live-reliability-probe.json'),
+    markdown: outputPath('sp-023-live-reliability-probe.md'),
+    screenshot: outputPath('sp-023-live-reliability-probe-debug-panel.png'),
+  };
+}
 
 const firstBatch = ['ProbeLive01', 'ProbeLive02', 'ProbeLive03'];
 const secondBatch = ['ProbeLive04', 'ProbeLive05', 'ProbeLive06'];
@@ -73,7 +83,7 @@ async function emitPlayerStates(
   }, states);
 }
 
-function makeMarkdown(readback) {
+function makeMarkdown(readback, screenshotReference: string) {
   const actionRows = readback.timeline
     .filter((event) => event.type === 'action')
     .map(
@@ -97,7 +107,7 @@ function makeMarkdown(readback) {
 - real_live_playback_tested: no
 - real_live_limit: no project-provided live URLs were used; this artifact validates the repeatable local probe path without credentials or public release.
 - browser_surface: Playwright Chromium via local http-server
-- screenshot: docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png
+- screenshot: ${screenshotReference}
 
 ## Scenario
 
@@ -122,7 +132,9 @@ ${finalRows}
 }
 
 test.describe('SP-023 live reliability probe', () => {
-  test('records add/play/pause/resume/sync readback without YouTube network', async ({ page }) => {
+  test('records add/play/pause/resume/sync readback without YouTube network', async ({
+    page,
+  }, testInfo) => {
     await page.route(/(youtube|youtube-nocookie|ytimg|googlevideo)\.com/, (route) => route.abort());
 
     await page.goto('/?sp023Probe=1', { waitUntil: 'load' });
@@ -200,6 +212,19 @@ test.describe('SP-023 live reliability probe', () => {
     expect(snapshot.totals.playing).toBe(6);
     expect(snapshot.videos.every((video) => video.lastUpdateAgeMs !== null)).toBeTruthy();
 
+    const artifactPaths = getArtifactPaths(testInfo);
+    const artifactReferences = updateReviewArtifacts
+      ? {
+          json: 'docs/verification/2026-07-07/sp-023-live-reliability-probe.json',
+          markdown: 'docs/verification/2026-07-07/sp-023-live-reliability-probe.md',
+          screenshot: 'docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png',
+        }
+      : {
+          json: path.basename(artifactPaths.json),
+          markdown: path.basename(artifactPaths.markdown),
+          screenshot: path.basename(artifactPaths.screenshot),
+        };
+
     const readback = {
       ...snapshot,
       realLivePlayback: {
@@ -212,19 +237,23 @@ test.describe('SP-023 live reliability probe', () => {
         syncGroupId: 'A',
         youtubeNetwork: 'blocked by Playwright route for deterministic local fixture',
       },
-      artifactPaths: {
-        json: 'docs/verification/2026-07-07/sp-023-live-reliability-probe.json',
-        markdown: 'docs/verification/2026-07-07/sp-023-live-reliability-probe.md',
-        screenshot: 'docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png',
-      },
+      artifactPaths: artifactReferences,
     };
 
-    await fs.mkdir(artifactDir, { recursive: true });
-    await page.locator('#debugPanel').screenshot({ path: screenshotPath });
-    await fs.writeFile(jsonPath, `${JSON.stringify(readback, null, 2)}\n`, 'utf8');
-    await fs.writeFile(mdPath, makeMarkdown(readback), 'utf8');
+    await fs.mkdir(artifactPaths.directory, { recursive: true });
+    await page.locator('#debugPanel').screenshot({ path: artifactPaths.screenshot });
+    await fs.writeFile(artifactPaths.json, `${JSON.stringify(readback, null, 2)}\n`, 'utf8');
+    await fs.writeFile(
+      artifactPaths.markdown,
+      makeMarkdown(readback, artifactReferences.screenshot),
+      'utf8'
+    );
 
-    await expect.poll(async () => fs.stat(jsonPath).then((stat) => stat.isFile())).toBeTruthy();
-    await expect.poll(async () => fs.stat(mdPath).then((stat) => stat.isFile())).toBeTruthy();
+    await expect
+      .poll(async () => fs.stat(artifactPaths.json).then((stat) => stat.isFile()))
+      .toBeTruthy();
+    await expect
+      .poll(async () => fs.stat(artifactPaths.markdown).then((stat) => stat.isFile()))
+      .toBeTruthy();
   });
 });

@@ -1,88 +1,76 @@
 # Runtime State
 
+Last reviewed: 2026-07-10
+
 ## Current Position
 
 - project: HoloSync
-- branch: main
+- canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
+- remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
+- legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
-- surface: Browser / Electron
-- slice: SP-023 Real Multi-Live Playback Reliability Probe
-- state: SP-023 local probe/readback is implemented for multi-video add/play/pause/resume/sync observation; real multi-live playback verification remains
-- Codex startup config: inherits user-level Codex defaults; no project-local `.codex/config.toml` overrides
+- active slice: SP-023 Real Multi-Live Playback Reliability Probe
+- phase: verify
+- current outcome: local probe/readback is implemented for multi-video add, play, pause, resume, sync, recovery, and player-state observation
+- primary bottleneck: real public YouTube multi-live playback has not been accepted; automated evidence blocks YouTube network traffic and uses mocked player events
 
-## SP-021 Status
+## Delivered Baseline
 
-- done: F-01, F-02, F-03, F-05, F-06, F-07, F-08, F-09, F-10, F-11
-- not started: F-04 main-area search
-- current bottleneck: verify real multi-live playback behavior before starting F-04 or broad redesign
+- SP-021 UI/UX refinement: 10 of 11 items are done; F-04 main-area search is not started.
+- SP-022 Objective Dense Gallery Canvas: done, including objective mosaic scoring and 12-tile `3x4` evidence at 1280x720.
+- SP-023 probe: implemented with `?sp023Probe=1`, `window.holosyncProbe`, Debug-panel readback, JSON export, and Playwright coverage.
+- Workflow maintenance: AI rules now define one outcome-sized supervisor Work Packet, bounded autonomy, a single design checkpoint, and single-source state ownership.
+- Verification hygiene: routine SP-022/SP-023 tests write generated evidence under ignored `test-results/`; committed review artifacts change only with `UPDATE_REVIEW_ARTIFACTS=1`.
 
-## SP-022 Status
+## Active Gate and Independent Lane
 
-- done: Dense layout option in the main layout selector.
-- done: `.layout-dense` now uses `scripts/dense-layout-planner.js` to enumerate and score candidate mosaics instead of picking by visual guesswork.
-- done: 12 tiles at 1280x720 with sidebar/toolbar collapsed compare `3x4`, `4x3`, `5x3`, `6x2`, and other feasible candidates; the objective planner selects `3x4`.
-- done: app chrome changes, window resize, tile count changes, layout mode changes, and gap changes trigger Dense recalculation.
-- done: hover and focus-within visibility for dense tile controls.
-- done: Playwright regression and review screenshot paths for normal, hover/control, and app chrome states.
-- evidence: `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.json`, `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.md`, `docs/verification/2026-07-06/sp-022-dense-gallery-normal-selected-3x4-1280x720.png`, `docs/verification/2026-07-06/sp-022-dense-gallery-hover-controls-selected-3x4-1280x720.png`, and `docs/verification/2026-07-06/sp-022-dense-gallery-chrome-selected-3x4-1280x720.png` after `npx playwright test e2e/dense-gallery.spec.ts --workers=1`.
-- next move: review the objective planner readback first, then visually review the generated Dense screenshots, then manually verify real multi-live playback before F-04.
+- human-only gate: run a bounded local probe with 3-6 current public live URLs and observe add/play/pause/resume/sync/recovery behavior.
+- pass path: accept SP-023 and choose the next product slice.
+- failure path: use the exported timeline to open a narrowly scoped playback-reliability fix.
+- while waiting: F-04 search and visual-system work may proceed only as reversible direction previews; do not begin their full implementation until a direction is selected and explicitly authorized.
 
-## SP-023 Status
+## Evidence to Reuse
 
-- done: local probe mode can be enabled with `?sp023Probe=1`, `?liveProbe=1`, or `?probe=live`.
-- done: `window.holosyncProbe` exposes start/stop/clear/mark/snapshot/exportJson/download for local operator readback.
-- done: probe timeline records tile add/remove, iframe load attempts, iframe commands, player state/currentTime/duration/errorCode, play/pause/resume/sync actions, and recovery attempts.
-- done: debug panel shows a compact Live Probe strip above the existing sync health table.
-- evidence: `docs/verification/2026-07-07/sp-023-live-reliability-probe.json`, `docs/verification/2026-07-07/sp-023-live-reliability-probe.md`, and `docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png` after `npx playwright test e2e/live-reliability-probe.spec.ts --workers=1`.
-- not done: real public YouTube multi-live playback reliability has not been accepted; the current automated evidence uses mocked player postMessage events with YouTube network blocked.
-- next move: run a bounded local operator probe with 3-6 current live URLs, then decide whether a playback reliability fix is needed before F-04.
+- SP-023: `docs/verification/2026-07-07/sp-023-live-reliability-probe.json`, `.md`, and `sp-023-live-reliability-probe-debug-panel.png`.
+- SP-022: `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.json`, `.md`, and the selected normal/hover/chrome screenshots.
+- Relevant specs: `docs/specs/live-reliability-probe.md`, `docs/specs/dense-gallery-canvas.md`, and `docs/specs/ux-refinement-phase1.md`.
 
-## Last Package Build
+## Decision Queue
 
-- date: 2026-04-15
-- path: `dist/HoloSync-win32-x64/HoloSync.exe`
-- command: `npm run build`
-- includes: SP-021 implemented items as of 2026-04-15; F-04 excluded
+- F-04 main-area search: choose how search results coexist with the video grid.
+- Visual system: choose a coherent icon, color, typography, motion, and control-density direction before broad polish.
+- Language: Japanese copy/help consistency is a small quality slice; message dictionary extraction or a Japanese/English switch still requires explicit scope approval.
+- External status: choose a generated GitHub Pages cockpit or a richer GitHub Project; Wiki should not become another hand-maintained state source.
+- Remote cleanup: decide whether the legacy GitLab mirror is retained, renamed clearly, or removed from local clones; do not change push assumptions implicitly.
 
-## Last Package Verification
+## External Visibility Baseline
 
-- date: 2026-06-03
-- path: `dist-build/package-check/HoloSync-win32-x64`
-- command: equivalent `electron-packager` run with the package ignore regex
-- result: `.codex`, `.claude`, and `.serena` were not present in the package artifact
-- note: `npm run build` could not overwrite `dist/HoloSync-win32-x64` because the existing output directory was locked
+- no generated external cockpit exists yet.
+- GitHub Wiki, Issues, and Project are not current-state sources; inspect them live instead of copying volatile counts or check results here.
+- recommended projection: generate a read-only GitHub Pages cockpit from this file and `docs/spec-index.json`; keep Wiki and Project out of the current-state ownership path.
 
-## Quantitative State
+## Boundaries and Holds
 
-- source files: 19 under `scripts/`
-- test files: 6 under `e2e/`
-- E2E tests: 17
-- last E2E run: 2026-07-07
-- specs: 21 tracked specs (19 done + 2 partial)
+- hold: broad sidebar restructuring and video-add flow replacement until a direction checkpoint resolves their interaction with F-04.
+- hold: YouTube account/OAuth history sync until its user-value path is clear.
+- frozen unless explicitly re-approved: accessibility expansion, telemetry, plugin architecture, PWA, full i18n, advanced audio processing, and collaboration features.
 
-## Resume Snapshot 2026-07-07 SP-023 Probe
+## Development Environment
 
-- purpose: preserve a repeatable local readback surface for multi-live playback reliability before SP-021/F-04 search work resumes.
-- effect: the current branch can record whether existing tiles keep receiving player state updates after adding more tiles, and whether play/pause/resume/sync/recovery actions are observable without devtools.
-- requirements: for real-live acceptance, open `http://localhost:8080/?sp023Probe=1`, paste current live URLs locally, keep Debug open, perform add/play/pause/resume/sync, then export `window.holosyncProbe.snapshot()` or download JSON.
-- state: checks passed on 2026-07-07 for the probe slice: `npm run lint`, changed-file `npx prettier --check ...`, `git diff --check`, `npx playwright test e2e/live-reliability-probe.spec.ts --workers=1`, and `npx playwright test e2e/ui-regression.spec.ts --workers=1`. Mocked local validation covers add/play/pause/resume/sync timeline and readback artifact generation; real live playback remains environment-dependent and unverified.
-- transfer note: after pulling the remote branch, read `docs/AI_RULES.md`, this file, `docs/ISSUES.md`, and `docs/specs/live-reliability-probe.md`; confirm parity with `git rev-list --left-right --count HEAD...github/main`; open the SP-023 JSON/Markdown/PNG artifacts before starting a real-live operator run.
-- owner: next operator / Codex session.
-- next move: run the bounded real-live probe or use the generated JSON/MD as the review template for a human observation pass.
+- required runtime: Node.js `>=22.12.0`; verified locally with Node `22.19.0` and npm `10.9.3`.
+- dependencies: restored from `package-lock.json` with `npm ci` on 2026-07-10.
+- dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (6 moderate, 3 high) and needs a separate upgrade assessment.
+- local refresh checks (2026-07-10): `npm run format:check`, focused Markdown Prettier, `npm run lint`, `git diff --check`, and the full Playwright suite all pass (18/18).
+- package state: the last Windows package is from 2026-04-15 and does not include SP-022 or SP-023; rebuild only when packaged-app verification is requested or the active feature slice closes.
 
-## Resume Snapshot 2026-07-07 SP-022 Objective Planner
+## Next Move
 
-- purpose: preserve the SP-022 objective Dense planner, readback artifacts, verification evidence, and next review edge inside the repo so another terminal can resume immediately.
-- effect: the current branch contains objective Dense candidate scoring, a selected 3x4 normal 1280x720 result, readback JSON/Markdown, normal/hover/chrome Playwright screenshots, regression coverage, and concise navigation docs. SP-021/F-04 remains not started, and real multi-live playback verification is still pending.
-- requirements: after pulling this branch, read `docs/AI_RULES.md`, this file, `docs/ISSUES.md`, and `docs/specs/dense-gallery-canvas.md`; confirm parity with `git rev-list --left-right --count HEAD...github/main`; open the planner readback before visually judging the three selected-3x4 screenshots.
-- state: checks passed on 2026-07-07 for the objective planner slice: `npm run lint`, changed-file `npx prettier --check ...`, `git diff --check`, `npx playwright test e2e/dense-gallery.spec.ts --workers=1`, and `npx playwright test e2e/ui-regression.spec.ts --workers=1`.
-- local transfer note: before fast-forwarding to `github/main`, tracked local edits against the older `ec3a3f3` base were preserved in this workstation as `stash@{0}: codex-preserve-before-remote-ff-2026-07-06`. They were not re-applied because the fetched GitHub commits superseded the old AI-rule cleanup context.
-- owner: next operator / Codex session.
-- next move: inspect the objective planner readback, then visually approve or tune Dense spacing from the screenshots, then manually verify real multi-live playback before starting F-04 main-area search.
+Run the real-live SP-023 operator probe. If that human-only gate cannot run now, prepare 2-4 F-04/visual directions as previews and return for one combined direction-and-implementation decision.
 
-## Human Decision Items
+## Resume Sequence
 
-- SP-021/F-04 main-area search: choose search-result layout relative to the video grid.
-- Sidebar structure redesign: decide whether search/playlist concerns should move out of the sidebar.
-- Video-add flow refinement: decide desired entry path before implementation.
-- YouTube account/OAuth sync: hold until value path is clear.
+1. Fetch the remote whose URL is the canonical GitHub repository; check out the active delivery PR branch when it is still open, otherwise use updated `main`.
+2. Run `npm ci` with Node.js 22.12 or newer, then run `npx playwright install chromium` when that workstation does not already have the matching browser binary.
+3. Read this file, `docs/AI_RULES.md`, `docs/specs/live-reliability-probe.md`, and the F-04 checkpoint in `docs/specs/ux-refinement-phase1.md`.
+4. Prefer the SP-023 real-live gate. When current live URLs are unavailable, create only the fixed-state F-04/visual previews described in SP-021 and return for one decision.
+5. Before publishing another state change, run formatting, lint, the narrow relevant Playwright test, and `git diff --check`; use the full suite when shared UI/player behavior changes.

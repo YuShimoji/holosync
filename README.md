@@ -11,8 +11,10 @@ HoloSync is a local Web + Electron app for viewing and synchronizing multiple Yo
 
 ## Local Use
 
+Requires Node.js 22.12 or newer.
+
 ```bash
-npm install
+npm ci
 npm start
 ```
 
@@ -20,6 +22,12 @@ For browser development:
 
 ```bash
 npm run dev
+```
+
+Before the first Playwright run on a new machine:
+
+```bash
+npx playwright install chromium
 ```
 
 ## Build
@@ -38,9 +46,9 @@ dist/HoloSync-win32-x64/HoloSync.exe
 
 ## Development
 
-- AI operation rules: `docs/AI_RULES.md`
-- Current project state: `docs/runtime-state.md`
-- Feature spec index: `docs/spec-index.json`
-- Testing notes: `docs/TESTING.md`
+- [AI operation rules](docs/AI_RULES.md)
+- [Current project state](docs/runtime-state.md) — the single, date-stamped source for the active slice, bottleneck, and next move
+- [Feature spec index](docs/spec-index.json)
+- [Testing notes](docs/TESTING.md)
 
 Do not edit files under `dist/` directly; rebuild from source instead.
