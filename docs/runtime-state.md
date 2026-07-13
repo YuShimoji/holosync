@@ -1,12 +1,13 @@
 # Runtime State
 
-Last reviewed: 2026-07-10
+Last reviewed: 2026-07-13
 
 ## Current Position
 
 - project: HoloSync
 - canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
 - remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
+- active delivery branch: `codex/workflow-handoff`; GitHub PR #23 is open, its checks pass, and the branch is one commit ahead of `main` as of 2026-07-13.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - active slice: SP-023 Real Multi-Live Playback Reliability Probe
@@ -61,6 +62,7 @@ Last reviewed: 2026-07-10
 - dependencies: restored from `package-lock.json` with `npm ci` on 2026-07-10.
 - dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (6 moderate, 3 high) and needs a separate upgrade assessment.
 - local refresh checks (2026-07-10): `npm run format:check`, focused Markdown Prettier, `npm run lint`, `git diff --check`, and the full Playwright suite all pass (18/18).
+- handoff refresh (2026-07-13): the working tree started clean; `codex/workflow-handoff` matched its GitHub remote exactly and remained one commit ahead of `main`; PR #23 checks passed. Only documentation-level handoff validation was rerun for this refresh.
 - package state: the last Windows package is from 2026-04-15 and does not include SP-022 or SP-023; rebuild only when packaged-app verification is requested or the active feature slice closes.
 
 ## Next Move
@@ -69,7 +71,7 @@ Run the real-live SP-023 operator probe. If that human-only gate cannot run now,
 
 ## Resume Sequence
 
-1. Fetch the remote whose URL is the canonical GitHub repository; check out the active delivery PR branch when it is still open, otherwise use updated `main`.
+1. Fetch the remote whose URL is the canonical GitHub repository; while PR #23 remains open, check out `codex/workflow-handoff` and pull it with `--ff-only`. If it has merged or closed, use updated `main` instead.
 2. Run `npm ci` with Node.js 22.12 or newer, then run `npx playwright install chromium` when that workstation does not already have the matching browser binary.
 3. Read this file, `docs/AI_RULES.md`, `docs/specs/live-reliability-probe.md`, and the F-04 checkpoint in `docs/specs/ux-refinement-phase1.md`.
 4. Prefer the SP-023 real-live gate. When current live URLs are unavailable, create only the fixed-state F-04/visual previews described in SP-021 and return for one decision.
