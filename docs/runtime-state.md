@@ -7,7 +7,7 @@ Last reviewed: 2026-07-17
 - project: HoloSync
 - canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
 - remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
-- active delivery branch: `codex/workflow-handoff`; GitHub draft PR #23 is open, mergeable without conflicts, its checks pass, and the branch is three commits ahead of `main` as of 2026-07-17.
+- active delivery branch: `codex/workflow-handoff`; canonical GitHub head `85879d7` was fast-forwarded locally before this state refresh. Draft PR #23 is open and mergeable, and all current GitHub checks pass.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - active slice: SP-023 Real Multi-Live Playback Reliability Probe
@@ -58,12 +58,29 @@ Last reviewed: 2026-07-17
 
 ## Development Environment
 
-- required runtime: Node.js `>=22.12.0`; verified locally with Node `22.19.0` and npm `10.9.3`.
-- dependencies: restored from `package-lock.json` with `npm ci` on 2026-07-15; the matching Playwright Chromium runtime is installed.
+- required runtime: Node.js `>=22.12.0`; verified locally with Node `24.13.0` and npm `11.6.2`.
+- dependencies: restored from `package-lock.json` with development dependencies on 2026-07-17; the matching Playwright Chromium runtime and Electron `40.8.0` binary are installed.
 - dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (6 moderate, 3 high) and needs a separate upgrade assessment.
-- local refresh checks (2026-07-15): `npm run format:check`, `npm run lint`, and the full Playwright suite all pass (18/18); `npm audit --omit=dev` reports 0 vulnerabilities.
-- handoff publication (2026-07-17): canonical GitHub was fetched; this state-only closeout is published on `codex/workflow-handoff` through draft PR #23. A fresh clone can follow the Resume Sequence below without local-only context.
+- local refresh checks (2026-07-17): clean top-level dependency tree, Electron version readback, `npm run format:check`, `npm run lint`, `git diff --check`, production dependency audit, and the full Playwright suite all pass (18/18).
+- handoff refresh (2026-07-17): both canonical GitHub aliases were fetched; the branch was fast-forwarded through `85879d7`; its state-file update was reconciled with the pre-existing local supervisor report without discarding either source.
 - package state: the last Windows package is from 2026-04-15 and does not include SP-022 or SP-023; rebuild only when packaged-app verification is requested or the active feature slice closes.
+
+## Supervisor Status Report (2026-07-17)
+
+- purpose: provide a current, portable decision point after canonical remote sync, conflict-safe state reconciliation, and local development-environment verification.
+- effect: no product behavior changed; remote head `85879d7`, the local supervisor report, dependency restoration, automated health gates, and the remaining acceptance boundary are now aligned in one durable state source.
+- requirements: continue with Node.js 22.12 or newer; real-live acceptance needs 3-6 current public YouTube live URLs and a local operator who can judge playback behavior.
+- state: SP-023 remains in `verify`; its probe and mocked automated evidence pass, but real public multi-live playback is not yet accepted. F-04 and broad visual implementation remain behind the recorded direction checkpoint.
+- owner: the human operator owns real-live acceptance; the developer owns a narrow timeline-backed reliability fix only if the probe fails; the supervising AI owns the next outcome-sized Work Packet and any F-04/visual direction framing.
+- next move: run the bounded SP-023 real-live probe and either accept the slice or open one narrow reliability fix from the exported timeline. If the gate cannot run, prepare only reversible F-04/visual previews for one combined direction-and-implementation decision.
+
+## Proposed Development Horizon
+
+- gate: accept or narrowly repair SP-023 from a real 3-6 stream operator timeline; mocked evidence cannot close it.
+- direction: compare the fixed F-04/visual states and select one search layout plus one product posture in a single checkpoint. The current recommendation is right-side search tray plus Operator Desk, but it is not implementation authorization.
+- vertical slice: implement the selected search/visual direction end to end without reopening held sidebar, OAuth, i18n, or platform work.
+- release baseline: close SP-021 at 11/11, rerun real-live and 0/4/12-tile acceptance, then rebuild and verify the Windows package that replaces the 2026-04-15 artifact.
+- farthest safe target: a packaged baseline with SP-023 accepted and SP-021 complete. Saved monitoring sets or a Live Hub may be explored next, but require a new scope decision before implementation.
 
 ## Next Move
 
