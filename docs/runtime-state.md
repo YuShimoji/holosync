@@ -1,13 +1,13 @@
 # Runtime State
 
-Last reviewed: 2026-07-13
+Last reviewed: 2026-07-17
 
 ## Current Position
 
 - project: HoloSync
 - canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
 - remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
-- active delivery branch: `codex/workflow-handoff`; GitHub PR #23 is open, its checks pass, and the branch is one commit ahead of `main` as of 2026-07-13.
+- active delivery branch: `codex/workflow-handoff`; GitHub draft PR #23 is open, mergeable without conflicts, its checks pass, and the branch is three commits ahead of `main` as of 2026-07-17.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - active slice: SP-023 Real Multi-Live Playback Reliability Probe
@@ -59,10 +59,10 @@ Last reviewed: 2026-07-13
 ## Development Environment
 
 - required runtime: Node.js `>=22.12.0`; verified locally with Node `22.19.0` and npm `10.9.3`.
-- dependencies: restored from `package-lock.json` with `npm ci` on 2026-07-10.
+- dependencies: restored from `package-lock.json` with `npm ci` on 2026-07-15; the matching Playwright Chromium runtime is installed.
 - dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (6 moderate, 3 high) and needs a separate upgrade assessment.
-- local refresh checks (2026-07-10): `npm run format:check`, focused Markdown Prettier, `npm run lint`, `git diff --check`, and the full Playwright suite all pass (18/18).
-- handoff refresh (2026-07-13): the working tree started clean; `codex/workflow-handoff` matched its GitHub remote exactly and remained one commit ahead of `main`; PR #23 checks passed. Only documentation-level handoff validation was rerun for this refresh.
+- local refresh checks (2026-07-15): `npm run format:check`, `npm run lint`, and the full Playwright suite all pass (18/18); `npm audit --omit=dev` reports 0 vulnerabilities.
+- handoff publication (2026-07-17): canonical GitHub was fetched; this state-only closeout is published on `codex/workflow-handoff` through draft PR #23. A fresh clone can follow the Resume Sequence below without local-only context.
 - package state: the last Windows package is from 2026-04-15 and does not include SP-022 or SP-023; rebuild only when packaged-app verification is requested or the active feature slice closes.
 
 ## Next Move
