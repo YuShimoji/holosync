@@ -1,13 +1,13 @@
 # Runtime State
 
-Last reviewed: 2026-07-17
+Last reviewed: 2026-07-21
 
 ## Current Position
 
 - project: HoloSync
 - canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
 - remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
-- active delivery branch: `codex/workflow-handoff`; canonical GitHub head `85879d7` was fast-forwarded locally before this state refresh. Draft PR #23 is open and mergeable, and all current GitHub checks pass.
+- active delivery branch: `codex/workflow-handoff`; canonical GitHub head `bdedfd9` matches both local tracking aliases. Draft PR #23 is open and mergeable, all current GitHub checks pass, and the branch is four commits ahead of `main` as verified on 2026-07-21.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - active slice: SP-023 Real Multi-Live Playback Reliability Probe
@@ -62,13 +62,13 @@ Last reviewed: 2026-07-17
 - dependencies: restored from `package-lock.json` with development dependencies on 2026-07-17; the matching Playwright Chromium runtime and Electron `40.8.0` binary are installed.
 - dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (6 moderate, 3 high) and needs a separate upgrade assessment.
 - local refresh checks (2026-07-17): clean top-level dependency tree, Electron version readback, `npm run format:check`, `npm run lint`, `git diff --check`, production dependency audit, and the full Playwright suite all pass (18/18).
-- handoff refresh (2026-07-17): both canonical GitHub aliases were fetched; the branch was fast-forwarded through `85879d7`; its state-file update was reconciled with the pre-existing local supervisor report without discarding either source.
+- handoff refresh (2026-07-21): the working tree started clean; both canonical GitHub aliases were fetched and match local HEAD at `bdedfd9`; Draft PR #23 remains open, mergeable, and green. No product or spec state changed after the 2026-07-17 validation.
 - package state: the last Windows package is from 2026-04-15 and does not include SP-022 or SP-023; rebuild only when packaged-app verification is requested or the active feature slice closes.
 
-## Supervisor Status Report (2026-07-17)
+## Supervisor Status Report (2026-07-21)
 
-- purpose: provide a current, portable decision point after canonical remote sync, conflict-safe state reconciliation, and local development-environment verification.
-- effect: no product behavior changed; remote head `85879d7`, the local supervisor report, dependency restoration, automated health gates, and the remaining acceptance boundary are now aligned in one durable state source.
+- purpose: publish a current, portable restart point after canonical remote revalidation, with all decisive active-lane context kept in this repository.
+- effect: no product behavior changed; branch/PR parity, the validated development baseline, active acceptance boundary, ownership, holds, and development horizon are available from this file and its linked specs without chat-only context.
 - requirements: continue with Node.js 22.12 or newer; real-live acceptance needs 3-6 current public YouTube live URLs and a local operator who can judge playback behavior.
 - state: SP-023 remains in `verify`; its probe and mocked automated evidence pass, but real public multi-live playback is not yet accepted. F-04 and broad visual implementation remain behind the recorded direction checkpoint.
 - owner: the human operator owns real-live acceptance; the developer owns a narrow timeline-backed reliability fix only if the probe fails; the supervising AI owns the next outcome-sized Work Packet and any F-04/visual direction framing.
