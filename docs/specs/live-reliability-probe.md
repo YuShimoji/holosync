@@ -4,7 +4,7 @@
 **Priority**: P1
 **Category**: core
 **Created**: 2026-07-07
-**Last updated**: 2026-07-07
+**Last updated**: 2026-07-10
 
 ## Purpose
 
@@ -43,7 +43,8 @@ The probe is deliberately local-only. It does not require OAuth, API keys, accou
 
 - Mocked local probe validation:
   - `npx playwright test e2e/live-reliability-probe.spec.ts --workers=1`
-- Readback artifacts produced by that test:
+- A normal run writes temporary readback artifacts under ignored `test-results/`; CI uploads them for 7 days.
+- Set `UPDATE_REVIEW_ARTIFACTS=1` only when intentionally replacing these committed review artifacts (PowerShell example: `docs/TESTING.md`):
   - `docs/verification/2026-07-07/sp-023-live-reliability-probe.json`
   - `docs/verification/2026-07-07/sp-023-live-reliability-probe.md`
   - `docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png`

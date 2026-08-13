@@ -4,7 +4,7 @@
 **Priority**: P1
 **Category**: ui
 **Created**: 2026-07-06
-**Last updated**: 2026-07-07
+**Last updated**: 2026-07-10
 
 ## Purpose
 
@@ -63,7 +63,9 @@ The selected result must explicitly compare `3x4`, `4x3`, `5x3`, and `6x2`. In t
 ## Evidence
 
 - Regression check: `npx playwright test e2e/ui-regression.spec.ts --workers=1`
-- Planner and screenshot command: `npx playwright test e2e/dense-gallery.spec.ts --workers=1`
+- Planner and screenshot check: `npx playwright test e2e/dense-gallery.spec.ts --workers=1`
+- A normal run writes temporary planner/screenshots under ignored `test-results/`; CI uploads them for 7 days.
+- Set `UPDATE_REVIEW_ARTIFACTS=1` only when intentionally replacing the following committed artifacts (PowerShell example: `docs/TESTING.md`).
 - Readback artifacts:
   - `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.json`
   - `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.md`

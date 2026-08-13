@@ -168,7 +168,7 @@
     "pct": 91,
     "cat": "ui",
     "file": "docs/specs/ux-refinement-phase1.md",
-    "summary": "10 of 11 UX items are implemented. F-04 main-area search is the only not-started item."
+    "summary": "10 of 11 UX items are implemented. F-04 remains not started; its search-layout and visual-direction checkpoint candidates are recorded for one preview-first decision."
   },
   {
     "id": "SP-022",
@@ -177,7 +177,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/dense-gallery-canvas.md",
-    "summary": "Dense multi-view layout option for scanning 8-12 streams with objective candidate scoring, planner readback artifacts, selected 3x4 proof, hover/control proof, and review screenshot evidence."
+    "summary": "Dense multi-view layout option for scanning 8-12 streams with objective candidate scoring, selected 3x4 proof, and opt-in committed review evidence that routine tests do not overwrite."
   },
   {
     "id": "SP-023",
@@ -186,6 +186,6 @@
     "pct": 70,
     "cat": "core",
     "file": "docs/specs/live-reliability-probe.md",
-    "summary": "Local probe mode and debug readback for multi-live add/play/pause/resume/sync observation. Mocked validation exists; real live operator evidence remains pending."
+    "summary": "Local probe mode and debug readback for multi-live add/play/pause/resume/sync observation. Mocked validation writes temporary evidence by default; real live operator evidence remains pending."
   }
 ]

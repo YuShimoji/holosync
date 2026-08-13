@@ -4,14 +4,19 @@
   "private": true,
   "description": "YouTube multi-video synchronization web app",
   "main": "electron-main.js",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . HoloSync --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(docs|e2e|test-artifacts|test-results|playwright-report|artifacts|dist-build|\\.git|\\.github|\\.husky|\\.claude|\\.codex|\\.serena|\\.vscode|\\.idea)\"",
+    "build": "electron-packager . HoloSync --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(docs|e2e|test-artifacts|test-results|playwright-report|artifacts|dist-build|\\.git|\\.github|\\.husky|\\.claude|\\.codex|\\.cursor|\\.serena|\\.vscode|\\.idea)\"",
     "build:offline-check": "node tools/build-offline-check.mjs",
     "build:checked": "npm run build:offline-check && npm run build",
     "lint": "eslint \"scripts/*.js\" \"scripts/**/*.js\" --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "format:check:state": "prettier --check docs/AI_RULES.md docs/runtime-state.md docs/spec-index.json docs/specs/ux-refinement-phase1.md docs/specs/live-reliability-probe.md docs/specs/dense-gallery-canvas.md",
     "prepare": "husky",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
