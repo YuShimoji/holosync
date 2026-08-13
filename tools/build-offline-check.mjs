@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 import dns from 'node:dns/promises';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,13 +1,13 @@
 # Runtime State
 
-Last reviewed: 2026-07-21
+Last reviewed: 2026-08-12
 
 ## Current Position
 
 - project: HoloSync
 - canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
 - remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
-- active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and the branch is ahead of `main` as verified on 2026-07-21. Resolve the exact head with a live fetch on resume instead of relying on a self-referential state-file hash.
+- active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and fetched head `33cd56f` is 7 commits ahead of `main` as verified on 2026-08-12. Resolve the exact head with a live fetch on resume instead of relying only on this recorded hash.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
 - active slice: SP-023 Real Multi-Live Playback Reliability Probe
@@ -58,17 +58,18 @@ Last reviewed: 2026-07-21
 
 ## Development Environment
 
-- required runtime: Node.js `>=22.12.0`; verified locally with Node `24.13.0` and npm `11.6.2`.
-- dependencies: restored from `package-lock.json` with development dependencies on 2026-07-17; the matching Playwright Chromium runtime and Electron `40.8.0` binary are installed.
-- dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (6 moderate, 3 high) and needs a separate upgrade assessment.
-- local refresh checks (2026-07-17): clean top-level dependency tree, Electron version readback, `npm run format:check`, `npm run lint`, `git diff --check`, production dependency audit, and the full Playwright suite all pass (18/18).
-- handoff refresh (2026-07-21): the working tree started clean; both canonical GitHub aliases were fetched and matched local HEAD before publication; this state-only refresh is published to the same delivery branch. No product or spec state changed after the 2026-07-17 validation.
-- package state: the last Windows package is from 2026-04-15 and does not include SP-022 or SP-023; rebuild only when packaged-app verification is requested or the active feature slice closes.
+- required runtime: Node.js `>=22.12.0`; verified locally with Node `22.19.0` and npm `10.9.3`.
+- dependencies: restored from `package-lock.json` with development dependencies on 2026-08-12; Playwright `1.58.2`, its Chromium runtime, and Electron `40.8.0` are installed.
+- dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (3 moderate, 6 high) and needs a separate upgrade assessment.
+- local refresh checks (2026-08-12): clean top-level dependency tree, Electron version readback, `node --check` across all 22 tracked JavaScript modules, `npm run format:check`, `npm run lint`, `git diff --check`, production dependency audit, the focused SP-023 Playwright test (1/1), and the full Playwright suite (18/18) all pass.
+- handoff refresh (2026-08-12): the tracked and untracked working tree started clean; canonical GitHub was fetched and the active branch fast-forwarded from `2fc5be6` to `33cd56f`, matching its upstream. The only fetched change removed the stale `.claude/CLAUDE.md` adapter; no product or feature-spec behavior changed.
+- related repair: removed the UTF-8 BOM before the shebang in `tools/build-offline-check.mjs`; the script already executed normally, but the repair also makes direct Node syntax checking reliable.
+- package state: `npm run build:checked` rebuilt `dist/HoloSync-win32-x64/HoloSync.exe` on 2026-08-12 with Electron `40.8.0`, so the local package now includes SP-022 and SP-023. Packaging passed; packaged-app launch and real-live playback remain manually unverified.
 
-## Supervisor Status Report (2026-07-21)
+## Supervisor Status Report (2026-08-12)
 
-- purpose: publish a current, portable restart point after canonical remote revalidation, with all decisive active-lane context kept in this repository.
-- effect: no product behavior changed; branch/PR parity, the validated development baseline, active acceptance boundary, ownership, holds, and development horizon are available from this file and its linked specs without chat-only context.
+- purpose: retain a current, portable restart point after canonical remote synchronization, lockfile restoration, local regression verification, and Windows package regeneration.
+- effect: no product behavior changed; branch/PR parity, the refreshed development and package baseline, active acceptance boundary, ownership, holds, and development horizon are available from this file and its linked specs without chat-only context.
 - requirements: continue with Node.js 22.12 or newer; real-live acceptance needs 3-6 current public YouTube live URLs and a local operator who can judge playback behavior.
 - state: SP-023 remains in `verify`; its probe and mocked automated evidence pass, but real public multi-live playback is not yet accepted. F-04 and broad visual implementation remain behind the recorded direction checkpoint.
 - owner: the human operator owns real-live acceptance; the developer owns a narrow timeline-backed reliability fix only if the probe fails; the supervising AI owns the next outcome-sized Work Packet and any F-04/visual direction framing.
