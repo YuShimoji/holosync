@@ -186,6 +186,6 @@
     "pct": 70,
     "cat": "core",
     "file": "docs/specs/live-reliability-probe.md",
-    "summary": "Local probe mode and debug readback for multi-live add/play/pause/resume/sync observation. Mocked validation writes temporary evidence by default; real live operator evidence remains pending."
+    "summary": "Local probe and debug readback have mocked validation plus fixed-commit real-network checks of three public lives; packaged UI, natural-outage recovery and human acceptance remain pending."
   }
 ]

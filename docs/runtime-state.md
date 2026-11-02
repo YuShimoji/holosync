@@ -1,139 +1,66 @@
 # Runtime State
 
-Last reviewed: 2026-11-02 (search consistency verification; older verification remains dated below)
+Last reviewed: 2026-11-02 (JST, coordinated repair closeout)
 
 ## Current Position
 
-- project: HoloSync
-- canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`
-- remote portability: this workstation calls canonical GitHub `github`; a fresh clone normally calls it `origin`. Resolve by URL instead of assuming an alias.
-- active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and fetched head `33cd56f` is 7 commits ahead of `main` as verified on 2026-08-12. Resolve the exact head with a live fetch on resume instead of relying only on this recorded hash.
-- legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
-- active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
-- active slice: SP-023 real multi-live operator acceptance and next direction decision
-- phase: verify
-- current outcome: queue persistence and sidebar search consistency repairs pass mocked regression checks; real-live acceptance remains pending
-- primary bottleneck: real public YouTube multi-live playback remains unaccepted
+- project: HoloSync; canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`.
+- active delivery branch: `codex/workflow-handoff`, tracking the canonical GitHub remote named `github` on this workstation. Resolve remotes by URL on other machines. Local `origin` is the legacy GitLab mirror and is not the parity source.
+- verified delivery code: `148b541`; local and fetched canonical heads matched before this documentation closeout. Draft PR #23 was open, mergeable, with E2E and lint checks successful at that code commit on 2026-11-02.
+- active artifact: Web App (`index.html`, `scripts/`, `styles/`) and the rebuilt local Windows package.
+- active slice / phase: SP-023 operator acceptance / verify. The authorized implementation work below is complete; human acceptance is still pending.
+- outcome: same-video tiles retain independent selection through queue changes/reload; queue URL/JSON/preset round-trips and sidebar search history/metadata are implemented and verified.
+- remaining acceptance: packaged UI operation, actual YouTube search with the operator's configured key, human viewing/operation judgment, and recovery from a natural outage. F-04 remains direction-gated.
 
-## Delivered Baseline
+## Authorized Work and Delivery
 
-- SP-021 UI/UX refinement: 10 of 11 items are done; F-04 main-area search is not started.
-- SP-022 Objective Dense Gallery Canvas: done, including objective mosaic scoring and 12-tile `3x4` evidence at 1280x720.
-- SP-023 probe: implemented with `?sp023Probe=1`, `window.holosyncProbe`, Debug-panel readback, JSON export, and Playwright coverage.
-- Workflow maintenance: AI rules now define one outcome-sized supervisor Work Packet, bounded autonomy, a single design checkpoint, and single-source state ownership.
-- Verification hygiene: routine SP-022/SP-023 tests write generated evidence under ignored `test-results/`; committed review artifacts change only with `UPDATE_REVIEW_ARTIFACTS=1`.
+The user's continuation instruction was: 「上記分析から推奨対応で進めてください。」 It adopted the playback/tile repairs, real-live observation, queue persistence, and existing-sidebar search consistency recommendations.
 
-## Authorized Repair Assignment (2026-11-02)
+| Delivery               | Result                                                                                                                                                                                                                       | Implementation commit |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Tile identity and sync | Stable tile IDs distinguish same-video Focus/audio/manual leader/group/order; selection and duplicate tiles survive reload; rejoining leaders do not seek themselves. Legacy selections resolve to the first matching video. | `8a91dc0`             |
+| Queue persistence      | Shared URL and JSON carry existing `q`/`qi`; presets retain queue/index and legacy `videoIds`; duplicate tiles restore; preset replacement uses normal tile cleanup. Legacy `?videos=` works with local storage available.   | `d00b99c`             |
+| Sidebar search         | Five-item MRU history, immediate re-search/clear and string-query storage API; batched duration/view-count metadata; failures preserve selectable results; stale responses are ignored.                                      | `148b541`             |
 
-- user requested corrected implementation prompts, independent Codex chats where needed, lightweight-model delegation where suitable, and non-overlapping editing ownership. The user explicitly selected `gpt-6.1-terra / high` and `gpt-6-luna / low`.
-- implementation owner: independent Codex chat `01a19a5a-7a11-74f0-a742-67d516ae8eff` (host `local`), requested `gpt-6.1-terra / high`. Owns the six repairs, their regression tests and related specs/index, final runtime-state updates, package verification, and integrated commit/push. Start was observed through `wait_threads`.
-- documentation owner: independent Codex chat `01a19a59-f10a-7941-94c4-e1d2c69b35ea` (host `local`), requested `gpt-6-luna / low`. Owns only `docs/specs/fitmode.md` and `docs/SECURITY_POSTMESSAGE.md`; no runtime-state or Git writes. Start and two-document work were observed through `wait_threads`.
-- both chats were created in this local HoloSync project and appear in the app's thread inventory. Creation accepted the explicit model/effort arguments; effective runtime settings have not been independently read back. These are independent chats, not internal subagents.
-- scope: live rejoin seek handling, leaderless recovery without undoing intentional pause, least-buffered selection including never-seeked candidates, queue controls using the current entry, zoomRadius save/normal-start restore while retaining old zoomShape reads, and Chrome storage value unwrapping. Complete playback/queue work first; zoom/Chrome work is not a prerequisite for the human live gate.
-- integration: this chat owns only the initial dispatch record; thereafter the implementation owner alone edits runtime-state and performs Git writes. The documentation owner returns its result in its own chat; the implementation owner uses `wait_threads` to review it before an integrated, path-scoped commit/push.
-- completion: focused regression evidence, lint/format/full Playwright checks, relevant spec updates, and a rebuilt Windows package. Real-live acceptance remains human-owned and cannot be closed by mocked checks.
-- next owner after code verification: human operator for SP-023 real-live acceptance. Search history/metadata and queue share/preset parity remain existing-spec follow-up work; F-04/broad visual implementation still requires the recorded direction decision. No dependency update or main-branch merge is authorized by this assignment.
+- implementation owner: independent Codex chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`, host `local`, requested `gpt-6.1-terra / high`; implementation and push complete. Coordinator reviewed the limited diffs and acceptance evidence.
+- documentation / real-network owner: independent Codex chat `01a19a59-f10a-7941-94c4-e1d2c69b35ea`, host `local`, requested `gpt-6-luna / low`. Earlier Full-Fit/postMessage documents were integrated; subsequent live verification did not edit product files.
+- both chats were created in the HoloSync project and observed running. Model/effort arguments were accepted at creation; effective runtime settings were not independently read back. These are independent chats, not internal subagents.
+- coordinator owns only this final state/spec integration after the implementation owner's completion. No other code owner remains active for the delivered scope.
+- initial implementation estimates were 45–90 minutes per packet, including verification/package/push. Actual packets completed earlier. Test startup/API-request selection issues and the string-query API mismatch found in review were corrected before delivery; time estimates were not stop conditions.
 
-## Repair verification (2026-11-02, JST)
+## Verification and Package
 
-- measured against base commit `04d6229` plus the repair worktree: live rejoin seek suppression, leaderless reason-based recovery, oldest-seek leader choice, current queue tile actions, radius persistence, and Chrome value reads were implemented. Mocked regression tests passed 3/3; full Playwright passed 21/21; lint, format check, and diff whitespace check passed.
-- `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`. The packaged process remained running for six seconds; no packaged UI interaction or live playback was verified.
-- documentation owner chat completed its two specified documents; their limited diff was reviewed and included. Requested model/effort for both chats was accepted at creation; effective runtime settings remain unverified.
-- remaining at that earlier verification: duplicate-video Focus/audio ambiguity; this was subsequently repaired in the tile identity slice below. Search history/metadata and queue share/preset parity remain separate follow-ups. Real 3–6-stream SP-023 acceptance belongs to the human operator; F-04 and broad visual implementation remain direction-gated.
-- next owner at that earlier verification: human operator for SP-023; tile identity was subsequently assigned to the existing implementation owner.
+- final mocked checks: search regression 8/8; full Playwright 36/36; lint, format and diff checks passed. The same code commit's published GitHub E2E and lint checks passed.
+- prior focused evidence: tile identity/sync 7/7 and queue persistence 3/3. Queue URL measurement: one 50-item queue at index 49 plus a same-video ordinary tile produced 1,759 characters on localhost; receiving-environment limits vary.
+- search UI: 320px sidebar history/results were checked with test fixtures. Coordinator reviewed both images and preserved local copies under `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/search-ui/`. These are fixture images, not evidence of actual YouTube search.
+- package: `dist/HoloSync-win32-x64/HoloSync.exe` was rebuilt on 2026-11-02 and its process stayed running for six seconds. Coordinator compared all 21 packaged Web implementation files in `resources/app.asar` with delivery code `148b541`: all bytes matched. Packaged UI interactions remain unverified.
+- temporary `.playwright-cli` output is excluded from formatting and packaging. Normal automated evidence under ignored `test-results/` is temporary and may be deleted by the next Playwright run.
 
-## Tile identity repair (2026-11-02, verified 14:43 JST)
+## Real-Network Observation
 
-- owner: independent implementation chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`; requested `gpt-6.1-terra / high`, effective setting not independently verified. Coordinator reviews this slice and assigns the already authorized queue-sharing/search follow-up.
-- measured against base `c3773b4` plus this repair worktree: stable tile IDs distinguish same-video Focus, audio master, manual sync leader, sync-group selection and tile ordering; duplicates and selection survive reload. Legacy audio video ID resolves to the first matching tile. Rejoining leader identity is compared by player window and does not self-seek.
-- initial estimate was 45–90 minutes including checks and delivery; implementation and verification completed earlier than that range. A parallel-suite test exposed startup/restore interaction; the test setup and idempotent restoration were corrected and checks rerun.
-- focused mocked regression: 7/7; full Playwright: 25/25; lint, format and diff whitespace checks passed. `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`; its process remained running for six seconds. Packaged UI and actual YouTube playback were not tested.
-- remaining and next owner: coordinator reviews the repair, then assigns the previously authorized queue share/preset and search consistency slice. The human operator separately owns SP-023 live acceptance; F-04/broad visual work remains direction-gated.
+- owner: the lightweight verification chat above; fixed Web snapshot `8a91dc0998603ad5df371d302881035cc67f5638`, independent headless Chromium and local server. Coordinator compared the snapshot's 21 Web implementation files to that commit's Git blobs: 21/21 matched.
+- inputs observed live/playable on 2026-11-02: Sen ISS `fO9e9jnhYK8`, CFHT Mauna Kea West `Q3UhCgsWDw8`, WebcamSydney Harbour `5uZa3-RMFos`. Recheck current availability before later operator runs.
+- run2 (15:06–15:11 JST): all three were loaded and assigned group A; all reached player state 1. Pause sent commands to all three and read back state 2; resume returned all to state 1 after buffering/recovery attempts; sync kept all playing and recorded no seek. This does not establish content-time alignment between unrelated streams.
+- probe player-error counters were zero in these stage readbacks; separate browser-console YouTube/embed warnings and errors were retained. Grouped intentional pause is classified as `suspended:paused`, so the aggregate `paused` count can be zero while all three player states are 2; use the per-player state for this observation.
+- initial explicit batch play: run3 (15:18–15:19 JST) used a fresh context: all three were cued before the sidebar batch-play click; `play-all` and three `playVideo` commands were recorded, and all three were playing with stale/error counters zero about 29 seconds later. Evidence is in `run3-initial-play/` under the local evidence path below.
+- natural outage recovery, human acceptance, and the latest packaged Electron UI were not established by these fixed-snapshot observations. Run2 did not independently establish initial batch play; run3 supplied that separate check.
+- first-run files were lost because the shared Playwright output directory was reset. They were not reconstructed. Run2 and later evidence are new observations saved directly outside the repository: `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/live-8a91dc0/`. Local-only manifests/JSON/images are available on this workstation and are not portable repository evidence.
+- the verifier closed its browsers/servers. Fixed Temp snapshot cleanup was rejected by automatic review and was not retried through another route; the snapshot remains outside the repository.
 
-## Queue persistence slice (2026-11-02, verified 14:51 JST)
+## Remaining Work and Boundaries
 
-- owner: existing independent implementation chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`, requested `gpt-6.1-terra / high`; effective setting remains unverified. Base commit was `8a91dc0` plus this worktree.
-- outcome: share URL and JSON use existing queue `q`/`qi`; new presets save per-tile queue/index while retaining `videoIds` compatibility. Duplicate-video tiles survive restore. Preset replacement uses tile cleanup, including pending iframe loads, audio/Focus, zoom and player state. Legacy `?videos=` links now work with local storage enabled.
-- URL measurement: one 50-item queue at index 49 plus a same-video ordinary tile produced 1,759 characters on localhost; limits depend on the receiving environment. No truncation or new limit was added.
-- checks: focused queue persistence 3/3 and full Playwright 28/28; lint, format and diff check passed. `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`, which remained running for six seconds. Packaged UI interaction and real YouTube playback remain unverified.
-- initial estimate was 45–90 minutes including delivery; verification finished earlier than that range. Coordinator reviews this slice, then assigns the already authorized search history/metadata consistency work. Human operator separately owns SP-023 real-live acceptance.
+- next owner: human operator for SP-023 acceptance. Use 3–6 currently live URLs and the local probe to judge actual operation, including the remaining outage/package conditions above. If a defect appears, use the exported timeline for one bounded reliability repair.
+- F-04 main-area search and broad visual direction: compare the recorded reversible candidates in `docs/specs/ux-refinement-phase1.md` before full implementation. Right-side tray plus Operator Desk is a recorded recommendation, not approval.
+- SP-007 channel-related search remains unimplemented; history/filter/metadata delivery does not close that separate feature group.
+- dependency audit observed on 2026-11-02: 26 total (18 moderate, 8 high), versus the older August observation of 9. Omit-dev audit was zero; Electron is classified as a dev dependency but ships in the app. No dependency update was performed; assess upgrades separately.
+- holds: broad sidebar/add-flow replacement and YouTube OAuth/account history sync. Frozen without explicit re-approval: accessibility expansion, telemetry, plugins, PWA, full i18n, advanced audio processing, collaboration.
+- external status is not a second hand-edited source. No generated external cockpit has been delivered; GitHub Wiki/Issues/Project must not replace this file and `docs/spec-index.json`. Legacy GitLab cleanup remains an unadopted decision.
 
-## Search consistency slice (2026-11-02, verified 15:08 JST)
+## Resume and Evidence
 
-- owner: independent implementation chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`, requested `gpt-6.1-terra / high`; effective setting unverified. Base commit was `d00b99c` plus this worktree.
-- outcome: sidebar keyword history is an MRU of five with persistence, immediate re-search and clear. Both the existing string-query storage API and internal list updates work. Search results stay selectable if batched `videos.list` metadata fails; duration, view count and LIVE status display when provided. Search/filter changes invalidate stale responses. Unknown URL-shaped input is not recorded as a search.
-- checks: focused mocked search 8/8, full Playwright 36/36, lint, format and diff check passed. A 320px sidebar was visually reviewed with fixture data: `test-results/search-consistency-history-6eaa4-tart-re-searches-and-clears-chromium/sidebar-search-history-fixture.png` and `test-results/search-consistency-search--ed183--and-keeps-multi-select-add-chromium/sidebar-search-results-fixture.png` (ignored, regenerated by tests). Human visual acceptance and real YouTube search remain unverified.
-- `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`; the process remained running for six seconds. Packaged UI interaction was not checked. Temporary `.playwright-cli` artifacts are excluded from formatting and packaging; their files were not changed.
-- initial estimate 45–90 minutes included verification and delivery; checks finished earlier than that range. The coordinator reviews this slice. SP-007's channel-related search remains unimplemented; the human operator separately owns SP-023 live acceptance. F-04 and broad visual work remain direction-gated.
+1. Read `docs/AI_RULES.md`, this file, and the relevant indexed spec. Use Node >=22.12.0; this workstation has Node 22.19.0/npm 10.9.3 and restored Playwright/Electron dependencies.
+2. Fetch the remote whose URL is canonical GitHub. While PR #23 remains open, use the active delivery branch and ff-only synchronization; do not assume old recorded hashes are the new head.
+3. Prefer the remaining operator acceptance. Its wait does not revoke separately authorized work; full F-04/visual implementation still needs its direction decision.
+4. Reuse valid evidence. Run focused checks for new changes and package verification when required by `docs/AI_RULES.md`.
 
-## Active Gate and Independent Lane
-
-- human-only gate: run a bounded local probe with 3-6 current public live URLs and observe add/play/pause/resume/sync/recovery behavior.
-- pass path: accept SP-023 and choose the next product slice.
-- failure path: use the exported timeline to open a narrowly scoped playback-reliability fix.
-- while waiting: F-04 search and visual-system work may proceed only as reversible direction previews; do not begin their full implementation until a direction is selected and explicitly authorized.
-
-## Evidence to Reuse
-
-- SP-023: `docs/verification/2026-07-07/sp-023-live-reliability-probe.json`, `.md`, and `sp-023-live-reliability-probe-debug-panel.png`.
-- SP-022: `docs/verification/2026-07-06/sp-022-dense-layout-planner-1280x720.json`, `.md`, and the selected normal/hover/chrome screenshots.
-- Relevant specs: `docs/specs/live-reliability-probe.md`, `docs/specs/dense-gallery-canvas.md`, and `docs/specs/ux-refinement-phase1.md`.
-
-## Decision Queue
-
-- F-04 main-area search: choose how search results coexist with the video grid.
-- Visual system: choose a coherent icon, color, typography, motion, and control-density direction before broad polish.
-- Language: Japanese copy/help consistency is a small quality slice; message dictionary extraction or a Japanese/English switch still requires explicit scope approval.
-- External status: choose a generated GitHub Pages cockpit or a richer GitHub Project; Wiki should not become another hand-maintained state source.
-- Remote cleanup: decide whether the legacy GitLab mirror is retained, renamed clearly, or removed from local clones; do not change push assumptions implicitly.
-
-## External Visibility Baseline
-
-- no generated external cockpit exists yet.
-- GitHub Wiki, Issues, and Project are not current-state sources; inspect them live instead of copying volatile counts or check results here.
-- recommended projection: generate a read-only GitHub Pages cockpit from this file and `docs/spec-index.json`; keep Wiki and Project out of the current-state ownership path.
-
-## Boundaries and Holds
-
-- hold: broad sidebar restructuring and video-add flow replacement until a direction checkpoint resolves their interaction with F-04.
-- hold: YouTube account/OAuth history sync until its user-value path is clear.
-- frozen unless explicitly re-approved: accessibility expansion, telemetry, plugin architecture, PWA, full i18n, advanced audio processing, and collaboration features.
-
-## Development Environment
-
-- required runtime: Node.js `>=22.12.0`; verified locally with Node `22.19.0` and npm `10.9.3`.
-- dependencies: restored from `package-lock.json` with development dependencies on 2026-08-12; Playwright `1.58.2`, its Chromium runtime, and Electron `40.8.0` are installed.
-- dependency audit: production install reports 0 vulnerabilities; the development toolchain reports 9 known issues (3 moderate, 6 high) and needs a separate upgrade assessment.
-- local refresh checks (2026-08-12): clean top-level dependency tree, Electron version readback, `node --check` across all 22 tracked JavaScript modules, `npm run format:check`, `npm run lint`, `git diff --check`, production dependency audit, the focused SP-023 Playwright test (1/1), and the full Playwright suite (18/18) all pass.
-- handoff refresh (2026-08-12): the tracked and untracked working tree started clean; canonical GitHub was fetched and the active branch fast-forwarded from `2fc5be6` to `33cd56f`, matching its upstream. The only fetched change removed the stale `.claude/CLAUDE.md` adapter; no product or feature-spec behavior changed.
-- related repair: removed the UTF-8 BOM before the shebang in `tools/build-offline-check.mjs`; the script already executed normally, but the repair also makes direct Node syntax checking reliable.
-- package state: `npm run build:checked` rebuilt `dist/HoloSync-win32-x64/HoloSync.exe` on 2026-08-12 with Electron `40.8.0`, so the local package now includes SP-022 and SP-023. Packaging passed; packaged-app launch and real-live playback remain manually unverified.
-
-## Supervisor Status Report (2026-08-12)
-
-- purpose: retain a current, portable restart point after canonical remote synchronization, lockfile restoration, local regression verification, and Windows package regeneration.
-- effect: no product behavior changed; branch/PR parity, the refreshed development and package baseline, active acceptance boundary, ownership, holds, and development horizon are available from this file and its linked specs without chat-only context.
-- requirements: continue with Node.js 22.12 or newer; real-live acceptance needs 3-6 current public YouTube live URLs and a local operator who can judge playback behavior.
-- state: SP-023 remains in `verify`; its probe and mocked automated evidence pass, but real public multi-live playback is not yet accepted. F-04 and broad visual implementation remain behind the recorded direction checkpoint.
-- owner: the human operator owns real-live acceptance; the developer owns a narrow timeline-backed reliability fix only if the probe fails; the supervising AI owns the next outcome-sized Work Packet and any F-04/visual direction framing.
-- next move: run the bounded SP-023 real-live probe and either accept the slice or open one narrow reliability fix from the exported timeline. If the gate cannot run, prepare only reversible F-04/visual previews for one combined direction-and-implementation decision.
-
-## Proposed Development Horizon
-
-- gate: accept or narrowly repair SP-023 from a real 3-6 stream operator timeline; mocked evidence cannot close it.
-- direction: compare the fixed F-04/visual states and select one search layout plus one product posture in a single checkpoint. The current recommendation is right-side search tray plus Operator Desk, but it is not implementation authorization.
-- vertical slice: implement the selected search/visual direction end to end without reopening held sidebar, OAuth, i18n, or platform work.
-- release baseline: close SP-021 at 11/11, rerun real-live and 0/4/12-tile acceptance, then rebuild and verify the Windows package that replaces the 2026-04-15 artifact.
-- farthest safe target: a packaged baseline with SP-023 accepted and SP-021 complete. Saved monitoring sets or a Live Hub may be explored next, but require a new scope decision before implementation.
-
-## Next Move
-
-Coordinator reviews the completed search consistency repair. The human operator separately runs the SP-023 real-live probe; SP-007 channel-related search and F-04/visual work require an appropriately scoped next decision.
-
-## Resume Sequence
-
-1. Fetch the remote whose URL is the canonical GitHub repository; while PR #23 remains open, check out `codex/workflow-handoff` and pull it with `--ff-only`. If it has merged or closed, use updated `main` instead.
-2. Run `npm ci` with Node.js 22.12 or newer, then run `npx playwright install chromium` when that workstation does not already have the matching browser binary.
-3. Read this file, `docs/AI_RULES.md`, `docs/specs/live-reliability-probe.md`, and the F-04 checkpoint in `docs/specs/ux-refinement-phase1.md`.
-4. Prefer the SP-023 real-live gate. When current live URLs are unavailable, create only the fixed-state F-04/visual previews described in SP-021 and return for one decision.
-5. Before publishing another state change, run formatting, lint, the narrow relevant Playwright test, and `git diff --check`; use the full suite when shared UI/player behavior changes.
+Earlier committed mocked review evidence remains under `docs/verification/2026-07-07/` (SP-023) and `docs/verification/2026-07-06/` (SP-022). It does not establish real-live acceptance. Feature behavior belongs in the indexed specs.

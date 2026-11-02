@@ -4,7 +4,7 @@
 **Priority**: P1
 **Category**: core
 **Created**: 2026-07-07
-**Last updated**: 2026-07-10
+**Last updated**: 2026-11-02
 
 ## Purpose
 
@@ -48,6 +48,13 @@ The probe is deliberately local-only. It does not require OAuth, API keys, accou
   - `docs/verification/2026-07-07/sp-023-live-reliability-probe.json`
   - `docs/verification/2026-07-07/sp-023-live-reliability-probe.md`
   - `docs/verification/2026-07-07/sp-023-live-reliability-probe-debug-panel.png`
+
+## Real-network observation (2026-11-02)
+
+- Fixed Web implementation `8a91dc0` was exercised with three public YouTube lives in an independent headless Chromium context, without mocked player events or blocked YouTube traffic. Coordinator compared all 21 Web implementation files with the commit's Git blobs; all matched.
+- Fresh-context initial batch play, group-A pause/resume and sync were observed through real commands and per-player readbacks. Buffering/recovery attempts during resume were followed by all three players returning to playing; natural-outage recovery was not established.
+- Run2 and run3 manifests, stage JSON and screen captures are local-only evidence under `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/live-8a91dc0/`. The first run's temporary test-results files were lost; the later runs are new observations, not reconstructed evidence.
+- These checks do not accept the latest packaged Electron UI or replace the human operator's viewing/operation judgment. See `docs/runtime-state.md` for delivered code, package parity and remaining acceptance.
 
 ## Boundaries
 
