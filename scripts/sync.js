@@ -113,6 +113,9 @@ function getSuspensionReason(record, now) {
   if (!record) {
     return 'no-state';
   }
+  if (typeof record.state !== 'number') {
+    return 'no-state';
+  }
   if (typeof record.state === 'number') {
     if (record.state === 3) {
       return 'buffering';
@@ -160,16 +163,14 @@ function pickLeader(activeEntries) {
   }
 
   if (SYNC_SETTINGS.leaderMode === 'least-buffered') {
-    // Choose the video with least buffering time (most stable)
+    // A missing seek is older than every recorded seek; ties retain tile order.
     let leastBuffered = null;
-    let minBufferTime = Infinity;
+    let oldestSeek = Infinity;
     for (const entry of activeEntries) {
       if (typeof entry.rec?.time === 'number' && entry.rec.state === 1) {
-        // Calculate buffering ratio (would need buffering time tracking)
-        // For now, prefer videos that haven't been suspended recently
-        const bufferTime = entry.rec.lastSeekAt ? Date.now() - entry.rec.lastSeekAt : 0;
-        if (bufferTime < minBufferTime) {
-          minBufferTime = bufferTime;
+        const lastSeek = entry.rec.lastSeekAt ?? 0;
+        if (lastSeek < oldestSeek) {
+          oldestSeek = lastSeek;
           leastBuffered = entry;
         }
       }
@@ -300,6 +301,12 @@ function reconcileGroup(groupVideos, now) {
 
   const leaderEntry = pickLeader(activeEntries);
   if (!leaderEntry) {
+    for (const v of groupVideos) {
+      const suspended = v.iframeLoaded && suspendedPlayers.get(v.iframe?.contentWindow);
+      if (suspended) {
+        attemptRecovery(v, suspended.reason, null);
+      }
+    }
     return;
   }
   const leaderRecord = leaderEntry.rec;
@@ -409,7 +416,11 @@ function reconcileGroup(groupVideos, now) {
     const offsetSec = (entry.v.offsetMs || 0) / 1000;
     const expectedTime = leaderRecord.time + offsetSec;
     const drift = record.time - expectedTime;
-    if (Math.abs(drift) > rejoinToleranceSeconds) {
+    if (
+      entry !== leaderEntry &&
+      (!leaderIsLive || offsetSec !== 0) &&
+      Math.abs(drift) > rejoinToleranceSeconds
+    ) {
       sendCommand(entry.v.iframe, 'seekTo', [expectedTime, true]);
     }
     if (leaderPlaying) {

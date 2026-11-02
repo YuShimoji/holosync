@@ -82,7 +82,7 @@ class StorageAdapter {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
-          resolve(result[key]);
+          resolve(result[key]?.value ?? null);
         }
       });
     });

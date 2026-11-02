@@ -460,8 +460,23 @@ export async function refreshDescriptionsForAllTiles() {
 
 function loadQueueItem(videoEntry) {
   const newVideoId = videoEntry.queue[videoEntry.queueIndex];
+  const oldVideoId = videoEntry.id;
+  if (videoEntry.tile.classList.contains('focus-target')) {
+    _deps.toggleFocusMode?.(oldVideoId);
+  }
+  const zoomWasOpen = !!videoEntry.zoomPanel;
+  if (zoomWasOpen) {
+    _deps.destroyZoomPanel?.(videoEntry);
+  }
   videoEntry.id = newVideoId;
   videoEntry.tile.dataset.videoId = newVideoId;
+  videoEntry.iframe.title = `YouTube video ${newVideoId}`;
+  if (zoomWasOpen) {
+    _deps.toggleZoomPanel(videoEntry);
+  }
+  if (state.audioFocusVideoId === oldVideoId && oldVideoId !== newVideoId) {
+    _deps.setAudioFocus(newVideoId);
+  }
 
   const thumb = videoEntry.tile.querySelector('.tile-thumbnail');
   if (thumb) {
@@ -525,6 +540,7 @@ export function persistVideos() {
     zoomPanelX: v.zoomPanelX ?? null,
     zoomPanelY: v.zoomPanelY ?? null,
     zoomShape: v.zoomShape ?? null,
+    zoomRadius: v.zoomRadius ?? null,
     queue: v.queue || null,
     queueIndex: v.queue ? v.queueIndex : undefined,
   }));
@@ -586,17 +602,14 @@ export function createTile(videoId, options = {}) {
   zoomBtn.textContent = '🔍';
   zoomBtn.title = 'ズームビュー';
   zoomBtn.addEventListener('click', () => {
-    const entry = videos.find((v) => v.id === videoId);
-    if (entry) {
-      _deps.toggleZoomPanel(entry);
-    }
+    _deps.toggleZoomPanel(videoEntry);
   });
 
   const audioBtn = document.createElement('button');
   audioBtn.className = 'tile-action-btn tile-audio-btn';
   audioBtn.textContent = '\u{1F508}';
   audioBtn.title = 'オーディオマスターに設定';
-  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoId));
+  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoEntry.id));
 
   const focusBtn = document.createElement('button');
   focusBtn.className = 'tile-action-btn tile-focus-btn';
@@ -608,7 +621,7 @@ export function createTile(videoId, options = {}) {
   focusBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_deps.toggleFocusMode) {
-      _deps.toggleFocusMode(videoId);
+      _deps.toggleFocusMode(videoEntry.id);
     }
   });
 
@@ -623,7 +636,7 @@ export function createTile(videoId, options = {}) {
       return;
     }
     if (_deps.toggleFocusMode) {
-      _deps.toggleFocusMode(videoId);
+      _deps.toggleFocusMode(videoEntry.id);
     }
   });
 
@@ -631,7 +644,7 @@ export function createTile(videoId, options = {}) {
   removeBtn.className = 'tile-action-btn tile-remove';
   removeBtn.textContent = '✕';
   removeBtn.title = 'この動画を削除';
-  removeBtn.addEventListener('click', () => removeVideo(videoId, tile));
+  removeBtn.addEventListener('click', () => removeVideo(videoEntry.id, tile));
 
   actions.appendChild(focusBtn);
   actions.appendChild(audioBtn);
@@ -667,13 +680,14 @@ export function createTile(videoId, options = {}) {
   popoutLink.textContent = 'YouTubeで開く';
   popoutLink.addEventListener('click', (event) => {
     event.stopPropagation();
-    const embedUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const currentId = videoEntry.id;
+    const embedUrl = `https://www.youtube.com/watch?v=${currentId}`;
     if (window.electronShell?.openExternal) {
       window.electronShell.openExternal(embedUrl);
     } else {
       window.open(
         embedUrl,
-        `holosync-${videoId}`,
+        `holosync-${currentId}`,
         'width=960,height=720,menubar=no,toolbar=no,location=no'
       );
     }
@@ -757,6 +771,7 @@ export function createTile(videoId, options = {}) {
     zoomPanelX: options.zoomPanelX ?? null,
     zoomPanelY: options.zoomPanelY ?? null,
     zoomShape: options.zoomShape ?? null,
+    zoomRadius: options.zoomRadius ?? null,
     pendingSeekTime: options.currentTime ?? null,
     iframeLoaded: false,
     queue: options.queue || null,
@@ -836,7 +851,7 @@ export function createTile(videoId, options = {}) {
 }
 
 function removeVideo(videoId, tile) {
-  const idx = videos.findIndex((v) => v.id === videoId);
+  const idx = videos.findIndex((v) => v.tile === tile);
   if (idx === -1) {
     return;
   }

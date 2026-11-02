@@ -169,7 +169,7 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 - デフォルト直径 250 → 375 (1.5 倍)
 - wheel ズーム範囲 100-600 → 100-1000
 - shape select (circle/rounded/square) を radius slider (0-50%) に置換
-- `resolveRadius()` で旧 `zoomShape` を radius 値に自動変換 (後方互換)
+- `zoomRadius` を保存・復元し、`resolveRadius()` で旧 `zoomShape` も radius 値に変換 (後方互換)
 - アスペクト比変更は将来検討 (未実装)
 
 ### F-10: ウィンドウ-動画サイズの双方向フィット

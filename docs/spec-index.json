@@ -87,7 +87,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/playlist-queue-mode.md",
-    "summary": "Single-tile playlist queue playback with controls, persistence, and share URL support."
+    "summary": "Single-tile queue playback and local persistence; share URL and preset restoration parity remains incomplete, and duplicate video IDs constrain focus/audio selection."
   },
   {
     "id": "SP-012",
@@ -132,7 +132,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/fitmode.md",
-    "summary": "Dynamic layout, cover behavior, and fit controls."
+    "summary": "Dynamic layout, Cover, Focus and Quick Fit controls; legacy Full-Fit was removed."
   },
   {
     "id": "SP-018",

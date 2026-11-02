@@ -104,3 +104,5 @@ sanitizeArgs に loadVideoById 用の検証を追加:
 - [x] loadVideoById がpostMessage経由で動作する
 - [x] キュー状態がlocalStorageに永続化される
 - [x] lint通過
+
+切替後のタイル操作は現在の動画IDを参照し、音声マスターも切替先へ引き継ぐ。開いているズームは切替先で再作成し、Focus表示中の切替ではFocusを解除する。異なるタイルが同じ動画IDを表示する場合、IDベースのFocusと音声マスターの区別には制約が残る。

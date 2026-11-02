@@ -2,38 +2,51 @@
 
 ## 概要
 
-動画タイル表示のフィットモード制御。レイアウトセレクトとは独立して、動的列数計算・余白なし表示・1動画最大化の3機能を提供する。
+動画タイルの表示調整を担当するコントローラー。通常のレイアウト選択に加え、Cover、Focus、Quick Fit、およびウィンドウサイズ調整を提供する。Full-FitはSP-021/F-02で廃止済み。
 
-## 機能
+## 現行機能
 
-### 1. 動的列数計算 (Auto Dynamic)
+### 動的列数計算 (Auto Dynamic)
 
-- レイアウト「自動」選択時に有効
-- コンテナサイズと動画数から 16:9 アスペクト比を考慮した最適列数を算出
-- `ResizeObserver` でリサイズ追従
-- CSS 変数 `--auto-cols` でグリッド列数を制御
+- レイアウト「自動」選択時にグリッドの列数と必要に応じた行高を計算する。
+- コンテナサイズと動画数を使い、16:9からの歪みと未使用領域を考慮する。
+- `ResizeObserver` でコンテナのサイズ変更に追従し、CSS変数 `--auto-cols` と必要に応じて `--auto-row-height` を設定する。
 
-### 2. Cover Mode (余白なし表示)
+### Cover Mode
 
-- `fitModeBtn` クリックでトグル
-- `object-fit: cover` で動画タイルを隙間なく埋める（レターボックス除去）
-- SVG アイコンが状態に応じて変化（grid → solid）
-- `fitCoverMode` として `storageAdapter` に永続化
+- `#fitModeBtn` で切り替える。
+- `fit-cover` クラスを設定し、動画表示をCoverにする。
+- `fitCoverMode` を `storageAdapter` に保存する。
 
-### 3. Full-Fit Mode (1動画最大化)
+### Focus Mode
 
-- `fullFitBtn` クリックでトグル
-- 先頭動画のみ表示し、グリッド全体に最大化
-- 元のレイアウトクラスを保存・復元
-- `fitFullFit` として `storageAdapter` に永続化
+- タイルのダブルクリックまたはタイルのフォーカスボタンから、対象動画1本を表示するモードに切り替える。実装上の入口は `toggleFocusMode(videoId)`。
+- `body.focus-mode` と対象タイルの `focus-target` を設定し、サイドバーとツールバーを折りたたむ。
+- ESCで解除し、開始前のサイドバー／ツールバー状態を復元する。フォーカス中のエッジ表示ボタンから解除する経路もある。
+- これは旧Full-Fitの後継としてSP-021/F-02とF-11で採用された別実装であり、Full-Fitの継続動作を意味しない。
+
+### Quick Fit
+
+- `#quickFitBtn` またはFキーから切り替える (`toggleQuickFit()`)。
+- グリッド内の全タイルを維持したまま、サイドバーとツールバーを折りたたみ、Electronでは必要に応じてフレームレス表示にする。
+- ESCまたは再度の切り替えで解除し、保存していた表示状態を復元する。
+- `quickFitAutoAspect` が有効でElectron APIが利用可能な場合、16:9にウィンドウ内容比率を設定する。
+
+### Fit Window to Videos
+
+- Electronの `#fitWindowBtn` から `fitWindowToVideos()` を一度実行する。動画がない場合は何もしない。
+- 現在の列数と行数をもとに、各動画を16:9と仮定してウィンドウ内容の比率を設定する。
+- Web環境ではボタンを隠す。これはトグルモードではない。
+
+## 廃止済み機能
+
+- **Full-Fit**: SP-021/F-02でFocus Modeに置き換えて廃止。`#fullFitBtn`、`layout-fullfit`、`setFullFit`、`toggleFullFit` は現行実装にない。残存する `fitFullFit` 保存キーは初期化時に `null` を書き込み、旧値を整理するためのもの。
+- **Cover Mode**は現行機能であり、独立した表示調整として残る。
 
 ## モジュール構成
 
-- ファイル: `scripts/fitmode.js` (180行)
+- 実装: [`scripts/fitmode.js`](../../scripts/fitmode.js)
 - 依存: `storage.js`, `state.js`
-- エクスポート: `initFitMode`, `toggleCoverMode`, `toggleFullFit`, `onVideosChanged`
-- DOM: `#fitModeBtn`, `#fullFitBtn`, `#fitModeIcon` (SVG), `#layoutSelect`
-
-## UI 配置
-
-ツールバーの `.layout-controls` 内、`layoutSelect` の右隣に2ボタンを配置。
+- 公開関数: `initFitMode`, `exitFocusMode`, `isFocusModeActive`, `toggleQuickFit`, `fitWindowToVideos`, `toggleFocusMode`, `onVideosChanged`
+- DOM入口: `#fitModeBtn`, `#quickFitBtn`, Electron用 `#fitWindowBtn`, `#layoutSelect`
+- Focus Modeのタイル入口は `scripts/player.js` が `toggleFocusMode(videoId)` を呼び出す。

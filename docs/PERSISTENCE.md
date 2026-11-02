@@ -130,3 +130,5 @@ URLパラメータ `session` からBase64圧縮状態を復元する。
 - IndexedDB トランザクションエラーは Promise reject で処理
 - URL パラメータの動画IDは11文字チェックでバリデーション
 - フォールバック失敗時はコンソール警告を出力し、`null` を返す
+
+動画の `zoomRadius` は通常起動と前回セッション復元で引き継ぐ。旧 `zoomShape` も読み込める。Chrome storage は他の方式と同様に保存envelopeの `value` を返し、欠損時は `null` を返す。

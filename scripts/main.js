@@ -421,6 +421,7 @@ async function initializeApp() {
           zoomPanelX: opts.zoomPanelX ?? null,
           zoomPanelY: opts.zoomPanelY ?? null,
           zoomShape: opts.zoomShape ?? null,
+          zoomRadius: opts.zoomRadius ?? null,
           queue: opts.queue ?? null,
           queueIndex: opts.queueIndex ?? 0,
         });

@@ -1,6 +1,6 @@
 # Runtime State
 
-Last reviewed: 2026-11-02 (repair dispatch; older verification remains dated below)
+Last reviewed: 2026-11-02 (repair verification; older verification remains dated below)
 
 ## Current Position
 
@@ -10,10 +10,10 @@ Last reviewed: 2026-11-02 (repair dispatch; older verification remains dated bel
 - active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and fetched head `33cd56f` is 7 commits ahead of `main` as verified on 2026-08-12. Resolve the exact head with a live fetch on resume instead of relying only on this recorded hash.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
-- active slice: existing playback, tile-operation, and settings-restoration repairs before SP-023 operator acceptance
-- phase: implement
-- current outcome: six observed implementation mismatches are assigned for repair; the SP-023 probe/readback remains delivered and real-live acceptance remains pending
-- primary bottleneck: live rejoin seeks, recovery without a leader, and queue controls retaining the old video ID need repair and regression evidence; real public YouTube multi-live playback is still unaccepted
+- active slice: SP-023 real multi-live operator acceptance
+- phase: verify
+- current outcome: playback, tile-operation, and settings-restoration repairs and mocked regression checks are complete except for duplicate-ID focus/audio ambiguity; real-live acceptance remains pending
+- primary bottleneck: real public YouTube multi-live playback remains unaccepted
 
 ## Delivered Baseline
 
@@ -33,6 +33,14 @@ Last reviewed: 2026-11-02 (repair dispatch; older verification remains dated bel
 - integration: this chat owns only the initial dispatch record; thereafter the implementation owner alone edits runtime-state and performs Git writes. The documentation owner returns its result in its own chat; the implementation owner uses `wait_threads` to review it before an integrated, path-scoped commit/push.
 - completion: focused regression evidence, lint/format/full Playwright checks, relevant spec updates, and a rebuilt Windows package. Real-live acceptance remains human-owned and cannot be closed by mocked checks.
 - next owner after code verification: human operator for SP-023 real-live acceptance. Search history/metadata and queue share/preset parity remain existing-spec follow-up work; F-04/broad visual implementation still requires the recorded direction decision. No dependency update or main-branch merge is authorized by this assignment.
+
+## Repair verification (2026-11-02, JST)
+
+- measured against base commit `04d6229` plus the repair worktree: live rejoin seek suppression, leaderless reason-based recovery, oldest-seek leader choice, current queue tile actions, radius persistence, and Chrome value reads were implemented. Mocked regression tests passed 3/3; full Playwright passed 21/21; lint, format check, and diff whitespace check passed.
+- `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`. The packaged process remained running for six seconds; no packaged UI interaction or live playback was verified.
+- documentation owner chat completed its two specified documents; their limited diff was reviewed and included. Requested model/effort for both chats was accepted at creation; effective runtime settings remain unverified.
+- remaining: if a queue switches to an ID already displayed in another tile, deletion is tile-specific but Focus and audio master still use video IDs and cannot distinguish those tiles. Search history/metadata and queue share/preset parity remain separate follow-ups. Real 3–6-stream SP-023 acceptance belongs to the human operator; F-04 and broad visual implementation remain direction-gated.
+- next owner: human operator runs the SP-023 live probe; a future bounded implementation owner resolves duplicate-ID identity and remaining persistence discrepancies.
 
 ## Active Gate and Independent Lane
 
@@ -96,7 +104,7 @@ Last reviewed: 2026-11-02 (repair dispatch; older verification remains dated bel
 
 ## Next Move
 
-The implementation owner completes the authorized repairs and integrated verification, then returns the SP-023 real-live operator probe to the human operator. Search/persistence follow-ups remain separate from the held F-04/visual direction decision.
+The human operator runs the SP-023 real-live probe. Resolve duplicate-ID tile identity and search/persistence follow-ups in a separately scoped repair; F-04/visual work remains behind its direction decision.
 
 ## Resume Sequence
 
