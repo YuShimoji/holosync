@@ -78,7 +78,8 @@ export const state = {
   sidebarStateBeforeImmersive: null,
   toolbarStateBeforeImmersive: null,
   embedSettings: { ...DEFAULT_EMBED_SETTINGS },
-  audioFocusVideoId: null,
+  audioFocusVideoId: null, // legacy-compatible video ID
+  audioFocusTileId: null,
   audioMode: 'normal', // 'normal' | 'solo' | 'ducking'
 };
 

@@ -22,8 +22,8 @@ main.js側でこのコールバックを受けて `applyAudioFocus()` を実行�
 
 ### 2. player.js: タイル削除時のaudio focus cleanup
 
-`removeVideo()` 内で、削除対象が `state.audioFocusVideoId` と一致する場合、
-`_deps.clearAudioFocus(videoId)` を呼び出す。
+`removeVideo()` 内で、削除対象が `state.audioFocusTileId` と一致する場合、
+`_deps.clearAudioFocus()` を呼び出す。
 
 ### 3. sync.js: 回復後のaudio focus復元
 
@@ -41,6 +41,10 @@ sync.jsに `setSyncCallbacks({ onRecovery })` 関数を追加。
 
 - [ ] solo/duckingモードでマスター設定→バッファリング発生→回復後にマスターの音声状態が維持される
 - [ ] 遅延ロードされたタイルが、現在のaudio mode/focusに従って音声状態が設定される
-- [ ] マスタータイル削除後に `state.audioFocusVideoId` が `null` になる
+- [ ] マスタータイル削除後に `state.audioFocusTileId` が `null` になる
 - [ ] normalモードでは既存動作に変更なし
 - [ ] lint通過
+
+## タイルの識別と保存
+
+音声マスターは動画IDではなく `tileId` で識別・保存する。同じ動画IDのタイルが複数あっても選択タイルだけに適用し、キュー切替後も同じタイルを維持する。旧 `audioFocusVideoId` だけがある場合は保存順の最初の一致タイルに移行する。選択タイルの削除で解除する。

@@ -33,7 +33,7 @@
     "pct": 100,
     "cat": "core",
     "file": "docs/specs/audio-master-pinning.md",
-    "summary": "Audio focus durability across sync recovery, lazy loading, and tile deletion."
+    "summary": "Tile-specific audio focus across duplicate video IDs, sync recovery, lazy loading, deletion, and local restoration."
   },
   {
     "id": "SP-006",
@@ -87,7 +87,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/playlist-queue-mode.md",
-    "summary": "Single-tile queue playback and local persistence; share URL and preset restoration parity remains incomplete, and duplicate video IDs constrain focus/audio selection."
+    "summary": "Single-tile queue playback with stable tile identity and local persistence; share URL and preset restoration parity remains incomplete."
   },
   {
     "id": "SP-012",

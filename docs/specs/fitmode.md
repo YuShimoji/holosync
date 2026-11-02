@@ -20,8 +20,9 @@
 
 ### Focus Mode
 
-- タイルのダブルクリックまたはタイルのフォーカスボタンから、対象動画1本を表示するモードに切り替える。実装上の入口は `toggleFocusMode(videoId)`。
+- タイルのダブルクリックまたはタイルのフォーカスボタンから、対象動画1本を表示するモードに切り替える。実装上の入口は `toggleFocusMode(tileId)`。
 - `body.focus-mode` と対象タイルの `focus-target` を設定し、サイドバーとツールバーを折りたたむ。
+- 選択タイルIDを保存し、通常起動で同じタイルを復元する。キュー切替中も対象は同じタイルであり、対象タイルの削除で解除する。
 - ESCで解除し、開始前のサイドバー／ツールバー状態を復元する。フォーカス中のエッジ表示ボタンから解除する経路もある。
 - これは旧Full-Fitの後継としてSP-021/F-02とF-11で採用された別実装であり、Full-Fitの継続動作を意味しない。
 
@@ -49,4 +50,4 @@
 - 依存: `storage.js`, `state.js`
 - 公開関数: `initFitMode`, `exitFocusMode`, `isFocusModeActive`, `toggleQuickFit`, `fitWindowToVideos`, `toggleFocusMode`, `onVideosChanged`
 - DOM入口: `#fitModeBtn`, `#quickFitBtn`, Electron用 `#fitWindowBtn`, `#layoutSelect`
-- Focus Modeのタイル入口は `scripts/player.js` が `toggleFocusMode(videoId)` を呼び出す。
+- Focus Modeのタイル入口は `scripts/player.js` が `toggleFocusMode(tileId)` を呼び出す。

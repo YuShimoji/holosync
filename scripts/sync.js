@@ -138,7 +138,9 @@ function getSuspensionReason(record, now) {
 
 function pickLeader(activeEntries) {
   if (SYNC_SETTINGS.leaderMode === 'manual' && SYNC_SETTINGS.leaderId) {
-    const manual = activeEntries.find((entry) => entry.v.id === SYNC_SETTINGS.leaderId);
+    const manual =
+      activeEntries.find((entry) => entry.v.tileId === SYNC_SETTINGS.leaderId) ||
+      activeEntries.find((entry) => entry.v.id === SYNC_SETTINGS.leaderId);
     if (manual && typeof manual.rec?.time === 'number' && manual.rec.state === 1) {
       return manual;
     }
@@ -417,7 +419,7 @@ function reconcileGroup(groupVideos, now) {
     const expectedTime = leaderRecord.time + offsetSec;
     const drift = record.time - expectedTime;
     if (
-      entry !== leaderEntry &&
+      entry.win !== leaderEntry.win &&
       (!leaderIsLive || offsetSec !== 0) &&
       Math.abs(drift) > rejoinToleranceSeconds
     ) {

@@ -358,8 +358,7 @@ function renderDescriptionWithTimestamps(desc, videoId) {
       return;
     }
     const seconds = Number(link.dataset.seconds);
-    const vid = link.dataset.videoId;
-    const entry = videos.find((v) => v.id === vid);
+    const entry = videos.find((v) => v.tile === container.closest('.tile'));
     if (entry?.iframe) {
       sendCommand(entry.iframe, 'seekTo', [seconds]);
     }
@@ -396,7 +395,7 @@ async function fetchVideoDescription(videoId, bodyEl) {
       const desc = data.items[0].snippet.description || '';
       const descEl = renderDescriptionWithTimestamps(desc, videoId);
       bodyEl.appendChild(descEl);
-      const entry = videos.find((v) => v.id === videoId);
+      const entry = videos.find((v) => v.infoBodyEl === bodyEl && v.id === videoId);
       if (entry) {
         entry.metaDescription = desc;
       }
@@ -420,7 +419,7 @@ async function fetchVideoMeta(videoId, titleEl, bodyEl) {
       return;
     }
     const data = await resp.json();
-    const entry = videos.find((v) => v.id === videoId);
+    const entry = videos.find((v) => v.infoBodyEl === bodyEl && v.id === videoId);
     if (entry) {
       entry.meta = { title: data.title, author: data.author_name };
     }
@@ -461,9 +460,6 @@ export async function refreshDescriptionsForAllTiles() {
 function loadQueueItem(videoEntry) {
   const newVideoId = videoEntry.queue[videoEntry.queueIndex];
   const oldVideoId = videoEntry.id;
-  if (videoEntry.tile.classList.contains('focus-target')) {
-    _deps.toggleFocusMode?.(oldVideoId);
-  }
   const zoomWasOpen = !!videoEntry.zoomPanel;
   if (zoomWasOpen) {
     _deps.destroyZoomPanel?.(videoEntry);
@@ -474,8 +470,8 @@ function loadQueueItem(videoEntry) {
   if (zoomWasOpen) {
     _deps.toggleZoomPanel(videoEntry);
   }
-  if (state.audioFocusVideoId === oldVideoId && oldVideoId !== newVideoId) {
-    _deps.setAudioFocus(newVideoId);
+  if (state.audioFocusTileId === videoEntry.tileId && oldVideoId !== newVideoId) {
+    _deps.refreshAudioFocus?.(videoEntry);
   }
 
   const thumb = videoEntry.tile.querySelector('.tile-thumbnail');
@@ -527,6 +523,7 @@ function queuePrev(videoEntry) {
 export function persistVideos() {
   const data = videos.map((v) => ({
     id: v.id,
+    tileId: v.tileId,
     syncGroupId: v.syncGroupId,
     offsetMs: v.offsetMs,
     cellCol: v.cellCol ?? null,
@@ -565,6 +562,13 @@ export function createTile(videoId, options = {}) {
   const tile = document.createElement('div');
   tile.className = 'tile';
   tile.dataset.videoId = videoId;
+  const tileId =
+    typeof options.tileId === 'string' &&
+    options.tileId &&
+    !videos.some((v) => v.tileId === options.tileId)
+      ? options.tileId
+      : crypto.randomUUID();
+  tile.dataset.tileId = tileId;
 
   const frameWrap = document.createElement('div');
   frameWrap.className = 'frame-wrap';
@@ -609,7 +613,7 @@ export function createTile(videoId, options = {}) {
   audioBtn.className = 'tile-action-btn tile-audio-btn';
   audioBtn.textContent = '\u{1F508}';
   audioBtn.title = 'オーディオマスターに設定';
-  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoEntry.id));
+  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoEntry));
 
   const focusBtn = document.createElement('button');
   focusBtn.className = 'tile-action-btn tile-focus-btn';
@@ -621,7 +625,7 @@ export function createTile(videoId, options = {}) {
   focusBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_deps.toggleFocusMode) {
-      _deps.toggleFocusMode(videoEntry.id);
+      _deps.toggleFocusMode(videoEntry.tileId);
     }
   });
 
@@ -636,7 +640,7 @@ export function createTile(videoId, options = {}) {
       return;
     }
     if (_deps.toggleFocusMode) {
-      _deps.toggleFocusMode(videoEntry.id);
+      _deps.toggleFocusMode(videoEntry.tileId);
     }
   });
 
@@ -751,6 +755,7 @@ export function createTile(videoId, options = {}) {
   const videoEntry = {
     iframe,
     id: videoId,
+    tileId,
     tile,
     syncGroupId: initialGroupId,
     offsetMs: options.offsetMs ?? 0,
@@ -867,8 +872,11 @@ function removeVideo(videoId, tile) {
     suspendedPlayers.delete(win);
     speedAdjustedPlayers.delete(win);
   }
-  if (state.audioFocusVideoId === videoId) {
-    _deps.clearAudioFocus?.(videoId);
+  if (state.audioFocusTileId === video.tileId) {
+    _deps.clearAudioFocus?.();
+  }
+  if (video.tile.classList.contains('focus-target')) {
+    _deps.toggleFocusMode?.(video.tileId);
   }
   // Tear down zoom loupe before tile is detached. Otherwise its setInterval
   // keeps running against a Window that has been GCed and its DOM node

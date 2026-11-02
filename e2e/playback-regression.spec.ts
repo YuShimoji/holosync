@@ -236,3 +236,224 @@ test('radius survives restart and last-session restore while legacy shape remain
   });
   expect(restored).toBe('31%');
 });
+
+test('duplicate-video queue tiles retain independent focus, audio and restoration', async ({
+  page,
+}) => {
+  await page.evaluate(async () => {
+    const { storageAdapter } = await import('/scripts/storage.js');
+    await storageAdapter.setItem('videos', [
+      { id: 'BBBBBBBBBBB', tileId: 'ordinary-tile' },
+      {
+        id: 'AAAAAAAAAAA',
+        tileId: 'queue-tile',
+        queue: ['AAAAAAAAAAA', 'BBBBBBBBBBB'],
+        queueIndex: 0,
+      },
+    ]);
+    await storageAdapter.setItem('audioFocusTileId', null);
+    await storageAdapter.setItem('audioFocusVideoId', null);
+    await storageAdapter.setItem('focusTileId', null);
+  });
+  await page.reload();
+  await expect(page.locator('.tile')).toHaveCount(2);
+  const before = await page.evaluate(async () => {
+    const { videos, state, SYNC_SETTINGS } = await import('/scripts/state.js');
+    const { advanceQueue, persistVideos } = await import('/scripts/player.js');
+    const { pickLeader } = await import('/scripts/sync.js');
+    const [ordinary, queue] = videos;
+    advanceQueue(queue);
+    queue.tile.querySelector('.tile-sync-badge').click();
+    const groups = videos.map((v) => v.syncGroupId);
+    queue.tile.querySelector('.tile-audio-btn').click();
+    queue.tile.querySelector('.tile-focus-btn').click();
+    state.audioMode = 'solo';
+    await Promise.all(
+      videos.map(
+        (v) =>
+          new Promise((resolve) => {
+            v.iframe.addEventListener('load', resolve, { once: true });
+            v.iframe.src = 'about:blank';
+          })
+      )
+    );
+    const commands = [];
+    for (const v of videos)
+      v.iframe.contentWindow.postMessage = (msg) => {
+        const m = JSON.parse(msg);
+        commands.push([v.tileId, m.func]);
+      };
+    document.querySelector('#audioModeSelect').value = 'solo';
+    document.querySelector('#audioModeSelect').dispatchEvent(new Event('change'));
+    SYNC_SETTINGS.leaderMode = 'manual';
+    SYNC_SETTINGS.leaderId = queue.tileId;
+    const leader = pickLeader(videos.map((v) => ({ v, rec: { state: 1, time: 5 } }))).v.tileId;
+    persistVideos();
+    return {
+      ids: videos.map((v) => v.tileId),
+      groups,
+      master: state.audioFocusTileId,
+      focus: videos.map((v) => v.tile.classList.contains('focus-target')),
+      audio: videos.map((v) => v.tile.classList.contains('audio-master')),
+      commands,
+      leader,
+    };
+  });
+  expect(before.ids[0]).not.toBe(before.ids[1]);
+  expect(before.groups).toEqual([null, 'A']);
+  expect(before.master).toBe(before.ids[1]);
+  expect(before.focus).toEqual([false, true]);
+  expect(before.audio).toEqual([false, true]);
+  expect(before.commands).toContainEqual([before.ids[0], 'mute']);
+  expect(before.commands).toContainEqual([before.ids[1], 'unMute']);
+  expect(before.leader).toBe(before.ids[1]);
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const { storageAdapter } = await import('/scripts/storage.js');
+        return [
+          await storageAdapter.getItem('focusTileId'),
+          await storageAdapter.getItem('audioFocusTileId'),
+          (await storageAdapter.getItem('videos'))?.length,
+        ];
+      })
+    )
+    .toEqual([before.ids[1], before.ids[1], 2]);
+  await page.reload();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const { videos, state } = await import('/scripts/state.js');
+        return [
+          videos.length,
+          state.audioFocusTileId,
+          videos.filter((v) => v.tile.classList.contains('focus-target')).map((v) => v.tileId),
+        ];
+      })
+    )
+    .toEqual([2, before.ids[1], [before.ids[1]]]);
+  const after = await page.evaluate(async () => {
+    const { videos, state } = await import('/scripts/state.js');
+    const queue = videos[1];
+    queue.tile.querySelector('.queue-prev-btn').click();
+    const focusAfterSwitch = videos.map((v) => v.tile.classList.contains('focus-target'));
+    const afterSwitch = [state.audioFocusTileId, state.audioFocusVideoId];
+    queue.tile.querySelector('.tile-focus-btn').click();
+    const afterExit = videos.map((v) => v.tile.classList.contains('focus-target'));
+    queue.tile.querySelector('.tile-remove').click();
+    return {
+      afterExit,
+      afterSwitch,
+      focusAfterSwitch,
+      count: videos.length,
+      remaining: videos[0].tileId,
+      master: state.audioFocusTileId,
+    };
+  });
+  expect(after.focusAfterSwitch).toEqual([false, true]);
+  expect(after.afterExit).toEqual([false, false]);
+  expect(after.afterSwitch).toEqual([before.ids[1], 'AAAAAAAAAAA']);
+  expect(after.count).toBe(1);
+  expect(after.remaining).toBe(before.ids[0]);
+  expect(after.master).toBeNull();
+});
+
+test('rejoining leader never seeks itself regardless of its offset', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const { videos, playerStates, suspendedPlayers } = await import('/scripts/state.js');
+    const { createTile } = await import('/scripts/player.js');
+    const { startSyncLoop } = await import('/scripts/sync.js');
+    createTile('AAAAAAAAAAA', { syncGroupId: 'A' });
+    createTile('BBBBBBBBBBB', { syncGroupId: 'A' });
+    const commands = [];
+    videos.forEach((v) => {
+      v.iframeLoaded = true;
+      v.iframe.contentWindow.postMessage = (msg) => {
+        const m = JSON.parse(msg);
+        if (m.func) commands.push([v.id, m.func]);
+      };
+    });
+    const original = window.setInterval;
+    let tick;
+    window.setInterval = (fn) => {
+      tick = fn;
+      return 9999;
+    };
+    startSyncLoop();
+    window.setInterval = original;
+    const rec = (state, time, duration) => ({ state, time, duration, lastUpdate: Date.now() });
+    const run = (offset, duration) => {
+      suspendedPlayers.clear();
+      videos[0].offsetMs = offset;
+      playerStates.set(videos[0].iframe.contentWindow, rec(3, 100, duration));
+      playerStates.set(videos[1].iframe.contentWindow, rec(3, 70, duration));
+      tick();
+      playerStates.set(videos[0].iframe.contentWindow, rec(1, 100, duration));
+      playerStates.set(videos[1].iframe.contentWindow, rec(1, 70, duration));
+      commands.length = 0;
+      tick();
+      return [...commands];
+    };
+    return [run(0, 50000), run(2000, 50000), run(2000, 1000)];
+  });
+  for (const commands of result) expect(commands).not.toContainEqual(['AAAAAAAAAAA', 'seekTo']);
+  expect(result[2]).toContainEqual(['BBBBBBBBBBB', 'seekTo']);
+});
+
+test('legacy saved videos and audio focus select the first matching tile', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { storageAdapter } = await import('/scripts/storage.js');
+    await storageAdapter.setItem('videos', [{ id: 'BBBBBBBBBBB' }, { id: 'BBBBBBBBBBB' }]);
+    await storageAdapter.setItem('audioFocusTileId', null);
+    await storageAdapter.setItem('audioFocusVideoId', 'BBBBBBBBBBB');
+    await storageAdapter.setItem('focusTileId', null);
+  });
+  await page.reload();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const { videos, state } = await import('/scripts/state.js');
+        return [
+          videos.length,
+          videos.map((v) => v.tile.classList.contains('audio-master')),
+          state.audioFocusTileId === videos[0]?.tileId,
+        ];
+      })
+    )
+    .toEqual([2, [true, false], true]);
+});
+
+test('legacy audio selection persists after generated tile IDs are saved', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { storageAdapter } = await import('/scripts/storage.js');
+    await storageAdapter.setItem('videos', [{ id: 'AAAAAAAAAAA' }]);
+    await storageAdapter.setItem('audioFocusTileId', null);
+    await storageAdapter.setItem('audioFocusVideoId', 'AAAAAAAAAAA');
+  });
+  await page.reload();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const { storageAdapter } = await import('/scripts/storage.js');
+        const vids = await storageAdapter.getItem('videos');
+        return (
+          !!vids?.[0]?.tileId &&
+          vids[0].tileId === (await storageAdapter.getItem('audioFocusTileId'))
+        );
+      })
+    )
+    .toBe(true);
+  await page.reload();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const { videos, state } = await import('/scripts/state.js');
+        return (
+          !!videos[0] &&
+          state.audioFocusTileId === videos[0].tileId &&
+          videos[0].tile.classList.contains('audio-master')
+        );
+      })
+    )
+    .toBe(true);
+});

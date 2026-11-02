@@ -1,6 +1,6 @@
 # Runtime State
 
-Last reviewed: 2026-11-02 (repair verification; older verification remains dated below)
+Last reviewed: 2026-11-02 (tile identity verification; older verification remains dated below)
 
 ## Current Position
 
@@ -10,9 +10,9 @@ Last reviewed: 2026-11-02 (repair verification; older verification remains dated
 - active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and fetched head `33cd56f` is 7 commits ahead of `main` as verified on 2026-08-12. Resolve the exact head with a live fetch on resume instead of relying only on this recorded hash.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
-- active slice: SP-023 real multi-live operator acceptance
+- active slice: queue share/preset and search consistency follow-up after coordinator review
 - phase: verify
-- current outcome: playback, tile-operation, and settings-restoration repairs and mocked regression checks are complete except for duplicate-ID focus/audio ambiguity; real-live acceptance remains pending
+- current outcome: duplicate-video tile identity and rejoining leader self-seek repairs pass mocked regression checks; real-live acceptance remains pending
 - primary bottleneck: real public YouTube multi-live playback remains unaccepted
 
 ## Delivered Baseline
@@ -39,8 +39,16 @@ Last reviewed: 2026-11-02 (repair verification; older verification remains dated
 - measured against base commit `04d6229` plus the repair worktree: live rejoin seek suppression, leaderless reason-based recovery, oldest-seek leader choice, current queue tile actions, radius persistence, and Chrome value reads were implemented. Mocked regression tests passed 3/3; full Playwright passed 21/21; lint, format check, and diff whitespace check passed.
 - `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`. The packaged process remained running for six seconds; no packaged UI interaction or live playback was verified.
 - documentation owner chat completed its two specified documents; their limited diff was reviewed and included. Requested model/effort for both chats was accepted at creation; effective runtime settings remain unverified.
-- remaining: if a queue switches to an ID already displayed in another tile, deletion is tile-specific but Focus and audio master still use video IDs and cannot distinguish those tiles. Search history/metadata and queue share/preset parity remain separate follow-ups. Real 3–6-stream SP-023 acceptance belongs to the human operator; F-04 and broad visual implementation remain direction-gated.
-- next owner: human operator runs the SP-023 live probe; a future bounded implementation owner resolves duplicate-ID identity and remaining persistence discrepancies.
+- remaining at that earlier verification: duplicate-video Focus/audio ambiguity; this was subsequently repaired in the tile identity slice below. Search history/metadata and queue share/preset parity remain separate follow-ups. Real 3–6-stream SP-023 acceptance belongs to the human operator; F-04 and broad visual implementation remain direction-gated.
+- next owner at that earlier verification: human operator for SP-023; tile identity was subsequently assigned to the existing implementation owner.
+
+## Tile identity repair (2026-11-02, verified 14:43 JST)
+
+- owner: independent implementation chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`; requested `gpt-6.1-terra / high`, effective setting not independently verified. Coordinator reviews this slice and assigns the already authorized queue-sharing/search follow-up.
+- measured against base `c3773b4` plus this repair worktree: stable tile IDs distinguish same-video Focus, audio master, manual sync leader, sync-group selection and tile ordering; duplicates and selection survive reload. Legacy audio video ID resolves to the first matching tile. Rejoining leader identity is compared by player window and does not self-seek.
+- initial estimate was 45–90 minutes including checks and delivery; implementation and verification completed earlier than that range. A parallel-suite test exposed startup/restore interaction; the test setup and idempotent restoration were corrected and checks rerun.
+- focused mocked regression: 7/7; full Playwright: 25/25; lint, format and diff whitespace checks passed. `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`; its process remained running for six seconds. Packaged UI and actual YouTube playback were not tested.
+- remaining and next owner: coordinator reviews the repair, then assigns the previously authorized queue share/preset and search consistency slice. The human operator separately owns SP-023 live acceptance; F-04/broad visual work remains direction-gated.
 
 ## Active Gate and Independent Lane
 
@@ -104,7 +112,7 @@ Last reviewed: 2026-11-02 (repair verification; older verification remains dated
 
 ## Next Move
 
-The human operator runs the SP-023 real-live probe. Resolve duplicate-ID tile identity and search/persistence follow-ups in a separately scoped repair; F-04/visual work remains behind its direction decision.
+Coordinator reviews the tile identity repair and advances the authorized queue-sharing/search consistency follow-up. The human operator separately runs the SP-023 real-live probe; F-04/visual work remains behind its direction decision.
 
 ## Resume Sequence
 

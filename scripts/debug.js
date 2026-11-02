@@ -152,7 +152,7 @@ function updateDebugPanel() {
       let drift = 'N/A';
       let healthIndicator = '\u{1F534}'; // red circle
 
-      if (leaderEntry.v.id === v.id) {
+      if (leaderEntry.v === v) {
         drift = '基準';
         healthIndicator = '\u{1F7E2}'; // green circle
       } else if (rec.time !== undefined && leaderEntry.rec.time !== undefined) {
