@@ -1091,7 +1091,8 @@ body.sidebar-collapsed.toolbar-collapsed .grid.layout-dense.dense-mosaic-ready {
 /* Queue navigation bar */
 .tile-queue-bar {
   position: absolute;
-  bottom: 4px;
+  /* Leave the tile controls and information header clickable below the queue. */
+  bottom: 84px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -1536,10 +1537,10 @@ body.sidebar-collapsed.toolbar-collapsed .grid.layout-dense.dense-mosaic-ready {
 
 /* Coexistence: push tile-info-header up when control bar is visible */
 .tile:hover .tile-info-header {
-  bottom: 38px;
+  bottom: 58px;
 }
 .tile:hover .tile-info-header.info-open {
-  bottom: 38px;
+  bottom: 58px;
 }
 
 /* Drop overlay on grid */
