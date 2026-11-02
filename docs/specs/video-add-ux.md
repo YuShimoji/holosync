@@ -65,9 +65,9 @@
 - 「すべて追加」で選択した全動画を一括で `createTile`
 
 #### 2-B. 検索履歴の統合
-- `searchbrowser.js` の検索欄に `search.js` の検索履歴（`searchHistory` 最大5件）をドロップダウン表示
+- 統合入力欄に `searchHistory` 最大5件をドロップダウン表示
 - 履歴クリックで即座に再検索
-- `searchbrowser.js` での検索も `storageAdapter.saveSearchHistory()` に保存
+- 成功したキーワード検索を `storageAdapter.saveSearchHistory()` で保存
 
 #### 2-C. プレビュー強化
 - 検索結果カードに動画の長さ（duration）と再生回数を表示
@@ -81,14 +81,14 @@
 - [x] 検索履歴ドロップダウンが表示・再検索可能
 - [x] カードに duration / viewCount が表示される
 
-### 実装詳細（Phase 2 完了）
+### 実装詳細（Phase 2、2026-11-02修復済み）
 
 - input.js (旧searchbrowser.js): チェックボックス追加、selectedVideoIds Set管理、セレクションバー動的生成
 - input.js (旧searchbrowser.js): doSearch後にvideos.list API呼び出しでcontentDetails+statistics取得（1 unit/12件）
 - input.js (旧searchbrowser.js): 検索入力フォーカス時に履歴ドロップダウン表示、クリックで再検索
 - input.js (旧searchbrowser.js): showToast連携（個別追加・一括追加）
 - styles/main.css: チェックボックス、セレクションバー、履歴ドロップダウン、再生時間バッジのCSS
-- 仕様変更: サムネイルホバー拡大は見送り（サイドバー幅の制約で効果が薄い）。代わりにサムネイル上に再生時間バッジを追加
+- 仕様変更: サムネイルホバー拡大は見送り（サイドバー幅の制約で効果が薄い）。代わりに結果カード内のメタ行へ動画長を表示
 
 ---
 

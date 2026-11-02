@@ -3,6 +3,7 @@
  * @brief Unified smart input: URL paste + keyword search in one field.
  */
 import { hasVideo, youtubeApiKey } from './state.js';
+import { storageAdapter } from './storage.js';
 import { parseYouTubeId, parsePlaylistId, createTile } from './player.js';
 import { fetchPlaylistItems } from './search.js';
 import { parseChannelInput, addChannel } from './channel.js';
@@ -23,6 +24,7 @@ const sbLoading = document.getElementById('sbLoading');
 const sbDuration = document.getElementById('sbDuration');
 const sbOrder = document.getElementById('sbOrder');
 const sbType = document.getElementById('sbType');
+const searchHistoryEl = document.getElementById('searchHistory');
 
 // Onboarding
 const loadDemoBtn = document.getElementById('loadDemoBtn');
@@ -39,6 +41,11 @@ const previewMap = new Map();
 const pendingPlaylists = new Set();
 let debounceTimer = null;
 let lastSearchQuery = '';
+let previewRevision = 0;
+let searchHistory = [];
+let historyLoaded = false;
+let historyLoadPromise = null;
+let historyWrites = Promise.resolve();
 
 // ── oEmbed Fetch ───────────────────────────────────────────
 
@@ -95,7 +102,104 @@ async function searchYouTube(query) {
       title: item.snippet.title,
       author: item.snippet.channelTitle,
       thumbUrl: item.snippet.thumbnails?.medium?.url || '',
+      isLive: item.snippet.liveBroadcastContent === 'live',
     }));
+}
+
+async function fetchSearchMetadata(results) {
+  if (!results.length) {
+    return new Map();
+  }
+  const ids = results.map((item) => item.videoId).join(',');
+  const params = new URLSearchParams({
+    part: 'contentDetails,statistics',
+    id: ids,
+    key: youtubeApiKey,
+  });
+  const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`);
+  if (!response.ok) {
+    throw new Error('Metadata unavailable');
+  }
+  const data = await response.json();
+  return new Map((data.items || []).map((item) => [item.id, item]));
+}
+
+function formatDuration(duration) {
+  if (typeof duration !== 'string') {
+    return '';
+  }
+  const match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(duration);
+  if (!match || !match.slice(1).some((value) => value !== undefined)) {
+    return '';
+  }
+  const seconds =
+    Number(match[1] || 0) * 86400 +
+    Number(match[2] || 0) * 3600 +
+    Number(match[3] || 0) * 60 +
+    Number(match[4] || 0);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = String(seconds % 60).padStart(2, '0');
+  return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${secs}` : `${minutes}:${secs}`;
+}
+
+async function loadSearchHistory() {
+  if (!historyLoaded) {
+    historyLoadPromise ||= storageAdapter.getSearchHistory();
+    searchHistory = await historyLoadPromise;
+    historyLoaded = true;
+  }
+  return searchHistory;
+}
+
+function saveHistory() {
+  const snapshot = [...searchHistory];
+  historyWrites = historyWrites.then(() => storageAdapter.saveSearchHistory(snapshot));
+}
+
+function renderSearchHistory() {
+  searchHistoryEl.replaceChildren();
+  if (
+    !searchHistory.length ||
+    (document.activeElement !== urlAddInput && !searchHistoryEl.contains(document.activeElement))
+  ) {
+    searchHistoryEl.hidden = true;
+    return;
+  }
+  for (const query of searchHistory) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'search-history-item';
+    button.textContent = query;
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => {
+      urlAddInput.value = query;
+      searchHistoryEl.hidden = true;
+      clearTimeout(debounceTimer);
+      lastSearchQuery = '';
+      previewRevision++;
+      parseAndPreview();
+    });
+    searchHistoryEl.appendChild(button);
+  }
+  const clear = document.createElement('button');
+  clear.type = 'button';
+  clear.className = 'search-history-clear';
+  clear.textContent = '検索履歴をクリア';
+  clear.addEventListener('mousedown', (event) => event.preventDefault());
+  clear.addEventListener('click', () => {
+    searchHistory = [];
+    saveHistory();
+    renderSearchHistory();
+  });
+  searchHistoryEl.appendChild(clear);
+  searchHistoryEl.hidden = false;
+}
+
+async function rememberSearch(query) {
+  await loadSearchHistory();
+  searchHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 5);
+  saveHistory();
 }
 
 // ── Classify Input ─────────────────────────────────────────
@@ -108,6 +212,7 @@ function classifyInput(text) {
   const urls = [];
   const playlists = [];
   const channels = [];
+  const unsupportedUrls = [];
   let searchQuery = null;
 
   for (const line of lines) {
@@ -126,23 +231,35 @@ function classifyInput(text) {
       channels.push({ line, channel: ch });
       continue;
     }
+    if (/^(?:https?:\/\/|www\.)/i.test(line)) {
+      unsupportedUrls.push(line);
+      continue;
+    }
     // Not a URL — treat as search query (use first non-URL line)
     if (!searchQuery) {
       searchQuery = line;
     }
   }
 
-  return { urls, playlists, channels, searchQuery, isMultiLine: lines.length > 1 };
+  return { urls, playlists, channels, unsupportedUrls, searchQuery, isMultiLine: lines.length > 1 };
 }
 
 // ── Parse & Preview ────────────────────────────────────────
 
 async function parseAndPreview() {
+  const revision = ++previewRevision;
   const text = urlAddInput.value;
-  const { urls, playlists, channels, searchQuery, isMultiLine } = classifyInput(text);
+  const { urls, playlists, channels, unsupportedUrls, searchQuery, isMultiLine } =
+    classifyInput(text);
+  if (unsupportedUrls.length) {
+    addError.textContent = 'このURLは認識できません。';
+    addError.classList.add('info');
+    addError.hidden = false;
+  }
 
   // Show/hide search filters
-  const isSearchMode = !isMultiLine && !urls.length && !playlists.length && !!searchQuery;
+  const isSearchMode =
+    !isMultiLine && !urls.length && !playlists.length && !channels.length && !!searchQuery;
   if (searchFilters) {
     searchFilters.hidden = !isSearchMode;
   }
@@ -274,6 +391,13 @@ async function parseAndPreview() {
       }
       try {
         const results = await searchYouTube(searchQuery);
+        if (revision !== previewRevision) {
+          return;
+        }
+        await rememberSearch(searchQuery);
+        if (revision !== previewRevision) {
+          return;
+        }
         for (const r of results) {
           if (previewMap.has(r.videoId)) {
             continue;
@@ -287,13 +411,39 @@ async function parseAndPreview() {
             checked: false,
             isDuplicate,
             isSearch: true,
+            isLive: r.isLive,
           });
         }
+        renderPreviewList();
+        updateAddBar();
+        try {
+          const metadata = await fetchSearchMetadata(results);
+          if (revision !== previewRevision) {
+            return;
+          }
+          for (const result of results) {
+            const entry = previewMap.get(result.videoId);
+            const item = metadata.get(result.videoId);
+            if (entry?.isSearch && item) {
+              entry.duration = formatDuration(item.contentDetails?.duration);
+              const count = item.statistics?.viewCount;
+              entry.viewCount =
+                typeof count === 'string' && /^\d+$/.test(count)
+                  ? Number(count).toLocaleString('ja-JP')
+                  : '';
+            }
+          }
+        } catch (_) {
+          // Search results remain selectable when metadata is unavailable.
+        }
       } catch (err) {
+        if (revision !== previewRevision) {
+          return;
+        }
         addError.textContent = err.message;
         addError.hidden = false;
       } finally {
-        if (sbLoading) {
+        if (sbLoading && revision === previewRevision) {
           sbLoading.hidden = true;
         }
       }
@@ -313,6 +463,9 @@ async function parseAndPreview() {
     lastSearchQuery = '';
   }
 
+  if (revision !== previewRevision) {
+    return;
+  }
   renderPreviewList();
   updateAddBar();
 }
@@ -354,6 +507,12 @@ function renderPreviewList() {
     thumb.src = entry.thumbUrl;
     thumb.alt = '';
     thumbWrap.appendChild(thumb);
+    if (entry.isLive) {
+      const live = document.createElement('span');
+      live.className = 'sb-live-badge';
+      live.textContent = 'LIVE';
+      thumbWrap.appendChild(live);
+    }
 
     const info = document.createElement('div');
     info.className = 'sb-result-info';
@@ -365,6 +524,15 @@ function renderPreviewList() {
     author.textContent = entry.author;
     info.appendChild(title);
     info.appendChild(author);
+    const metadata = [entry.duration, entry.viewCount ? `${entry.viewCount}回視聴` : ''].filter(
+      Boolean
+    );
+    if (metadata.length) {
+      const meta = document.createElement('div');
+      meta.className = 'sb-result-meta';
+      meta.textContent = metadata.join(' · ');
+      info.appendChild(meta);
+    }
 
     card.appendChild(checkbox);
     card.appendChild(thumbWrap);
@@ -404,6 +572,10 @@ function updateAddBar() {
 }
 
 function submitSelected() {
+  previewRevision++;
+  if (sbLoading) {
+    sbLoading.hidden = true;
+  }
   let added = 0;
   for (const entry of previewMap.values()) {
     if (entry.checked && !entry.isDuplicate) {
@@ -486,8 +658,25 @@ const DEMO_VIDEOS = [
 // ── Init ────────────────────────────────────────────────────
 
 export function initInput() {
+  urlAddInput.addEventListener('focus', async () => {
+    await loadSearchHistory();
+    renderSearchHistory();
+  });
+  function hideHistoryOnLeave(event) {
+    if (event.relatedTarget !== urlAddInput && !searchHistoryEl.contains(event.relatedTarget)) {
+      searchHistoryEl.hidden = true;
+    }
+  }
+  urlAddInput.addEventListener('blur', hideHistoryOnLeave);
+  searchHistoryEl.addEventListener('focusout', hideHistoryOnLeave);
   // Unified input with debounced parse/search
   urlAddInput.addEventListener('input', () => {
+    previewRevision++;
+    lastSearchQuery = '';
+    if (sbLoading) {
+      sbLoading.hidden = true;
+    }
+    searchHistoryEl.hidden = true;
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
@@ -511,19 +700,25 @@ export function initInput() {
   // Re-search when filters change
   if (sbDuration) {
     sbDuration.addEventListener('change', () => {
+      clearTimeout(debounceTimer);
       lastSearchQuery = '';
+      previewRevision++;
       parseAndPreview();
     });
   }
   if (sbOrder) {
     sbOrder.addEventListener('change', () => {
+      clearTimeout(debounceTimer);
       lastSearchQuery = '';
+      previewRevision++;
       parseAndPreview();
     });
   }
   if (sbType) {
     sbType.addEventListener('change', () => {
+      clearTimeout(debounceTimer);
       lastSearchQuery = '';
+      previewRevision++;
       parseAndPreview();
     });
   }

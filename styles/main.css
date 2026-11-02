@@ -2749,3 +2749,47 @@ button:active {
   transform: translateX(0);
   opacity: 1;
 }
+
+/* Search history and result details in the existing sidebar. */
+.search-history {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 6px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+.search-history-item,
+.search-history-clear {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 7px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.search-history-clear {
+  color: var(--color-text-secondary);
+}
+.sb-result-channel,
+.sb-result-meta {
+  overflow-wrap: anywhere;
+}
+.sb-result-meta {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+.sb-live-badge {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: white;
+  background: #b91c1c;
+  font-size: 10px;
+  font-weight: 700;
+}

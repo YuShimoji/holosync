@@ -47,11 +47,11 @@
   {
     "id": "SP-007",
     "title": "Search enhancements",
-    "status": "done",
-    "pct": 100,
+    "status": "partial",
+    "pct": 67,
     "cat": "ui",
     "file": "docs/specs/search-enhancements.md",
-    "summary": "Search history, length filters, order filters, and MRU retention."
+    "summary": "Search history, duration/order filters and batched result metadata work; channel-related search remains unimplemented (two of three feature groups delivered)."
   },
   {
     "id": "SP-008",
