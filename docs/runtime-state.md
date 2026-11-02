@@ -1,6 +1,6 @@
 # Runtime State
 
-Last reviewed: 2026-11-02 (JST, coordinated repair closeout)
+Last reviewed: 2026-11-02 (JST, automated Windows acceptance and F-04 exploration started)
 
 ## Current Position
 
@@ -8,9 +8,9 @@ Last reviewed: 2026-11-02 (JST, coordinated repair closeout)
 - active delivery branch: `codex/workflow-handoff`, tracking the canonical GitHub remote named `github` on this workstation. Resolve remotes by URL on other machines. Local `origin` is the legacy GitLab mirror and is not the parity source.
 - verified delivery code: `148b541`; local and fetched canonical heads matched before this documentation closeout. Draft PR #23 was open, mergeable, with E2E and lint checks successful at that code commit on 2026-11-02.
 - active artifact: Web App (`index.html`, `scripts/`, `styles/`) and the rebuilt local Windows package.
-- active slice / phase: SP-023 operator acceptance / verify. The authorized implementation work below is complete; human acceptance is still pending.
+- active slice / phase: SP-023 automated Windows acceptance / verify; independent F-04 comparison previews / explore. Earlier implementation packets are complete; human acceptance is pending.
 - outcome: same-video tiles retain independent selection through queue changes/reload; queue URL/JSON/preset round-trips and sidebar search history/metadata are implemented and verified.
-- remaining acceptance: packaged UI operation, actual YouTube search with the operator's configured key, human viewing/operation judgment, and recovery from a natural outage. F-04 remains direction-gated.
+- current authorization (verbatim): 「上記推奨について手動確認以外で進められる個所を進めてください。」 Automated packaged UI, controlled app-only network interruption/recovery, and actual search with an available configured key are now assigned. Natural-outage observation and human viewing/operation judgment remain distinct. F-04 implementation remains direction-gated; comparison previews are authorized.
 
 ## Authorized Work and Delivery
 
@@ -25,7 +25,9 @@ The user's continuation instruction was: 「上記分析から推奨対応で進
 - implementation owner: independent Codex chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`, host `local`, requested `gpt-6.1-terra / high`; implementation and push complete. Coordinator reviewed the limited diffs and acceptance evidence.
 - documentation / real-network owner: independent Codex chat `01a19a59-f10a-7941-94c4-e1d2c69b35ea`, host `local`, requested `gpt-6-luna / low`. Earlier Full-Fit/postMessage documents were integrated; subsequent live verification did not edit product files.
 - both chats were created in the HoloSync project and observed running. Model/effort arguments were accepted at creation; effective runtime settings were not independently read back. These are independent chats, not internal subagents.
-- coordinator owns only this final state/spec integration after the implementation owner's completion. No other code owner remains active for the delivered scope.
+- current Windows verification / bounded repair owner: implementation chat above, requested `gpt-6.1-terra / high` in the continuation call; owns the packaged app GUI, product files and necessary verification tooling. It does not edit runtime-state/spec-index/SP-023/F-04 documents. Evidence target: `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/windows-acceptance/`.
+- current F-04 preview owner: documentation / real-network chat above, requested `gpt-6-luna / low` in the continuation call; owns only external static comparison artifacts under `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/f04-preview/`. No product edits or Windows app GUI operation. Requested settings were accepted; effective runtime settings were not read back.
+- both existing independent chats were resumed and observed running. Coordinator owns review and runtime-state/spec-index/spec integration; file and GUI ownership do not overlap. Current overall estimate: 45–90 minutes including verification/related repairs/closeout; preview estimate: 20–40 minutes. App attachment or key availability may change the estimate; elapsed time is not a stop condition.
 - initial implementation estimates were 45–90 minutes per packet, including verification/package/push. Actual packets completed earlier. Test startup/API-request selection issues and the string-query API mismatch found in review were corrected before delivery; time estimates were not stop conditions.
 
 ## Verification and Package
@@ -49,7 +51,7 @@ The user's continuation instruction was: 「上記分析から推奨対応で進
 
 ## Remaining Work and Boundaries
 
-- next owner: human operator for SP-023 acceptance. Use 3–6 currently live URLs and the local probe to judge actual operation, including the remaining outage/package conditions above. If a defect appears, use the exported timeline for one bounded reliability repair.
+- next owner: assigned Windows verifier for automated package and controlled-network acceptance; human operator only for unavailable key entry and subjective viewing/operation acceptance. Use current live URLs and the local probe. Do not claim a controlled outage establishes recovery from every natural outage. Related reproduced defects may receive one bounded repair with evidence.
 - F-04 main-area search and broad visual direction: compare the recorded reversible candidates in `docs/specs/ux-refinement-phase1.md` before full implementation. Right-side tray plus Operator Desk is a recorded recommendation, not approval.
 - SP-007 channel-related search remains unimplemented; history/filter/metadata delivery does not close that separate feature group.
 - dependency audit observed on 2026-11-02: 26 total (18 moderate, 8 high), versus the older August observation of 9. Omit-dev audit was zero; Electron is classified as a dev dependency but ships in the app. No dependency update was performed; assess upgrades separately.
