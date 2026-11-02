@@ -56,6 +56,15 @@ The probe is deliberately local-only. It does not require OAuth, API keys, accou
 - Run2 and run3 manifests, stage JSON and screen captures are local-only evidence under `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/live-8a91dc0/`. The first run's temporary test-results files were lost; the later runs are new observations, not reconstructed evidence.
 - These checks do not accept the latest packaged Electron UI or replace the human operator's viewing/operation judgment. See `docs/runtime-state.md` for delivered code, package parity and remaining acceptance.
 
+## Windows package observation (2026-11-02)
+
+- The packaged executable was launched with Playwright Electron in an isolated profile. Playback implementation `148b541` supplied real-live initial batch play, pause/resume, sync and controlled app-context offline/online observations. The later CSS-only queue fix `3cdd3a7` was rebuilt and verified separately through packaged pointer operations; it does not change playback code.
+- In the controlled run, two of three players entered buffering after about 30 seconds offline. All three returned to player state 1 about 20 seconds after online restoration. Over the next 15 seconds, currentTime advanced by approximately 15.31, 3.20 and 15.08 seconds; this is endpoint progress, not proof of uninterrupted playback or human viewing acceptance. No seekTo was recorded in the marked outage/recovery interval at zero offset.
+- A separate intentional-pause offline/online sequence retained all three players in state 2 and recorded no new play commands in that interval. Recovery attempts and suspended players must still be read from the per-player timeline, not aggregate counts alone.
+- Packaged pointer operations exposed a queue/header overlap. The limited CSS repair and two behavioral regressions passed; rebuilt packaged previous/next, Focus, audio master and information-panel operations were then verified. Queue setup used an internal API in the isolated profile; subsequent controls used pointer input. Same-port restart retained the duplicate tile, queue position, Focus and audio selection.
+- Port-conflict fallback revealed separate origin-scoped storage, documented in `docs/PERSISTENCE.md`. It is an unresolved product/persistence decision, not a successful cross-port restore.
+- Evidence is local-only under `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/windows-acceptance/` (`summary.json`, `run3/`, screenshots). Full mocked Playwright passed 38/38; lint, targeted format and diff checks passed. Natural failures, content-time alignment, real API search and human acceptance are not established by this run.
+
 ## Boundaries
 
 - This slice does not claim real public live playback reliability.

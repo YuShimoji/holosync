@@ -4,7 +4,7 @@
 **Priority**: P1
 **Category**: ui
 **Created**: 2026-03-23
-**Last updated**: 2026-07-10
+**Last updated**: 2026-11-02
 
 ## 概要
 
@@ -113,6 +113,14 @@ HoloSyncの基本機能は安定しているが、YouTube視聴体験として�
 - 伸ばしやすい候補: layout・音声master・sync groupまで保存する監視セット、登録channel/前回session/保存setを集めるLive Hub、SP-023を縮約した再生健全性chip、timestamp/offsetを使う同期moment。
 - 日本語と英語が混在するcopy/helpの整合は小スライス候補。message辞書化と日英切替はそれぞれ独立スライスとして明示的にscope承認し、full i18nは別途再承認する。
 - Operator Deskの視覚仮説は既存`#0f172a`を基調に、状態色の役割固定、local SVG統一、時刻/同期値のみtabular monospace、120〜180msの短い状態遷移、`prefers-reduced-motion`尊重とする。
+
+#### 配置比較ラフ（未採用、2026-11-02）
+
+- 本人原文: 「上記推奨について手動確認以外で進められる個所を進めてください。」 今回は方向選択前の比較ラフを制作し、本実装はしていない。
+- ローカル成果物: `C:/Users/PLANNER007/.codex/outputs/holosync-20261102/f04-preview/` の `f04-preview.html`、`comparison-sheet.png`、`README.md`、`SHA256SUMS.txt`。この端末上の成果物であり、リポジトリに同梱された証拠ではない。
+- 右側検索トレイと全面追加モードを同じ1280×720、動画0件/4件/12件通常/12件hover/sidebar-toolbar表示の5状態で比較できる。動画・検索結果は明記したプレースホルダーで、実検索・再生・復帰の動作証拠ではない。
+- 現行sidebar維持を初期基準とし、検索中の一時収納は別の未採用オプションとして表示する。320pxのsidebarと約340pxのトレイを併用すると動画面は約620px幅になる。全面追加モードは結果面を広く使う一方、検索中の動画面を隠す想定である。
+- 担当とCoordinatorが比較画像を確認した。検索配置2案の比較を制作済みとし、Calm Utility / Operator Desk / Session Builderの見た目を実装・採用したとは扱わない。F-04の実装状態は未着手のまま。
 
 ### F-05: スクロールバーとウィンドウドラッグの衝突解消
 

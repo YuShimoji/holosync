@@ -168,7 +168,7 @@
     "pct": 91,
     "cat": "ui",
     "file": "docs/specs/ux-refinement-phase1.md",
-    "summary": "10 of 11 UX items are implemented. F-04 remains not started; its search-layout and visual-direction checkpoint candidates are recorded for one preview-first decision."
+    "summary": "10 of 11 UX items are implemented. F-04 implementation remains not started; local comparison previews cover two search layouts in five states, while layout and visual direction remain unselected."
   },
   {
     "id": "SP-022",
@@ -186,6 +186,6 @@
     "pct": 70,
     "cat": "core",
     "file": "docs/specs/live-reliability-probe.md",
-    "summary": "Local probe and debug readback have mocked validation plus fixed-commit real-network checks of three public lives; packaged UI, natural-outage recovery and human acceptance remain pending."
+    "summary": "Probe has mocked and three-live packaged observations, including controlled app-network interruption/recovery and queue pointer repairs. Cross-port persistence is unresolved; natural failures and human acceptance remain unverified."
   }
 ]
