@@ -1,6 +1,6 @@
 # Runtime State
 
-Last reviewed: 2026-11-02 (tile identity verification; older verification remains dated below)
+Last reviewed: 2026-11-02 (queue persistence verification; older verification remains dated below)
 
 ## Current Position
 
@@ -10,9 +10,9 @@ Last reviewed: 2026-11-02 (tile identity verification; older verification remain
 - active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and fetched head `33cd56f` is 7 commits ahead of `main` as verified on 2026-08-12. Resolve the exact head with a live fetch on resume instead of relying only on this recorded hash.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
-- active slice: queue share/preset and search consistency follow-up after coordinator review
+- active slice: search history/metadata consistency after coordinator review
 - phase: verify
-- current outcome: duplicate-video tile identity and rejoining leader self-seek repairs pass mocked regression checks; real-live acceptance remains pending
+- current outcome: queue sharing, JSON and preset round-trips pass mocked regression checks; real-live acceptance remains pending
 - primary bottleneck: real public YouTube multi-live playback remains unaccepted
 
 ## Delivered Baseline
@@ -49,6 +49,14 @@ Last reviewed: 2026-11-02 (tile identity verification; older verification remain
 - initial estimate was 45–90 minutes including checks and delivery; implementation and verification completed earlier than that range. A parallel-suite test exposed startup/restore interaction; the test setup and idempotent restoration were corrected and checks rerun.
 - focused mocked regression: 7/7; full Playwright: 25/25; lint, format and diff whitespace checks passed. `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`; its process remained running for six seconds. Packaged UI and actual YouTube playback were not tested.
 - remaining and next owner: coordinator reviews the repair, then assigns the previously authorized queue share/preset and search consistency slice. The human operator separately owns SP-023 live acceptance; F-04/broad visual work remains direction-gated.
+
+## Queue persistence slice (2026-11-02, verified 14:51 JST)
+
+- owner: existing independent implementation chat `01a19a5a-7a11-74f0-a742-67d516ae8eff`, requested `gpt-6.1-terra / high`; effective setting remains unverified. Base commit was `8a91dc0` plus this worktree.
+- outcome: share URL and JSON use existing queue `q`/`qi`; new presets save per-tile queue/index while retaining `videoIds` compatibility. Duplicate-video tiles survive restore. Preset replacement uses tile cleanup, including pending iframe loads, audio/Focus, zoom and player state. Legacy `?videos=` links now work with local storage enabled.
+- URL measurement: one 50-item queue at index 49 plus a same-video ordinary tile produced 1,759 characters on localhost; limits depend on the receiving environment. No truncation or new limit was added.
+- checks: focused queue persistence 3/3 and full Playwright 28/28; lint, format and diff check passed. `npm run build:checked` rebuilt ignored `dist/HoloSync-win32-x64/HoloSync.exe`, which remained running for six seconds. Packaged UI interaction and real YouTube playback remain unverified.
+- initial estimate was 45–90 minutes including delivery; verification finished earlier than that range. Coordinator reviews this slice, then assigns the already authorized search history/metadata consistency work. Human operator separately owns SP-023 real-live acceptance.
 
 ## Active Gate and Independent Lane
 
@@ -112,7 +120,7 @@ Last reviewed: 2026-11-02 (tile identity verification; older verification remain
 
 ## Next Move
 
-Coordinator reviews the tile identity repair and advances the authorized queue-sharing/search consistency follow-up. The human operator separately runs the SP-023 real-live probe; F-04/visual work remains behind its direction decision.
+Coordinator reviews the queue persistence repair and advances the authorized search history/metadata consistency follow-up. The human operator separately runs the SP-023 real-live probe; F-04/visual work remains behind its direction decision.
 
 ## Resume Sequence
 

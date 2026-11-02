@@ -75,8 +75,8 @@ sanitizeArgs に loadVideoById 用の検証を追加:
 ## 永続化
 
 - localStorage: queue と queueIndex を videoEntry に含めて保存
-- URL共有: storage.js の generateShareUrl / parseShareUrl に queue/queueIndex を追加
-- プリセット: queue 情報を含めて保存/復元
+- URL共有とJSON: `queue` / `queueIndex` を共有元から既存の `q` / `qi` URL形式に渡し、順序・現在位置を復元する。JSONは同じ共有状態を出力し、読込時にURL形式へ変換する。
+- プリセット: タイルごとの動画ID・キュー・現在位置を保存し、旧 `videoIds` 形式も復元する。同じ動画IDの別タイルは維持し、切替前のタイルは通常の削除処理で後始末する。
 
 ## 制約
 

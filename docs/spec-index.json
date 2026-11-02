@@ -87,7 +87,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/playlist-queue-mode.md",
-    "summary": "Single-tile queue playback with stable tile identity and local persistence; share URL and preset restoration parity remains incomplete."
+    "summary": "Single-tile queue playback with stable tile identity and queue round-trips through local storage, shared URL, JSON, and presets."
   },
   {
     "id": "SP-012",

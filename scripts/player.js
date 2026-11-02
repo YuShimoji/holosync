@@ -79,6 +79,7 @@ function _processLoadQueue() {
       continue;
     }
     _activeLoadCount++;
+    entry._pendingLoad = true;
     _loadTileIframe(entry);
   }
 }
@@ -92,8 +93,15 @@ function _loadTileIframe(videoEntry) {
   iframe.addEventListener(
     'load',
     () => {
+      if (videoEntry._pendingLoad) {
+        videoEntry._pendingLoad = false;
+        _activeLoadCount--;
+      }
+      if (!videos.includes(videoEntry)) {
+        setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
+        return;
+      }
       videoEntry.iframeLoaded = true;
-      _activeLoadCount--;
       const thumb = tile.querySelector('.tile-thumbnail');
       if (thumb) {
         thumb.classList.add('loaded');
@@ -855,7 +863,7 @@ export function createTile(videoId, options = {}) {
   }
 }
 
-function removeVideo(videoId, tile) {
+function removeVideo(videoId, tile, persist = true) {
   const idx = videos.findIndex((v) => v.tile === tile);
   if (idx === -1) {
     return;
@@ -865,6 +873,11 @@ function removeVideo(videoId, tile) {
   const qIdx = _loadQueue.indexOf(video);
   if (qIdx !== -1) {
     _loadQueue.splice(qIdx, 1);
+  }
+  if (video._pendingLoad) {
+    video._pendingLoad = false;
+    _activeLoadCount--;
+    setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
   }
   const win = video.iframe?.contentWindow;
   if (win) {
@@ -893,5 +906,13 @@ function removeVideo(videoId, tile) {
     tileCount: videos.length,
   });
   _deps.refreshTileStackOrder();
-  persistVideos();
+  if (persist) {
+    persistVideos();
+  }
+}
+
+export function clearAllTiles() {
+  for (const video of [...videos]) {
+    removeVideo(video.id, video.tile, false);
+  }
 }

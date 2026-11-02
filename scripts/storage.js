@@ -335,13 +335,23 @@ class StorageAdapter {
   }
 
   // Preset-specific methods
-  async savePreset(name, videoIds) {
+  async savePreset(name, videoEntries) {
+    const entries = videoEntries.map((entry) =>
+      typeof entry === 'string'
+        ? { id: entry }
+        : {
+            id: entry.id,
+            queue: entry.queue ? [...entry.queue] : null,
+            queueIndex: entry.queue ? entry.queueIndex : 0,
+          }
+    );
     const presets = (await this.getItem('presets')) || [];
     const existingIndex = presets.findIndex((p) => p.name === name);
     const preset = {
       id: crypto.randomUUID(),
       name,
-      videoIds,
+      videoIds: entries.map((entry) => entry.id),
+      videos: entries,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

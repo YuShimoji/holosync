@@ -384,19 +384,36 @@ async function initializeApp() {
 
       // Restore Videos
       (sharedSession.videos || []).forEach((v) => {
-        if (!hasVideo(v.id)) {
-          createTile(v.id, v);
-        }
+        createTile(v.id, v);
       });
 
       state.isRestoring = false;
       return;
     }
 
+    // Legacy links use individual URL parameters even when local storage is available.
+    const legacyVideos = storageAdapter.getUrlParameter('videos');
+    if (legacyVideos?.length) {
+      state.isRestoring = true;
+      for (const id of legacyVideos) {
+        if (!hasVideo(id)) {
+          createTile(id);
+        }
+      }
+      state.isRestoring = false;
+      const legacyVolume = storageAdapter.getUrlParameter('volume');
+      if (legacyVolume !== null) {
+        volumeAll.value = String(legacyVolume);
+        volumeVal.textContent = String(legacyVolume);
+        setVolumeAll(legacyVolume);
+      }
+      return;
+    }
+
     // Priority 2: Storage Fallback
     const storedVideos = await storageAdapter.getItem('videos');
     const storedVolume = await storageAdapter.getItem('volume');
-    const urlPreset = await storageAdapter.getItem('preset');
+    const urlPreset = storageAdapter.getUrlParameter('preset');
 
     const vol = parseInt(storedVolume, 10);
     if (!Number.isNaN(vol)) {
