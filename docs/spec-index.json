@@ -187,5 +187,14 @@
     "cat": "core",
     "file": "docs/specs/live-reliability-probe.md",
     "summary": "Probe has mocked and three-live packaged observations, including controlled app-network interruption/recovery and queue pointer repairs. Cross-port persistence is unresolved; natural failures and human acceptance remain unverified."
+  },
+  {
+    "id": "SP-024",
+    "title": "Personalized RSS Feed and Advanced Playback",
+    "status": "planned",
+    "pct": 10,
+    "cat": "ui",
+    "file": "docs/specs/personalized-rss-and-advanced-playback.md",
+    "summary": "No-API-Key architecture using public YouTube RSS feeds, client-side profile scoring/filtering, right-side feed tray, multi-window popouts, URL transfer, and live reservation."
   }
 ]

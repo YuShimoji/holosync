@@ -1,6 +1,6 @@
 # Runtime State
 
-Last reviewed: 2026-11-02 (JST, automated Windows verification and F-04 preview closeout)
+Last reviewed: 2026-11-02 (JST, feature proposal SP-024 formulation and Thank handoff)
 
 ## Current Position
 
@@ -8,9 +8,9 @@ Last reviewed: 2026-11-02 (JST, automated Windows verification and F-04 preview 
 - active delivery branch: `codex/workflow-handoff`, tracking the canonical GitHub remote named `github` on this workstation. Resolve remotes by URL on other machines. Local `origin` is the legacy GitLab mirror and is not the parity source.
 - verified delivery code: `3cdd3a7` (queue/header pointer repair); prior playback/search delivery is `148b541`. The code repair was pushed to the canonical tracking branch before this documentation closeout. Draft PR #23 remains the delivery PR; no main merge was performed.
 - active artifact: Web App (`index.html`, `scripts/`, `styles/`) and the rebuilt local Windows package.
-- active slice / phase: automated Windows verification and independent F-04 comparison previews are complete. Real search is blocked only by the absent key in the normal default-origin settings. Human acceptance and F-04 direction remain pending; cross-port persistence is a newly reproduced unresolved decision.
-- outcome: packaged pointer operations exposed and received a limited queue/header overlap repair; controlled network recovery and same-port restart have evidence. F-04 has two layout previews in five states, with no direction adopted or implemented.
-- current authorization (verbatim): 「上記推奨について手動確認以外で進められる個所を進めてください。」 This covered automated package/network/search checks and F-04 comparison previews. Natural-outage observation and human viewing/operation judgment remain distinct; no dependency upgrade or persistence-contract change was authorized by this verification packet.
+- active slice / phase: Advanced feature analysis and specification (SP-024: Personalized RSS Feed & Advanced Playback Architecture) complete. Covers No-API-Key architecture, public YouTube RSS feed integration, client-side Smart Profile scoring, right-side tray UI (F-04 evolution), multi-window popouts, URL quick transfer, and live reservation/autoplay.
+- Recordinator integration: Task `6e95c9d1-a5b9-57d2-8843-8cd525d78e6a` and Proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61` (content revision `01M6DQW5W7Z2RYMAFNR3MHKZ9H`) registered on canonical storage (`S:\マイドライブ\Recordinator-canonical\records`), accessible across Planner007 and Thank machines.
+- current authorization (verbatim): 「ここまでの更新と分析および策定についてまとめて、Thank端末で開発継続できるようPushしてください。Recordinatorタスクも共有したいです。」「分析提案も全て共有してください。」
 
 ## Authorized Work and Delivery
 
@@ -62,18 +62,22 @@ The user's continuation instruction was: 「上記分析から推奨対応で進
 
 ## Remaining Work and Boundaries
 
-- next owner: operator for key entry and subjective viewing/operation acceptance; then reuse the Windows verification chat for actual search. Cross-port persistence needs a startup/persistence decision before a separate repair packet; F-04 implementation needs a direction decision. No automatic continuation is running while these inputs are absent.
-- F-04 main-area search and broad visual direction: compare the recorded reversible candidates in `docs/specs/ux-refinement-phase1.md` before full implementation. Right-side tray plus Operator Desk is a recorded recommendation, not approval.
-- SP-007 channel-related search remains unimplemented; history/filter/metadata delivery does not close that separate feature group.
-- dependency audit observed on 2026-11-02: 26 total (18 moderate, 8 high), versus the older August observation of 9. Omit-dev audit was zero; Electron is classified as a dev dependency but ships in the app. No dependency update was performed; assess upgrades separately.
-- holds: broad sidebar/add-flow replacement and YouTube OAuth/account history sync. Frozen without explicit re-approval: accessibility expansion, telemetry, plugins, PWA, full i18n, advanced audio processing, collaboration.
-- external status is not a second hand-edited source. No generated external cockpit has been delivered; GitHub Wiki/Issues/Project must not replace this file and `docs/spec-index.json`. Legacy GitLab cleanup remains an unadopted decision.
+- next owner: Thank terminal operator/agent for continuing SP-024 implementation (Phase 1: RSS fetch IPC and tray UI) and reviewing the Recordinator proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61`.
+- SP-024 implementation slices:
+  - Phase 1: Electron IPC `rss:fetch` (CORS bypass), Atom XML parsing, and right-side tray feed UI integration (F-04 right tray evolution).
+  - Phase 2: Client-side Smart Profile scoring engine, exclusion rules, and URL quick transfer (`holosync://` and local HTTP API).
+  - Phase 3: Satellite BrowserWindow popout management, master-satellite sync bridge, and live stream reservation with autoplay policy mitigation.
+- cross-port persistence and F-04 visual theme (Calm Utility / Operator Desk / Session Builder) remain open product choices; SP-024 proceeds on the recommended right-side tray structure without blocking on theme skin selection.
+- SP-007 channel search remains legacy-optional; SP-024 No-API-Key RSS feed replaces the mandatory API key requirement for regular usage.
+- dependency audit observed on 2026-11-02: 26 total (18 moderate, 8 high). No dependency upgrade was performed.
+- holds: YouTube OAuth/account history sync. Frozen without explicit re-approval: telemetry, plugins, PWA, full i18n, advanced audio DSP.
 
 ## Resume and Evidence
 
-1. Read `docs/AI_RULES.md`, this file, and the relevant indexed spec. Use Node >=22.12.0; this workstation has Node 22.19.0/npm 10.9.3 and restored Playwright/Electron dependencies.
-2. Fetch the remote whose URL is canonical GitHub. While PR #23 remains open, use the active delivery branch and ff-only synchronization; do not assume old recorded hashes are the new head.
-3. Resume real search after key entry, or the separately selected persistence/UI packet. Reuse existing evidence; full F-04/visual implementation still needs its direction decision. A key gate does not block an independently authorized packet.
-4. Reuse valid evidence. Run focused checks for new changes and package verification when required by `docs/AI_RULES.md`.
+1. Read `docs/AI_RULES.md`, this file, `docs/specs/personalized-rss-and-advanced-playback.md` (SP-024), and `docs/specs/ux-refinement-phase1.md` (F-04). Use Node >=22.12.0.
+2. Fetch the canonical GitHub remote (`https://github.com/YuShimoji/holosync.git`). Use active delivery branch `codex/workflow-handoff` with ff-only synchronization.
+3. On Thank terminal, review Recordinator task `6e95c9d1-a5b9-57d2-8843-8cd525d78e6a` and proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61`.
+4. Proceed with SP-024 Phase 1: implement `rss:fetch` in `electron-main.js` and `preload.js`, create `scripts/rss-parser.js`, and connect to the right-side tray.
+5. Run focused tests (`npm test` / Playwright) and format checks before push.
 
 Earlier committed mocked review evidence remains under `docs/verification/2026-07-07/` (SP-023) and `docs/verification/2026-07-06/` (SP-022). It does not establish real-live acceptance. Feature behavior belongs in the indexed specs.
