@@ -1,6 +1,6 @@
 # Runtime State
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-11-02 (repair dispatch; older verification remains dated below)
 
 ## Current Position
 
@@ -10,10 +10,10 @@ Last reviewed: 2026-08-12
 - active delivery branch: `codex/workflow-handoff`; Draft PR #23 is open and mergeable, its published checks pass, and fetched head `33cd56f` is 7 commits ahead of `main` as verified on 2026-08-12. Resolve the exact head with a live fetch on resume instead of relying only on this recorded hash.
 - legacy mirror: `https://gitlab.com/YuShimoji/holosync.git` was 152 commits behind at the 2026-07-10 audit and is not a parity source.
 - active artifact: HoloSync Web App (`index.html`, `scripts/`, `styles/`)
-- active slice: SP-023 Real Multi-Live Playback Reliability Probe
-- phase: verify
-- current outcome: local probe/readback is implemented for multi-video add, play, pause, resume, sync, recovery, and player-state observation
-- primary bottleneck: real public YouTube multi-live playback has not been accepted; automated evidence blocks YouTube network traffic and uses mocked player events
+- active slice: existing playback, tile-operation, and settings-restoration repairs before SP-023 operator acceptance
+- phase: implement
+- current outcome: six observed implementation mismatches are assigned for repair; the SP-023 probe/readback remains delivered and real-live acceptance remains pending
+- primary bottleneck: live rejoin seeks, recovery without a leader, and queue controls retaining the old video ID need repair and regression evidence; real public YouTube multi-live playback is still unaccepted
 
 ## Delivered Baseline
 
@@ -22,6 +22,17 @@ Last reviewed: 2026-08-12
 - SP-023 probe: implemented with `?sp023Probe=1`, `window.holosyncProbe`, Debug-panel readback, JSON export, and Playwright coverage.
 - Workflow maintenance: AI rules now define one outcome-sized supervisor Work Packet, bounded autonomy, a single design checkpoint, and single-source state ownership.
 - Verification hygiene: routine SP-022/SP-023 tests write generated evidence under ignored `test-results/`; committed review artifacts change only with `UPDATE_REVIEW_ARTIFACTS=1`.
+
+## Authorized Repair Assignment (2026-11-02)
+
+- user requested corrected implementation prompts, independent Codex chats where needed, lightweight-model delegation where suitable, and non-overlapping editing ownership. The user explicitly selected `gpt-6.1-terra / high` and `gpt-6-luna / low`.
+- implementation owner: independent Codex chat `01a19a5a-7a11-74f0-a742-67d516ae8eff` (host `local`), requested `gpt-6.1-terra / high`. Owns the six repairs, their regression tests and related specs/index, final runtime-state updates, package verification, and integrated commit/push. Start was observed through `wait_threads`.
+- documentation owner: independent Codex chat `01a19a59-f10a-7941-94c4-e1d2c69b35ea` (host `local`), requested `gpt-6-luna / low`. Owns only `docs/specs/fitmode.md` and `docs/SECURITY_POSTMESSAGE.md`; no runtime-state or Git writes. Start and two-document work were observed through `wait_threads`.
+- both chats were created in this local HoloSync project and appear in the app's thread inventory. Creation accepted the explicit model/effort arguments; effective runtime settings have not been independently read back. These are independent chats, not internal subagents.
+- scope: live rejoin seek handling, leaderless recovery without undoing intentional pause, least-buffered selection including never-seeked candidates, queue controls using the current entry, zoomRadius save/normal-start restore while retaining old zoomShape reads, and Chrome storage value unwrapping. Complete playback/queue work first; zoom/Chrome work is not a prerequisite for the human live gate.
+- integration: this chat owns only the initial dispatch record; thereafter the implementation owner alone edits runtime-state and performs Git writes. The documentation owner returns its result in its own chat; the implementation owner uses `wait_threads` to review it before an integrated, path-scoped commit/push.
+- completion: focused regression evidence, lint/format/full Playwright checks, relevant spec updates, and a rebuilt Windows package. Real-live acceptance remains human-owned and cannot be closed by mocked checks.
+- next owner after code verification: human operator for SP-023 real-live acceptance. Search history/metadata and queue share/preset parity remain existing-spec follow-up work; F-04/broad visual implementation still requires the recorded direction decision. No dependency update or main-branch merge is authorized by this assignment.
 
 ## Active Gate and Independent Lane
 
@@ -85,7 +96,7 @@ Last reviewed: 2026-08-12
 
 ## Next Move
 
-Run the real-live SP-023 operator probe. If that human-only gate cannot run now, prepare 2-4 F-04/visual directions as previews and return for one combined direction-and-implementation decision.
+The implementation owner completes the authorized repairs and integrated verification, then returns the SP-023 real-live operator probe to the human operator. Search/persistence follow-ups remain separate from the held F-04/visual direction decision.
 
 ## Resume Sequence
 
