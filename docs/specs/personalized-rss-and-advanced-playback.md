@@ -1,6 +1,6 @@
 # SP-024: Personalized RSS Feed & Advanced Playback Architecture
 
-**Status**: planned (2026-11-02)  
+**Status**: in-progress (Phase 1 foundation delivered 2026-11-04)
 **Parent / Related**: F-04 (docs/specs/ux-refinement-phase1.md), SP-001 (Sync algorithm), SP-005 (Audio master pinning), SP-011 (Playlist queue mode), SP-012 (Channel live monitor)
 
 ---
@@ -172,6 +172,12 @@ F-04（右側トレイ案）を基盤とし、動画再生を遮蔽せず右側�
   - 主配信のタイトル・説明文からコラボ相手の `@ハンドル` やハッシュタグを抽出し、トレイ内に関連配信候補として提示。
 
 ---
+
+## Phase 1 実装状況（2026-11-04）
+
+Electron の固定 YouTube エンドポイント経由でチャンネル ID・ハンドル・再生リスト ID／URL の RSS を取得し、Atom の動画を右側トレイに表示して追加できる。API キーは不要。入力エラー・取得エラー・空結果を表示し、狭い画面ではトレイ表示中のみ左サイドバーを収納する。
+
+この段階はフィードの基礎であり、プロファイル、候補のパーソナライズ、フィード／検索／キューのタブ統合、置換・次・別窓操作、チャンネル登録の保存は未実装。ブラウザ単体では CORS 回避用の Electron IPC がないため取得できない。ハンドル解決は YouTube の HTML 構造に依存し、失敗時はチャンネル ID を使う。RSS は全動画やライブ状態を保証しない。
 
 ## 4. 段階的実装計画
 

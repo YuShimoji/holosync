@@ -35,6 +35,17 @@
 
       <section class="section">
         <h2>動画を追加</h2>
+        <button
+          id="feedOpen"
+          class="share-btn"
+          type="button"
+          aria-controls="feedTray"
+          aria-expanded="false"
+          title="フィードを開く (Ctrl+F または /)"
+        >
+          フィード
+        </button>
+
         <textarea
           id="urlAddInput"
           class="bulk-textarea"
@@ -480,6 +491,28 @@
         </div>
       </div>
       <div id="grid" class="grid" aria-live="polite"></div>
+      <aside id="feedTray" class="feed-tray" aria-label="フィード" hidden>
+        <header class="feed-header">
+          <h2>フィード</h2>
+          <button id="feedClose" type="button" aria-label="フィードを閉じる">閉じる</button>
+        </header>
+        <form id="feedForm">
+          <label for="feedInput">チャンネルまたは再生リスト</label>
+          <p class="feed-hint">チャンネル ID・@ハンドル・YouTube URL、または再生リスト ID</p>
+          <div class="feed-input-row">
+            <input id="feedInput" type="text" autocomplete="off" required /><button
+              class="primary"
+              type="submit"
+            >
+              取得
+            </button>
+          </div>
+        </form>
+        <p id="feedStatus" class="feed-status" role="status" aria-live="polite">
+          チャンネルや再生リストを入力してください。
+        </p>
+        <div id="feedResults" class="feed-results"></div>
+      </aside>
       <div id="dragOverlay" class="drag-overlay" hidden></div>
     </main>
 
@@ -553,6 +586,10 @@
             <tr>
               <td><kbd>Esc</kbd></td>
               <td>デバッグパネルを閉じる</td>
+            </tr>
+            <tr>
+              <td><kbd>Ctrl+F</kbd> / <kbd>/</kbd></td>
+              <td>フィードを開く</td>
             </tr>
             <tr>
               <td><kbd>?</kbd></td>

@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { fetchFeed } = require('./rss-fetch.js');
 
 let mainWindow = null;
 let server = null;
@@ -263,6 +264,13 @@ ipcMain.on('dialog:confirm', (event, message) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.focus();
   }
+});
+
+ipcMain.handle('rss:fetch', async (event, input) => {
+  if (!mainWindow || event.senderFrame !== mainWindow.webContents.mainFrame) {
+    return { ok: false, error: 'フィードを取得できません。' };
+  }
+  return fetchFeed(input);
 });
 
 ipcMain.handle('window:get-preferences', () => {

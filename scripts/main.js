@@ -63,6 +63,7 @@ import {
   setLayout,
 } from './layout.js';
 import { initInput } from './input.js';
+import { initFeed } from './feed.js';
 import { initChannel } from './channel.js';
 import { initFitMode, isFocusModeActive, toggleFocusMode } from './fitmode.js';
 import { initLiveProbe, recordProbeAction, recordProbeEvent } from './live-probe.js';
@@ -531,6 +532,7 @@ initHistory({
   },
 });
 initInput();
+initFeed({ createTile, hasVideo });
 initUI({ playAll, pauseAll, muteAll, unmuteAll });
 initDebugPanel();
 initLiveProbe();

@@ -36,3 +36,9 @@ contextBridge.exposeInMainWorld('electronShell', {
     ipcRenderer.send('shell:open-external', String(url));
   },
 });
+
+contextBridge.exposeInMainWorld('electronRss', {
+  fetch(input) {
+    return ipcRenderer.invoke('rss:fetch', input);
+  },
+});

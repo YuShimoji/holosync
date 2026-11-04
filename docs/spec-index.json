@@ -191,7 +191,7 @@
   {
     "id": "SP-024",
     "title": "Personalized RSS Feed and Advanced Playback",
-    "status": "planned",
+    "status": "in-progress",
     "pct": 10,
     "cat": "ui",
     "file": "docs/specs/personalized-rss-and-advanced-playback.md",
