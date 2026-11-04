@@ -2889,3 +2889,8 @@ body.frameless-mode .feed-tray {
   color: var(--color-text-secondary);
   opacity: 0.8;
 }
+
+/* Reserve space for the open tray so it does not cover video controls. */
+body.feed-open .content {
+  padding-right: min(340px, 100%);
+}

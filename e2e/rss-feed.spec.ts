@@ -15,6 +15,17 @@ test('feed shows results, adds a tile and restores focus on close', async ({ pag
   await expect(page.locator('.feed-card strong')).toHaveText('配信 & 動画');
   await page.getByRole('button', { name: '配信 & 動画を追加' }).click();
   await expect(page.locator('.tile[data-video-id="abc12345678"]')).toHaveCount(1);
+  for (const width of [1280, 700]) {
+    await page.setViewportSize({ width, height: 720 });
+    await expect
+      .poll(async () => {
+        const tile = await page.locator('.tile').first().boundingBox();
+        const tray = await page.locator('#feedTray').boundingBox();
+        return tile && tray ? tile.x + tile.width <= tray.x + 1 : false;
+      })
+      .toBe(true);
+  }
+
   await expect(page.getByRole('button', { name: '配信 & 動画を追加' })).toBeDisabled();
   await page.keyboard.press('Escape');
   await expect(page.locator('#feedTray')).toBeHidden();
