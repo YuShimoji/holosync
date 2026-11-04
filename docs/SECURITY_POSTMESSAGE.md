@@ -4,7 +4,7 @@
 
 HoloSyncは、YouTube IFrame APIとの通信にpostMessageを使用している。セキュリティリスクを最小化するため、送信側と受信側の両方で厳格な検証を実装している。
 
-- 送信側: コマンドホワイトリスト、引数サニタイズ、ターゲットoriginの固定
+- 送信側: 8コマンドのホワイトリスト、対象引数の検証、YouTube iframeに対応するターゲットorigin
 - 受信側: origin検証、イベントタイプホワイトリスト、数値データの検証
 - iframe作成時のセキュリティ属性設定
 
@@ -12,7 +12,7 @@ HoloSyncは、YouTube IFrame APIとの通信にpostMessageを使用している�
 
 ### 1.1 許可コマンドのホワイトリスト
 
-**定義箇所**: `scripts/state.js` (30-39行目)
+**定義箇所**: `scripts/state.js` の `ALLOWED_COMMANDS`
 
 ```javascript
 ALLOWED_ORIGIN = 'https://www.youtube.com'
@@ -24,14 +24,15 @@ ALLOWED_COMMANDS = new Set([
   'setVolume',
   'seekTo',
   'setPlaybackRate',
+  'loadVideoById',
 ])
 ```
 
-7つのYouTube IFrame APIコマンドのみを許可。ホワイトリストにないコマンドは`sendCommand()`で無視される。
+8つのYouTube IFrame APIコマンドを許可する。ホワイトリストにないコマンドは`sendCommand()`で無視される。
 
 ### 1.2 引数のサニタイズ
 
-**実装箇所**: `scripts/player.js` の `sanitizeArgs()` 関数 (120-145行目)
+**実装箇所**: `scripts/player.js` の `sanitizeArgs()` 関数
 
 各コマンドに応じて引数を検証・クランプする。
 
@@ -40,6 +41,7 @@ ALLOWED_COMMANDS = new Set([
 | `setVolume`        | `[0, 100]` にクランプ、非数値は50にフォールバック | 50           |
 | `seekTo`           | 負数は0にクランプ、非数値は0、第2引数に`true`を固定 | 0            |
 | `setPlaybackRate`  | `[0.25, 2.0]` の範囲外は1.0にフォールバック      | 1.0          |
+| `loadVideoById`    | 11文字のYouTube動画ID形式に一致する場合のみ通す | 不正時は空配列 |
 | その他             | 空配列を返す                                   | `[]`         |
 
 ```javascript
@@ -67,17 +69,21 @@ function sanitizeArgs(func, args) {
     }
     return [1];
   }
+  if (func === 'loadVideoById') {
+    const id = String(args?.[0] || '');
+    return /^[a-zA-Z0-9_-]{11}$/.test(id) ? [id] : [];
+  }
   return [];
 }
 ```
 
 ### 1.3 postMessage送信
 
-**実装箇所**: `scripts/player.js` の `sendCommand()` 関数 (147-165行目)
+**実装箇所**: `scripts/player.js` の `sendCommand()` 関数
 
 1. コマンドがホワイトリストに含まれるか検証
 2. `sanitizeArgs()` で引数をサニタイズ
-3. ターゲットorigin を `ALLOWED_ORIGIN` ("https://www.youtube.com") に固定してpostMessage
+3. iframe URLに応じたターゲットorigin (`https://www.youtube.com` または `https://www.youtube-nocookie.com`) を選んでpostMessage
 
 ```javascript
 export function sendCommand(iframe, func, args = []) {
@@ -90,14 +96,14 @@ export function sendCommand(iframe, func, args = []) {
   }
   const safeArgs = sanitizeArgs(func, args);
   const message = JSON.stringify({ event: 'command', func, args: safeArgs });
-  win.postMessage(message, ALLOWED_ORIGIN);
+  win.postMessage(message, getIframeOrigin(iframe));
   // ...
 }
 ```
 
 ### 1.4 iframe作成時のセキュリティ属性
 
-**実装箇所**: `scripts/player.js` の `createTile()` 関数 (313-509行目)
+**実装箇所**: `scripts/player.js` の `createTile()` 関数
 
 YouTube iframeを作成する際、以下のセキュリティ属性を設定する。
 
@@ -119,14 +125,14 @@ iframe.title = `YouTube video ${videoId}`;
 
 ### 2.1 origin検証
 
-**実装箇所**: `scripts/main.js` の `window.addEventListener('message', ...)` (308-333行目)
+**実装箇所**: `scripts/main.js` の `window.addEventListener('message', ...)`
 
-受信したpostMessageのoriginを検証し、`https://www.youtube.com` 以外のメッセージは無視する。
+受信したpostMessageのoriginを検証し、`https://www.youtube.com` と `https://www.youtube-nocookie.com` 以外のメッセージは無視する。
 
 ```javascript
 window.addEventListener('message', (event) => {
   try {
-    if (event.origin !== ALLOWED_ORIGIN) {
+    if (event.origin !== ALLOWED_ORIGIN && event.origin !== ALLOWED_ORIGIN_NOCOOKIE) {
       return;
     }
     // ...
@@ -138,13 +144,14 @@ window.addEventListener('message', (event) => {
 
 ### 2.2 イベントタイプのホワイトリスト
 
-**実装箇所**: `scripts/sync.js` の `normalizePlayerInfoMessage()` 関数 (41-74行目)
+**実装箇所**: `scripts/sync.js` の `normalizePlayerInfoMessage()` 関数
 
-YouTube IFrame APIから受信可能なイベントタイプを3種類に限定。
+YouTube IFrame APIから受信するイベントタイプを4種類に限定。
 
 - `infoDelivery`: 定期的な状態更新
 - `initialDelivery`: 初回状態配信
 - `onStateChange`: 再生状態変更
+- `onError`: エラーコード
 
 ```javascript
 function normalizePlayerInfoMessage(payload) {
@@ -156,7 +163,8 @@ function normalizePlayerInfoMessage(payload) {
   if (
     eventType !== 'infoDelivery' &&
     eventType !== 'initialDelivery' &&
-    eventType !== 'onStateChange'
+    eventType !== 'onStateChange' &&
+    eventType !== 'onError'
   ) {
     return null;
   }
@@ -166,7 +174,7 @@ function normalizePlayerInfoMessage(payload) {
 
 ### 2.3 データの数値検証
 
-**実装箇所**: `scripts/sync.js` の `normalizePlayerInfoMessage()` 関数 (41-74行目)
+**実装箇所**: `scripts/sync.js` の `normalizePlayerInfoMessage()` 関数
 
 抽出したデータが数値として有効かを検証し、不正な値は破棄する。
 
@@ -196,18 +204,20 @@ return null;
 
 - `currentTime`: 再生位置（秒）
 - `playerState`: 再生状態（-1=未開始, 0=終了, 1=再生中, 2=停止, 3=バッファリング, 5=頭出し済み）
+- `duration`: 正数の動画長（有限数の場合）
+- `errorCode`: 有限数の場合のエラーコード。`onError`の非数値情報は`unknown`として扱う。
 
 ## 3. セキュリティ保証
 
 ### 3.1 送信側
 
 - ホワイトリストにない任意のコマンドを送信できない
-- 引数は型とレンジを検証・サニタイズされる
-- ターゲットoriginが固定されているため、意図しないフレームへの送信を防止
+- 音量・シーク位置・再生速度・動画IDは、それぞれ実装された範囲／形式に合わせて処理される。他の許可コマンドの引数は空配列になる。
+- ターゲットoriginは選択中のYouTube iframe originに限定される（通常またはno-cookie）。
 
 ### 3.2 受信側
 
-- `https://www.youtube.com` 以外からのメッセージは無視
+- `https://www.youtube.com` と `https://www.youtube-nocookie.com` 以外からのメッセージは無視
 - 期待されるイベントタイプのみを処理
 - 数値データは`Number.isFinite()`で厳格に検証
 
@@ -244,12 +254,13 @@ return null;
 3. 不正な値を入力して境界値検証
    - 音量: -10, 1000 → `[0, 100]` にクランプされる
    - シーク: -5, NaN → 0 にクランプされる
+   - 動画ID: 11文字形式に一致しない値は引数なしで送信される
    - 再生速度: 0.1, 5.0 → 1.0 にフォールバックされる
 
-4. 未知のorigin/イベントタイプのメッセージを手動で送信し、無視されることを確認
+4. 未知イベントタイプを許可originから送信しても処理されないことを確認する。ページ上の `window.postMessage` では送信元originを偽装できないため、未知originの拒否はorigin検査を単体検証する。
    ```javascript
    window.postMessage(JSON.stringify({ event: 'unknownEvent' }), '*');
-   // → scripts/sync.js で無視される
+   // → scripts/sync.js のイベント種別検査で無視される
    ```
 
 ## 6. 今後の拡張

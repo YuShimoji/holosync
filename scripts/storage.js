@@ -82,7 +82,7 @@ class StorageAdapter {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
-          resolve(result[key]);
+          resolve(result[key]?.value ?? null);
         }
       });
     });
@@ -334,14 +334,68 @@ class StorageAdapter {
     return null;
   }
 
+  async getSearchHistory() {
+    const stored = await this.getItem('searchHistory');
+    if (!Array.isArray(stored)) {
+      return [];
+    }
+    return [
+      ...new Set(
+        stored
+          .map((item) =>
+            typeof item === 'string'
+              ? item.trim()
+              : typeof item?.query === 'string'
+                ? item.query.trim()
+                : ''
+          )
+          .filter(Boolean)
+      ),
+    ].slice(0, 5);
+  }
+
+  async saveSearchHistory(query) {
+    if (Array.isArray(query)) {
+      const history = [
+        ...new Set(
+          query
+            .filter((item) => typeof item === 'string')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        ),
+      ].slice(0, 5);
+      await this.setItem('searchHistory', history);
+      return;
+    }
+    if (typeof query !== 'string' || !query.trim()) {
+      return;
+    }
+    const term = query.trim();
+    const history = await this.getSearchHistory();
+    await this.setItem(
+      'searchHistory',
+      [term, ...history.filter((item) => item !== term)].slice(0, 5)
+    );
+  }
+
   // Preset-specific methods
-  async savePreset(name, videoIds) {
+  async savePreset(name, videoEntries) {
+    const entries = videoEntries.map((entry) =>
+      typeof entry === 'string'
+        ? { id: entry }
+        : {
+            id: entry.id,
+            queue: entry.queue ? [...entry.queue] : null,
+            queueIndex: entry.queue ? entry.queueIndex : 0,
+          }
+    );
     const presets = (await this.getItem('presets')) || [];
     const existingIndex = presets.findIndex((p) => p.name === name);
     const preset = {
       id: crypto.randomUUID(),
       name,
-      videoIds,
+      videoIds: entries.map((entry) => entry.id),
+      videos: entries,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

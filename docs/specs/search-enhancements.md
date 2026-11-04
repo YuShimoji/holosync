@@ -11,9 +11,9 @@ YouTube検索UIの拡張。検索履歴表示、結果フィルタリング、�
 - 検索入力フォーカス時に過去の検索クエリ（最大5件）をドロップダウン表示
 - クリックで検索実行
 - 「履歴をクリア」ボタン付き
-- ストレージ層は実装済み（`storageAdapter.getSearchHistory()`）
+- `storageAdapter.getSearchHistory()` / `saveSearchHistory()` で保存し、動画・プレイリスト・チャンネルURLは履歴に入れない
 
-実装箇所: search.js + index.html
+実装箇所: input.js + storage.js + index.html
 
 ### 2. 検索フィルタ
 
@@ -24,7 +24,7 @@ YouTube検索UIの拡張。検索履歴表示、結果フィルタリング、�
 | 長さ | セレクト | `videoDuration` | any / short(<4m) / medium(4-20m) / long(>20m) |
 | 並び順 | セレクト | `order` | relevance / date / viewCount / rating |
 
-実装箇所: search.js内 `searchYouTube()` にパラメータ追加 + index.html にフィルタUI
+実装箇所: input.js内 `searchYouTube()` + index.html のフィルタUI
 
 ### 3. タイルからの関連検索（チャンネル内検索）
 
@@ -33,11 +33,13 @@ YouTube検索UIの拡張。検索履歴表示、結果フィルタリング、�
 
 備考: `relatedToVideoId` は2023年に非推奨化。チャンネル検索で代替。
 
-実装箇所: player.js タイル生成時にチャンネルリンク追加、search.js に `searchByChannel()` 追加
+未実装。今回の検索履歴・metadata修復には含めない。
 
 ## 完了条件
 
-- [ ] 検索欄フォーカスで過去の検索履歴がドロップダウン表示される
-- [ ] 履歴クリックで検索実行される
-- [ ] 長さ/並び順フィルタが検索結果に反映される
-- [ ] lint通過
+- [x] 検索欄フォーカスで過去の検索履歴がドロップダウン表示される
+- [x] 履歴クリックで検索実行される
+- [x] 長さ/並び順フィルタが検索結果に反映される
+- [x] lint通過
+
+検索結果の動画長・再生回数は `videos.list` で一括取得し、失敗・欠損時もカードの選択と追加を維持する。LIVEバッジは検索結果の `snippet.liveBroadcastContent` を使う。検索語やフィルタ変更後の古い応答は反映しない。

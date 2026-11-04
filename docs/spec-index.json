@@ -33,7 +33,7 @@
     "pct": 100,
     "cat": "core",
     "file": "docs/specs/audio-master-pinning.md",
-    "summary": "Audio focus durability across sync recovery, lazy loading, and tile deletion."
+    "summary": "Tile-specific audio focus across duplicate video IDs, sync recovery, lazy loading, deletion, and local restoration."
   },
   {
     "id": "SP-006",
@@ -47,11 +47,11 @@
   {
     "id": "SP-007",
     "title": "Search enhancements",
-    "status": "done",
-    "pct": 100,
+    "status": "partial",
+    "pct": 67,
     "cat": "ui",
     "file": "docs/specs/search-enhancements.md",
-    "summary": "Search history, length filters, order filters, and MRU retention."
+    "summary": "Search history, duration/order filters and batched result metadata work; channel-related search remains unimplemented (two of three feature groups delivered)."
   },
   {
     "id": "SP-008",
@@ -87,7 +87,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/playlist-queue-mode.md",
-    "summary": "Single-tile playlist queue playback with controls, persistence, and share URL support."
+    "summary": "Single-tile queue playback with stable tile identity and queue round-trips through local storage, shared URL, JSON, and presets."
   },
   {
     "id": "SP-012",
@@ -132,7 +132,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/fitmode.md",
-    "summary": "Dynamic layout, cover behavior, and fit controls."
+    "summary": "Dynamic layout, Cover, Focus and Quick Fit controls; legacy Full-Fit was removed."
   },
   {
     "id": "SP-018",
@@ -168,7 +168,7 @@
     "pct": 91,
     "cat": "ui",
     "file": "docs/specs/ux-refinement-phase1.md",
-    "summary": "10 of 11 UX items are implemented. F-04 main-area search is the only not-started item."
+    "summary": "10 of 11 UX items are implemented. F-04 implementation remains not started; local comparison previews cover two search layouts in five states, while layout and visual direction remain unselected."
   },
   {
     "id": "SP-022",
@@ -177,7 +177,7 @@
     "pct": 100,
     "cat": "ui",
     "file": "docs/specs/dense-gallery-canvas.md",
-    "summary": "Dense multi-view layout option for scanning 8-12 streams with objective candidate scoring, planner readback artifacts, selected 3x4 proof, hover/control proof, and review screenshot evidence."
+    "summary": "Dense multi-view layout option for scanning 8-12 streams with objective candidate scoring, selected 3x4 proof, and opt-in committed review evidence that routine tests do not overwrite."
   },
   {
     "id": "SP-023",
@@ -186,6 +186,15 @@
     "pct": 70,
     "cat": "core",
     "file": "docs/specs/live-reliability-probe.md",
-    "summary": "Local probe mode and debug readback for multi-live add/play/pause/resume/sync observation. Mocked validation exists; real live operator evidence remains pending."
+    "summary": "Probe has mocked and three-live packaged observations, including controlled app-network interruption/recovery and queue pointer repairs. Cross-port persistence is unresolved; natural failures and human acceptance remain unverified."
+  },
+  {
+    "id": "SP-024",
+    "title": "Personalized RSS Feed and Advanced Playback",
+    "status": "in-progress",
+    "pct": 10,
+    "cat": "ui",
+    "file": "docs/specs/personalized-rss-and-advanced-playback.md",
+    "summary": "No-API-Key architecture using public YouTube RSS feeds, client-side profile scoring/filtering, right-side feed tray, multi-window popouts, URL transfer, and live reservation."
   }
 ]

@@ -15,7 +15,7 @@ const layoutSelect = document.getElementById('layoutSelect');
 // ── State ──────────────────────────────────────────────────
 const fitState = {
   coverMode: false, // true = fill (cover), false = standard (contain + aspect-ratio)
-  focusVideoId: null, // non-null = focus mode active for this video
+  focusTileId: null, // non-null = focus mode active for this video
   _savedFocusState: null, // sidebar/toolbar/frameless state before focus
   quickFitActive: false, // SP-021/F-01 quick-fit (all chrome hidden, grid preserved)
   _savedQuickFitState: null,
@@ -124,12 +124,12 @@ function updateFitIcon() {
 
 // ── Focus Mode (SP-021/F-02+F-11) ─────────────────────────────
 // Single video maximized, all chrome hidden.
-// Entry: tile double-click, tile focus button, or toggleFocusMode(videoId).
+// Entry: tile double-click, tile focus button, or toggleFocusMode(tileId).
 // Exit: ESC, or edge-hover reveal buttons (top/left) to temporarily show chrome.
 let _uiDeps = null; // { setSidebarCollapsed, setToolbarCollapsed }
 
-function setFocusMode(videoId) {
-  if (fitState.focusVideoId) {
+function setFocusMode(tileId) {
+  if (fitState.focusTileId) {
     exitFocusMode();
   }
 
@@ -140,11 +140,12 @@ function setFocusMode(videoId) {
     frameless: document.body.classList.contains('frameless-mode'),
   };
 
-  fitState.focusVideoId = videoId;
+  fitState.focusTileId = tileId;
+  storageAdapter.setItem('focusTileId', tileId);
   document.body.classList.add('focus-mode');
 
   // Mark the focused tile
-  const entry = videos.find((v) => v.id === videoId);
+  const entry = videos.find((v) => v.tileId === tileId);
   if (entry?.tile) {
     entry.tile.classList.add('focus-target');
   }
@@ -157,16 +158,17 @@ function setFocusMode(videoId) {
 }
 
 export function exitFocusMode() {
-  if (!fitState.focusVideoId) {
+  if (!fitState.focusTileId) {
     return;
   }
 
-  const prevId = fitState.focusVideoId;
-  fitState.focusVideoId = null;
+  const prevId = fitState.focusTileId;
+  fitState.focusTileId = null;
+  storageAdapter.setItem('focusTileId', null);
   document.body.classList.remove('focus-mode');
 
   // Remove focus-target from tile
-  const entry = videos.find((v) => v.id === prevId);
+  const entry = videos.find((v) => v.tileId === prevId);
   if (entry?.tile) {
     entry.tile.classList.remove('focus-target');
   }
@@ -182,7 +184,7 @@ export function exitFocusMode() {
 
 /** @returns {boolean} Whether focus mode is currently active */
 export function isFocusModeActive() {
-  return fitState.focusVideoId !== null;
+  return fitState.focusTileId !== null;
 }
 
 // ── Quick Fit (SP-021/F-01) ────────────────────────────────
@@ -282,11 +284,11 @@ function toggleCoverMode() {
   setCoverMode(!fitState.coverMode);
 }
 
-export function toggleFocusMode(videoId) {
-  if (fitState.focusVideoId === videoId) {
+export function toggleFocusMode(tileId) {
+  if (fitState.focusTileId === tileId) {
     exitFocusMode();
   } else {
-    setFocusMode(videoId);
+    setFocusMode(tileId);
   }
 }
 
@@ -314,7 +316,7 @@ export function initFitMode(deps) {
     if (e.key !== 'Escape') {
       return;
     }
-    if (fitState.focusVideoId) {
+    if (fitState.focusTileId) {
       e.preventDefault();
       e.stopPropagation();
       exitFocusMode();

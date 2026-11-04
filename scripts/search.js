@@ -3,14 +3,8 @@
  * @brief YouTube search, preset management, and API key functions for HoloSync.
  */
 import { storageAdapter } from './storage.js';
-import {
-  videos,
-  playerStates,
-  suspendedPlayers,
-  hasVideo,
-  youtubeApiKey,
-  setYoutubeApiKey,
-} from './state.js';
+import { videos, state, youtubeApiKey, setYoutubeApiKey } from './state.js';
+import { clearAllTiles, persistVideos } from './player.js';
 
 // DOM references (preset / API key)
 const apiKeyInput = document.getElementById('apiKeyInput');
@@ -20,7 +14,6 @@ const quotaInfo = document.getElementById('quotaInfo');
 const savePresetBtn = document.getElementById('savePresetBtn');
 const presetNameInput = document.getElementById('presetNameInput');
 const presetList = document.getElementById('presetList');
-const gridEl = document.getElementById('grid');
 
 export async function fetchPlaylistItems(playlistId, maxItems = 50) {
   if (!youtubeApiKey) {
@@ -60,14 +53,14 @@ async function saveCurrentPreset(name) {
     alert('プリセット名を入力してください。');
     return;
   }
-  const videoIds = videos.map((v) => v.id);
-  if (videoIds.length === 0) {
+  const videoEntries = videos.map((v) => ({ id: v.id, queue: v.queue, queueIndex: v.queueIndex }));
+  if (videoEntries.length === 0) {
     alert('保存する動画がありません。');
     return;
   }
 
   try {
-    await storageAdapter.savePreset(name, videoIds);
+    await storageAdapter.savePreset(name, videoEntries);
     presetNameInput.value = '';
     loadPresets();
     alert('プリセットを保存しました。');
@@ -87,7 +80,8 @@ async function loadPresets() {
 
       const thumbRow = document.createElement('div');
       thumbRow.className = 'preset-thumbs';
-      (preset.videoIds || []).slice(0, 3).forEach((vid) => {
+      const entries = presetEntries(preset);
+      entries.slice(0, 3).forEach(({ id: vid }) => {
         const img = document.createElement('img');
         img.src = `https://img.youtube.com/vi/${vid}/default.jpg`;
         img.alt = '';
@@ -102,7 +96,7 @@ async function loadPresets() {
       nameSpan.textContent = preset.name;
       const meta = document.createElement('span');
       meta.className = 'preset-meta';
-      const count = (preset.videoIds || []).length;
+      const count = entries.length;
       const dateStr = preset.updatedAt ? new Date(preset.updatedAt).toLocaleDateString() : '';
       meta.textContent = `${count}本 ${dateStr}`;
       info.appendChild(nameSpan);
@@ -142,6 +136,11 @@ async function deletePreset(name) {
   }
 }
 
+function presetEntries(preset) {
+  const entries = Array.isArray(preset.videos) ? preset.videos : preset.videoIds || [];
+  return entries.map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+}
+
 let _createTile;
 
 async function loadPreset(name) {
@@ -151,25 +150,17 @@ async function loadPreset(name) {
       return;
     }
 
-    // Clear current videos properly
-    for (const v of videos) {
-      const win = v.iframe?.contentWindow;
-      if (win) {
-        playerStates.delete(win);
-        suspendedPlayers.delete(win);
+    const entries = presetEntries(preset);
+    state.isRestoring = true;
+    try {
+      clearAllTiles();
+      for (const entry of entries) {
+        _createTile(entry.id, entry);
       }
-      v.iframe.src = '';
-      v.tile?.remove();
+    } finally {
+      state.isRestoring = false;
+      persistVideos();
     }
-    videos.length = 0;
-    gridEl.innerHTML = '';
-
-    // Load preset videos
-    preset.videoIds.forEach((id) => {
-      if (!hasVideo(id)) {
-        _createTile(id);
-      }
-    });
   } catch (error) {
     console.error('Load preset failed:', error);
   }

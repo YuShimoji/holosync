@@ -2,16 +2,7 @@ name: Lint
 
 on:
   push:
-    paths:
-      - '**/*.js'
-      - '**/*.md'
-      - 'package.json'
-      - '.eslintrc.json'
-      - '.prettierrc'
   pull_request:
-    paths:
-      - '**/*.js'
-      - '**/*.md'
   workflow_dispatch:
 
 jobs:
@@ -24,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -33,6 +24,9 @@ jobs:
 
       - name: Prettier Check
         run: npm run format:check
+
+      - name: Project state formatting
+        run: npm run format:check:state
 
       - name: ESLint
         run: npm run lint

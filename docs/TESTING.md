@@ -10,7 +10,18 @@
 
 - `npm run lint`
 - `npm run format:check`
+- `npm run format:check:state`
 - `npx playwright test`
+
+After the first `npm ci` on a new workstation, install the local test browser once with `npx playwright install chromium`. Linux CI uses `npx playwright install --with-deps chromium`.
+
+Normal Playwright runs write generated screenshots and readbacks under ignored `test-results/` paths, so verification does not dirty tracked review evidence. Regenerate the committed SP-022/SP-023 review artifacts only when intentionally accepting new evidence:
+
+```powershell
+$env:UPDATE_REVIEW_ARTIFACTS = '1'
+npx playwright test e2e/dense-gallery.spec.ts e2e/live-reliability-probe.spec.ts --workers=1
+Remove-Item Env:UPDATE_REVIEW_ARTIFACTS
+```
 
 ## Manual Checks
 

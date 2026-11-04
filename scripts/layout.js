@@ -77,8 +77,8 @@ export function getGridReorderIndexFromRects(candidateRects, clientX, clientY, i
   return insertIndex;
 }
 
-function bringVideoToFront(videoId) {
-  const index = videos.findIndex((video) => video.id === videoId);
+function bringVideoToFront(videoEntry) {
+  const index = videos.indexOf(videoEntry);
   if (index === -1 || index === videos.length - 1) {
     return;
   }
@@ -557,7 +557,7 @@ function setupTileDrag(tile, videoEntry, dragHandle) {
       return;
     }
 
-    bringVideoToFront(videoEntry.id);
+    bringVideoToFront(videoEntry);
     startLeft = tile.offsetLeft;
     startTop = tile.offsetTop;
     tile.classList.add('dragging');
@@ -604,8 +604,7 @@ function setupTileDrag(tile, videoEntry, dragHandle) {
 
 // ── Sync Groups ────────────────────────────────────────────
 
-function setSyncGroup(videoId, groupId) {
-  const entry = videos.find((v) => v.id === videoId);
+function setSyncGroup(entry, groupId) {
   if (!entry) {
     return;
   }
@@ -680,8 +679,7 @@ export function initLayout() {
     if (!tile) {
       return;
     }
-    const videoId = tile.dataset.videoId;
-    const entry = videos.find((v) => v.id === videoId);
+    const entry = videos.find((v) => v.tile === tile);
     if (!entry) {
       return;
     }
@@ -689,7 +687,7 @@ export function initLayout() {
     const options = [...SYNC_GROUPS, null];
     const currentIdx = options.indexOf(entry.syncGroupId);
     const nextIdx = (currentIdx + 1) % options.length;
-    setSyncGroup(videoId, options[nextIdx]);
+    setSyncGroup(entry, options[nextIdx]);
   });
 
   const scheduleCellRelayout = (() => {

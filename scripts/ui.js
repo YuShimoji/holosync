@@ -280,10 +280,14 @@ function updateLeaderIdOptions() {
   leaderIdSelect.innerHTML = '<option value="">自動選択</option>';
   videos.forEach((v) => {
     const option = document.createElement('option');
-    option.value = v.id;
-    option.textContent = `${v.id.slice(0, 11)}...`;
+    option.value = v.tileId;
+    option.textContent = `${v.id.slice(0, 11)} (${videos.indexOf(v) + 1})`;
     leaderIdSelect.appendChild(option);
   });
+  const selected =
+    videos.find((v) => v.tileId === SYNC_SETTINGS.leaderId) ||
+    videos.find((v) => v.id === SYNC_SETTINGS.leaderId);
+  leaderIdSelect.value = selected?.tileId || '';
 }
 
 // ── Init ───────────────────────────────────────────────────

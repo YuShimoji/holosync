@@ -79,6 +79,7 @@ function _processLoadQueue() {
       continue;
     }
     _activeLoadCount++;
+    entry._pendingLoad = true;
     _loadTileIframe(entry);
   }
 }
@@ -92,8 +93,15 @@ function _loadTileIframe(videoEntry) {
   iframe.addEventListener(
     'load',
     () => {
+      if (videoEntry._pendingLoad) {
+        videoEntry._pendingLoad = false;
+        _activeLoadCount--;
+      }
+      if (!videos.includes(videoEntry)) {
+        setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
+        return;
+      }
       videoEntry.iframeLoaded = true;
-      _activeLoadCount--;
       const thumb = tile.querySelector('.tile-thumbnail');
       if (thumb) {
         thumb.classList.add('loaded');
@@ -358,8 +366,7 @@ function renderDescriptionWithTimestamps(desc, videoId) {
       return;
     }
     const seconds = Number(link.dataset.seconds);
-    const vid = link.dataset.videoId;
-    const entry = videos.find((v) => v.id === vid);
+    const entry = videos.find((v) => v.tile === container.closest('.tile'));
     if (entry?.iframe) {
       sendCommand(entry.iframe, 'seekTo', [seconds]);
     }
@@ -396,7 +403,7 @@ async function fetchVideoDescription(videoId, bodyEl) {
       const desc = data.items[0].snippet.description || '';
       const descEl = renderDescriptionWithTimestamps(desc, videoId);
       bodyEl.appendChild(descEl);
-      const entry = videos.find((v) => v.id === videoId);
+      const entry = videos.find((v) => v.infoBodyEl === bodyEl && v.id === videoId);
       if (entry) {
         entry.metaDescription = desc;
       }
@@ -420,7 +427,7 @@ async function fetchVideoMeta(videoId, titleEl, bodyEl) {
       return;
     }
     const data = await resp.json();
-    const entry = videos.find((v) => v.id === videoId);
+    const entry = videos.find((v) => v.infoBodyEl === bodyEl && v.id === videoId);
     if (entry) {
       entry.meta = { title: data.title, author: data.author_name };
     }
@@ -460,8 +467,20 @@ export async function refreshDescriptionsForAllTiles() {
 
 function loadQueueItem(videoEntry) {
   const newVideoId = videoEntry.queue[videoEntry.queueIndex];
+  const oldVideoId = videoEntry.id;
+  const zoomWasOpen = !!videoEntry.zoomPanel;
+  if (zoomWasOpen) {
+    _deps.destroyZoomPanel?.(videoEntry);
+  }
   videoEntry.id = newVideoId;
   videoEntry.tile.dataset.videoId = newVideoId;
+  videoEntry.iframe.title = `YouTube video ${newVideoId}`;
+  if (zoomWasOpen) {
+    _deps.toggleZoomPanel(videoEntry);
+  }
+  if (state.audioFocusTileId === videoEntry.tileId && oldVideoId !== newVideoId) {
+    _deps.refreshAudioFocus?.(videoEntry);
+  }
 
   const thumb = videoEntry.tile.querySelector('.tile-thumbnail');
   if (thumb) {
@@ -512,6 +531,7 @@ function queuePrev(videoEntry) {
 export function persistVideos() {
   const data = videos.map((v) => ({
     id: v.id,
+    tileId: v.tileId,
     syncGroupId: v.syncGroupId,
     offsetMs: v.offsetMs,
     cellCol: v.cellCol ?? null,
@@ -525,6 +545,7 @@ export function persistVideos() {
     zoomPanelX: v.zoomPanelX ?? null,
     zoomPanelY: v.zoomPanelY ?? null,
     zoomShape: v.zoomShape ?? null,
+    zoomRadius: v.zoomRadius ?? null,
     queue: v.queue || null,
     queueIndex: v.queue ? v.queueIndex : undefined,
   }));
@@ -549,6 +570,13 @@ export function createTile(videoId, options = {}) {
   const tile = document.createElement('div');
   tile.className = 'tile';
   tile.dataset.videoId = videoId;
+  const tileId =
+    typeof options.tileId === 'string' &&
+    options.tileId &&
+    !videos.some((v) => v.tileId === options.tileId)
+      ? options.tileId
+      : crypto.randomUUID();
+  tile.dataset.tileId = tileId;
 
   const frameWrap = document.createElement('div');
   frameWrap.className = 'frame-wrap';
@@ -586,17 +614,14 @@ export function createTile(videoId, options = {}) {
   zoomBtn.textContent = '🔍';
   zoomBtn.title = 'ズームビュー';
   zoomBtn.addEventListener('click', () => {
-    const entry = videos.find((v) => v.id === videoId);
-    if (entry) {
-      _deps.toggleZoomPanel(entry);
-    }
+    _deps.toggleZoomPanel(videoEntry);
   });
 
   const audioBtn = document.createElement('button');
   audioBtn.className = 'tile-action-btn tile-audio-btn';
   audioBtn.textContent = '\u{1F508}';
   audioBtn.title = 'オーディオマスターに設定';
-  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoId));
+  audioBtn.addEventListener('click', () => _deps.setAudioFocus(videoEntry));
 
   const focusBtn = document.createElement('button');
   focusBtn.className = 'tile-action-btn tile-focus-btn';
@@ -608,7 +633,7 @@ export function createTile(videoId, options = {}) {
   focusBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_deps.toggleFocusMode) {
-      _deps.toggleFocusMode(videoId);
+      _deps.toggleFocusMode(videoEntry.tileId);
     }
   });
 
@@ -623,7 +648,7 @@ export function createTile(videoId, options = {}) {
       return;
     }
     if (_deps.toggleFocusMode) {
-      _deps.toggleFocusMode(videoId);
+      _deps.toggleFocusMode(videoEntry.tileId);
     }
   });
 
@@ -631,7 +656,7 @@ export function createTile(videoId, options = {}) {
   removeBtn.className = 'tile-action-btn tile-remove';
   removeBtn.textContent = '✕';
   removeBtn.title = 'この動画を削除';
-  removeBtn.addEventListener('click', () => removeVideo(videoId, tile));
+  removeBtn.addEventListener('click', () => removeVideo(videoEntry.id, tile));
 
   actions.appendChild(focusBtn);
   actions.appendChild(audioBtn);
@@ -667,13 +692,14 @@ export function createTile(videoId, options = {}) {
   popoutLink.textContent = 'YouTubeで開く';
   popoutLink.addEventListener('click', (event) => {
     event.stopPropagation();
-    const embedUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const currentId = videoEntry.id;
+    const embedUrl = `https://www.youtube.com/watch?v=${currentId}`;
     if (window.electronShell?.openExternal) {
       window.electronShell.openExternal(embedUrl);
     } else {
       window.open(
         embedUrl,
-        `holosync-${videoId}`,
+        `holosync-${currentId}`,
         'width=960,height=720,menubar=no,toolbar=no,location=no'
       );
     }
@@ -737,6 +763,7 @@ export function createTile(videoId, options = {}) {
   const videoEntry = {
     iframe,
     id: videoId,
+    tileId,
     tile,
     syncGroupId: initialGroupId,
     offsetMs: options.offsetMs ?? 0,
@@ -757,6 +784,7 @@ export function createTile(videoId, options = {}) {
     zoomPanelX: options.zoomPanelX ?? null,
     zoomPanelY: options.zoomPanelY ?? null,
     zoomShape: options.zoomShape ?? null,
+    zoomRadius: options.zoomRadius ?? null,
     pendingSeekTime: options.currentTime ?? null,
     iframeLoaded: false,
     queue: options.queue || null,
@@ -835,8 +863,8 @@ export function createTile(videoId, options = {}) {
   }
 }
 
-function removeVideo(videoId, tile) {
-  const idx = videos.findIndex((v) => v.id === videoId);
+function removeVideo(videoId, tile, persist = true) {
+  const idx = videos.findIndex((v) => v.tile === tile);
   if (idx === -1) {
     return;
   }
@@ -846,14 +874,22 @@ function removeVideo(videoId, tile) {
   if (qIdx !== -1) {
     _loadQueue.splice(qIdx, 1);
   }
+  if (video._pendingLoad) {
+    video._pendingLoad = false;
+    _activeLoadCount--;
+    setTimeout(_processLoadQueue, LOAD_STAGGER_MS);
+  }
   const win = video.iframe?.contentWindow;
   if (win) {
     playerStates.delete(win);
     suspendedPlayers.delete(win);
     speedAdjustedPlayers.delete(win);
   }
-  if (state.audioFocusVideoId === videoId) {
-    _deps.clearAudioFocus?.(videoId);
+  if (state.audioFocusTileId === video.tileId) {
+    _deps.clearAudioFocus?.();
+  }
+  if (video.tile.classList.contains('focus-target')) {
+    _deps.toggleFocusMode?.(video.tileId);
   }
   // Tear down zoom loupe before tile is detached. Otherwise its setInterval
   // keeps running against a Window that has been GCed and its DOM node
@@ -870,5 +906,13 @@ function removeVideo(videoId, tile) {
     tileCount: videos.length,
   });
   _deps.refreshTileStackOrder();
-  persistVideos();
+  if (persist) {
+    persistVideos();
+  }
+}
+
+export function clearAllTiles() {
+  for (const video of [...videos]) {
+    removeVideo(video.id, video.tile, false);
+  }
 }

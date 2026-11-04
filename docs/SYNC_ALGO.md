@@ -46,9 +46,9 @@ state === 1 (再生中) の動画のみ候補。
 | モード | 挙動 |
 |--------|------|
 | `first` (デフォルト) | activeEntriesの最初の再生中動画 |
-| `manual` | `leaderId`で指定した動画 (再生中でなければフォールバック) |
+| `manual` | `leaderId`のタイルIDで指定したタイル (旧動画IDは最初の一致、再生中でなければフォールバック) |
 | `longest-playing` | time値が最大の動画 (=動画内で最も進んでいる) |
-| `least-buffered` | lastSeekAtが最も古い(=最もseekされていない安定した)動画 |
+| `least-buffered` | lastSeekAtが最も古い動画（未seekを最優先、同値はタイル順。実測バッファ量ではない） |
 
 ### 3.4 drift検出と3段階補正
 
@@ -94,7 +94,7 @@ drift = followerTime - (leaderTime + followerOffsetSec)
 | stalled | lastUpdateから2500ms経過 | スナップショット再要求 |
 | no-state/no-time | 状態未取得 | スナップショット再要求 |
 
-復帰時は `toleranceMs + rejoinSyncBufferMs` (800ms) の許容幅で再同期。
+復帰時は `toleranceMs + rejoinSyncBufferMs` (800ms) の許容幅で再同期。ライブでは通常時と同様にオフセット0のseekを省く。リーダーがいない場合も停止理由に応じた復旧を試みるが、全員が一時停止中なら自動再生しない。
 復帰時に速度補正中だった場合は通常速度(1x)にリセット。
 
 ### 3.7 同期グループ
@@ -163,3 +163,5 @@ seekToのみの離散的補正は視覚的に「ジャンプ」する。小さ�
 | P2 | least-bufferedモードのバッファリング比率計算 (現在は代替指標) | 精度 |
 | P3 | デバッグパネルにdrift補正履歴表示 | 開発支援 |
 | P3 | ライブ配信のグループ間遅延オフセット対応 | 機能 |
+
+復帰リーダー自身はオフセットの値によらず自身にseekしない。

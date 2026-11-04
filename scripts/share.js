@@ -37,6 +37,8 @@ function buildShareState() {
       const rec = win ? playerStates.get(win) : null;
       return {
         id: v.id,
+        queue: v.queue ? [...v.queue] : null,
+        queueIndex: v.queue ? v.queueIndex : 0,
         syncGroupId: v.syncGroupId,
         offsetMs: v.offsetMs,
         currentTime: rec?.time ?? null,

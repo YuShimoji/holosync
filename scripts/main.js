@@ -63,8 +63,9 @@ import {
   setLayout,
 } from './layout.js';
 import { initInput } from './input.js';
+import { initFeed } from './feed.js';
 import { initChannel } from './channel.js';
-import { initFitMode, toggleFocusMode } from './fitmode.js';
+import { initFitMode, isFocusModeActive, toggleFocusMode } from './fitmode.js';
 import { initLiveProbe, recordProbeAction, recordProbeEvent } from './live-probe.js';
 import {
   createTileControlBar,
@@ -103,6 +104,7 @@ initPlayer({
   destroyZoomPanel: (videoEntry) => zoomLoupeController?.destroyZoomPanel(videoEntry),
   refreshTileStackOrder,
   setAudioFocus,
+  refreshAudioFocus: (entry) => updateAudioFocus(entry),
   toggleFocusMode,
   onTileIframeLoaded: () => applyAudioFocus(),
   clearAudioFocus: () => setAudioFocus(null),
@@ -264,9 +266,9 @@ function setSpeedAll(rate) {
 
 function setVolumeAll(val) {
   recordProbeAction('volume-all', { tileCount: videos.length, volume: val });
-  const masterVid = state.audioFocusVideoId;
+  const masterTileId = state.audioFocusTileId;
   for (const v of videos) {
-    if (state.audioMode === 'ducking' && masterVid && v.id !== masterVid) {
+    if (state.audioMode === 'ducking' && masterTileId && v.tileId !== masterTileId) {
       sendCommand(v.iframe, 'setVolume', [Math.round(val * DUCKING_RATIO)]);
     } else {
       sendCommand(v.iframe, 'setVolume', [val]);
@@ -383,19 +385,36 @@ async function initializeApp() {
 
       // Restore Videos
       (sharedSession.videos || []).forEach((v) => {
-        if (!hasVideo(v.id)) {
-          createTile(v.id, v);
-        }
+        createTile(v.id, v);
       });
 
       state.isRestoring = false;
       return;
     }
 
+    // Legacy links use individual URL parameters even when local storage is available.
+    const legacyVideos = storageAdapter.getUrlParameter('videos');
+    if (legacyVideos?.length) {
+      state.isRestoring = true;
+      for (const id of legacyVideos) {
+        if (!hasVideo(id)) {
+          createTile(id);
+        }
+      }
+      state.isRestoring = false;
+      const legacyVolume = storageAdapter.getUrlParameter('volume');
+      if (legacyVolume !== null) {
+        volumeAll.value = String(legacyVolume);
+        volumeVal.textContent = String(legacyVolume);
+        setVolumeAll(legacyVolume);
+      }
+      return;
+    }
+
     // Priority 2: Storage Fallback
     const storedVideos = await storageAdapter.getItem('videos');
     const storedVolume = await storageAdapter.getItem('volume');
-    const urlPreset = await storageAdapter.getItem('preset');
+    const urlPreset = storageAdapter.getUrlParameter('preset');
 
     const vol = parseInt(storedVolume, 10);
     if (!Number.isNaN(vol)) {
@@ -403,11 +422,14 @@ async function initializeApp() {
       volumeVal.textContent = String(vol);
     }
     state.isRestoring = true;
+    const normalizedVideos = [];
+    let tileIdsChanged = false;
     (storedVideos || []).forEach((entry) => {
       const vid = typeof entry === 'string' ? entry : entry?.id;
       const opts = typeof entry === 'object' && entry ? entry : {};
-      if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid) && !hasVideo(vid)) {
+      if (typeof vid === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(vid)) {
         createTile(vid, {
+          tileId: opts.tileId ?? null,
           syncGroupId: opts.syncGroupId ?? null,
           offsetMs: opts.offsetMs ?? 0,
           cellCol: opts.cellCol ?? null,
@@ -421,12 +443,21 @@ async function initializeApp() {
           zoomPanelX: opts.zoomPanelX ?? null,
           zoomPanelY: opts.zoomPanelY ?? null,
           zoomShape: opts.zoomShape ?? null,
+          zoomRadius: opts.zoomRadius ?? null,
           queue: opts.queue ?? null,
           queueIndex: opts.queueIndex ?? 0,
         });
+        const tileId = videos[videos.length - 1].tileId;
+        normalizedVideos.push({ ...opts, id: vid, tileId });
+        tileIdsChanged ||= opts.tileId !== tileId;
+      } else {
+        normalizedVideos.push(entry);
       }
     });
     state.isRestoring = false;
+    if (tileIdsChanged) {
+      await storageAdapter.setItem('videos', normalizedVideos);
+    }
     if (!Number.isNaN(vol)) {
       setVolumeAll(vol);
     }
@@ -439,24 +470,7 @@ async function initializeApp() {
         }
       });
     }
-    // Restore audio focus (after all videos are loaded)
-    const storedAudioFocus = await storageAdapter.getItem('audioFocusVideoId');
-    if (storedAudioFocus && hasVideo(storedAudioFocus)) {
-      state.audioFocusVideoId = storedAudioFocus;
-      // Update visual state without re-persisting
-      for (const v of videos) {
-        if (v.tile) {
-          v.tile.classList.toggle('audio-master', v.id === storedAudioFocus);
-          const btn = v.tile.querySelector('.tile-audio-btn');
-          if (btn) {
-            btn.textContent = v.id === storedAudioFocus ? '\u{1F50A}' : '\u{1F508}';
-            btn.title =
-              v.id === storedAudioFocus ? 'オーディオマスターを解除' : 'オーディオマスターに設定';
-          }
-        }
-      }
-      applyAudioFocus();
-    }
+    await restoreTileSelections();
   } catch (error) {
     console.warn('Failed to restore from storage:', error);
   }
@@ -477,11 +491,13 @@ async function initializeApp() {
               state.isRestoring = true;
               lastSession.forEach((entry) => {
                 const vid = typeof entry === 'string' ? entry : entry?.id;
-                if (typeof vid === 'string' && !hasVideo(vid)) {
+                if (typeof vid === 'string') {
                   createTile(vid, typeof entry === 'object' ? entry : undefined);
                 }
               });
               state.isRestoring = false;
+              persistVideos();
+              restoreTileSelections();
               banner.hidden = true;
             },
             { once: true }
@@ -516,6 +532,7 @@ initHistory({
   },
 });
 initInput();
+initFeed({ createTile, hasVideo });
 initUI({ playAll, pauseAll, muteAll, unmuteAll });
 initDebugPanel();
 initLiveProbe();
@@ -687,22 +704,39 @@ masterSeekBar.addEventListener('change', () => {
 
 scheduleSeekbarUpdate();
 
-function setAudioFocus(videoId) {
-  // Toggle off if same video
-  if (videoId !== null && state.audioFocusVideoId === videoId) {
-    videoId = null;
+async function restoreTileSelections() {
+  const storedTileId = await storageAdapter.getItem('audioFocusTileId');
+  const legacyVideoId = await storageAdapter.getItem('audioFocusVideoId');
+  const master =
+    videos.find((v) => v.tileId === storedTileId) ||
+    (!storedTileId && videos.find((v) => v.id === legacyVideoId));
+  if (master && !state.audioFocusTileId) {
+    updateAudioFocus(master);
   }
-  state.audioFocusVideoId = videoId;
-  storageAdapter.setItem('audioFocusVideoId', videoId);
+  const focusedTileId = await storageAdapter.getItem('focusTileId');
+  if (!isFocusModeActive() && videos.some((v) => v.tileId === focusedTileId)) {
+    toggleFocusMode(focusedTileId);
+  }
+}
 
-  // Update visual indicator on all tiles
+function setAudioFocus(entry) {
+  updateAudioFocus(entry && entry.tileId === state.audioFocusTileId ? null : entry);
+}
+
+function updateAudioFocus(entry) {
+  const tileId = entry?.tileId ?? null;
+  state.audioFocusTileId = tileId;
+  state.audioFocusVideoId = entry?.id ?? null;
+  storageAdapter.setItem('audioFocusTileId', tileId);
+  storageAdapter.setItem('audioFocusVideoId', state.audioFocusVideoId);
+
   for (const v of videos) {
     if (v.tile) {
-      v.tile.classList.toggle('audio-master', v.id === videoId);
+      v.tile.classList.toggle('audio-master', v.tileId === tileId);
       const btn = v.tile.querySelector('.tile-audio-btn');
       if (btn) {
-        btn.textContent = v.id === videoId ? '\u{1F50A}' : '\u{1F508}';
-        btn.title = v.id === videoId ? 'オーディオマスターを解除' : 'オーディオマスターに設定';
+        btn.textContent = v.tileId === tileId ? '\u{1F50A}' : '\u{1F508}';
+        btn.title = v.tileId === tileId ? 'オーディオマスターを解除' : 'オーディオマスターに設定';
       }
     }
   }
@@ -710,11 +744,10 @@ function setAudioFocus(videoId) {
 }
 
 function applyAudioFocus() {
-  const masterVid = state.audioFocusVideoId;
+  const masterTileId = state.audioFocusTileId;
   const vol = parseInt(volumeAll.value, 10);
 
-  if (!masterVid || state.audioMode === 'normal') {
-    // Normal mode or no master: unmute all, uniform volume
+  if (!masterTileId || state.audioMode === 'normal') {
     for (const v of videos) {
       sendCommand(v.iframe, 'unMute');
       sendCommand(v.iframe, 'setVolume', [vol]);
@@ -724,7 +757,7 @@ function applyAudioFocus() {
 
   if (state.audioMode === 'solo') {
     for (const v of videos) {
-      if (v.id === masterVid) {
+      if (v.tileId === masterTileId) {
         sendCommand(v.iframe, 'unMute');
         sendCommand(v.iframe, 'setVolume', [vol]);
       } else {
@@ -738,11 +771,7 @@ function applyAudioFocus() {
     const duckedVol = Math.round(vol * DUCKING_RATIO);
     for (const v of videos) {
       sendCommand(v.iframe, 'unMute');
-      if (v.id === masterVid) {
-        sendCommand(v.iframe, 'setVolume', [vol]);
-      } else {
-        sendCommand(v.iframe, 'setVolume', [duckedVol]);
-      }
+      sendCommand(v.iframe, 'setVolume', [v.tileId === masterTileId ? vol : duckedVol]);
     }
   }
 }

@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -50,11 +50,12 @@ jobs:
           CI: true
 
       - name: Upload test results
-        if: failure()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ github.run_number }}
           path: |
             playwright-report/
             test-results/
+          if-no-files-found: ignore
           retention-days: 7

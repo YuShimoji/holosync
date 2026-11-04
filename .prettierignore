@@ -4,3 +4,4 @@ artifacts/
 docs/
 docs/**
 .eslintrc.json
+.playwright-cli/

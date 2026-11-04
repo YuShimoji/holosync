@@ -1,6 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
 
 declare global {
   interface Window {
@@ -23,14 +24,21 @@ const DENSE_IDS = [
   'DenseDemo12',
 ];
 
-const SCREENSHOT_DIR = 'docs/verification/2026-07-06';
-const SCREENSHOTS = {
-  normal: `${SCREENSHOT_DIR}/sp-022-dense-gallery-normal-selected-3x4-1280x720.png`,
-  hover: `${SCREENSHOT_DIR}/sp-022-dense-gallery-hover-controls-selected-3x4-1280x720.png`,
-  chrome: `${SCREENSHOT_DIR}/sp-022-dense-gallery-chrome-selected-3x4-1280x720.png`,
-};
-const READBACK_JSON = `${SCREENSHOT_DIR}/sp-022-dense-layout-planner-1280x720.json`;
-const READBACK_MD = `${SCREENSHOT_DIR}/sp-022-dense-layout-planner-1280x720.md`;
+const REVIEW_ARTIFACT_DIR = 'docs/verification/2026-07-06';
+const UPDATE_REVIEW_ARTIFACTS = process.env.UPDATE_REVIEW_ARTIFACTS === '1';
+
+function getArtifactPaths(testInfo: TestInfo) {
+  const outputPath = (filename: string) =>
+    UPDATE_REVIEW_ARTIFACTS ? `${REVIEW_ARTIFACT_DIR}/${filename}` : testInfo.outputPath(filename);
+
+  return {
+    normal: outputPath('sp-022-dense-gallery-normal-selected-3x4-1280x720.png'),
+    hover: outputPath('sp-022-dense-gallery-hover-controls-selected-3x4-1280x720.png'),
+    chrome: outputPath('sp-022-dense-gallery-chrome-selected-3x4-1280x720.png'),
+    readbackJson: outputPath('sp-022-dense-layout-planner-1280x720.json'),
+    readbackMarkdown: outputPath('sp-022-dense-layout-planner-1280x720.md'),
+  };
+}
 
 const MOCK_TILE_STYLE = `
   .grid.layout-dense .tile-thumbnail {
@@ -162,15 +170,18 @@ function getCurrentHead() {
   }
 }
 
-function writePlannerReadback(plan: any) {
-  fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+function writePlannerReadback(
+  plan: any,
+  paths: { readbackJson: string; readbackMarkdown: string }
+) {
+  fs.mkdirSync(path.dirname(paths.readbackJson), { recursive: true });
   const payload = {
     artifact: 'sp-022-dense-layout-planner-1280x720',
     implementationDate: '2026-07-07',
     commitHead: getCurrentHead(),
     plan,
   };
-  fs.writeFileSync(READBACK_JSON, `${JSON.stringify(payload, null, 2)}\n`);
+  fs.writeFileSync(paths.readbackJson, `${JSON.stringify(payload, null, 2)}\n`);
 
   const rows = plan.candidates
     .map(
@@ -199,10 +210,12 @@ function writePlannerReadback(plan: any) {
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 ${rows}
 `;
-  fs.writeFileSync(READBACK_MD, markdown);
+  fs.writeFileSync(paths.readbackMarkdown, markdown);
 }
 
-test('SP-022 dense planner scores candidates and exposes objective readback', async ({ page }) => {
+test('SP-022 dense planner scores candidates and exposes objective readback', async ({
+  page,
+}, testInfo) => {
   await prepareDenseScenario(page, { sidebarCollapsed: true, toolbarVisible: false });
   const plan = await getDensePlan(page);
   const candidates = plan.candidates;
@@ -232,12 +245,16 @@ test('SP-022 dense planner scores candidates and exposes objective readback', as
   expect(sixByTwo.selected).toBe(false);
   expect(sixByTwo.verticalSlackRatio).toBeGreaterThan(selected.verticalSlackRatio);
 
-  writePlannerReadback(plan);
-  expect(fs.existsSync(READBACK_JSON)).toBe(true);
-  expect(fs.existsSync(READBACK_MD)).toBe(true);
+  const artifactPaths = getArtifactPaths(testInfo);
+  writePlannerReadback(plan, artifactPaths);
+  expect(fs.existsSync(artifactPaths.readbackJson)).toBe(true);
+  expect(fs.existsSync(artifactPaths.readbackMarkdown)).toBe(true);
 });
 
-test('SP-022 dense gallery uses objective mosaic and captures review states', async ({ page }) => {
+test('SP-022 dense gallery uses objective mosaic and captures review states', async ({
+  page,
+}, testInfo) => {
+  const artifactPaths = getArtifactPaths(testInfo);
   await prepareDenseScenario(page, { sidebarCollapsed: true, toolbarVisible: false });
   await expect(page.locator('#grid')).toHaveAttribute('data-dense-cols', '3');
   await expect(page.locator('#grid')).toHaveAttribute('data-dense-rows', '4');
@@ -248,7 +265,7 @@ test('SP-022 dense gallery uses objective mosaic and captures review states', as
   expect(metrics.verticalUtilization).toBeGreaterThan(0.9);
   expect(Math.abs(metrics.topWhitespace - metrics.bottomWhitespace)).toBeLessThanOrEqual(40);
 
-  await page.screenshot({ path: SCREENSHOTS.normal, fullPage: false });
+  await page.screenshot({ path: artifactPaths.normal, fullPage: false });
 
   const hoverTile = page.locator('.tile').nth(4);
   await hoverTile.hover({ position: { x: 80, y: 60 } });
@@ -262,7 +279,7 @@ test('SP-022 dense gallery uses objective mosaic and captures review states', as
       hoverTile.locator('.tile-control-bar').evaluate((el) => getComputedStyle(el).opacity)
     )
     .toBe('1');
-  await page.screenshot({ path: SCREENSHOTS.hover, fullPage: false });
+  await page.screenshot({ path: artifactPaths.hover, fullPage: false });
 
   await prepareDenseScenario(page, { sidebarCollapsed: false, toolbarVisible: true });
   await expect(page.locator('body')).not.toHaveClass(/sidebar-collapsed/);
@@ -271,5 +288,5 @@ test('SP-022 dense gallery uses objective mosaic and captures review states', as
   await expect(page.locator('#grid')).toHaveClass(/dense-mosaic-ready/);
   await expect(page.locator('#grid')).toHaveAttribute('data-dense-cols', '3');
   await expect(page.locator('#grid')).toHaveAttribute('data-dense-rows', '4');
-  await page.screenshot({ path: SCREENSHOTS.chrome, fullPage: false });
+  await page.screenshot({ path: artifactPaths.chrome, fullPage: false });
 });
