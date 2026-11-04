@@ -87,7 +87,11 @@ function _processLoadQueue() {
 function _loadTileIframe(videoEntry) {
   const { iframe, id, tile } = videoEntry;
   recordProbeEvent('iframe-load-start', { tileId: id });
-  iframe.src = buildEmbedUrl(id, { mute: 0 });
+  iframe.src = buildEmbedUrl(id, {
+    mute: 0,
+    autoplay: videoEntry.autoPlay ? 1 : undefined,
+    start: videoEntry.autoPlay ? videoEntry.pendingSeekTime : undefined,
+  });
   initializeSyncForIframe(iframe);
 
   iframe.addEventListener(
@@ -508,6 +512,59 @@ function updateQueueUI(videoEntry) {
   }
 }
 
+function ensureQueueControls(videoEntry) {
+  if (
+    !videoEntry.queue ||
+    videoEntry.queue.length < 2 ||
+    videoEntry.tile.querySelector('.tile-queue-bar')
+  ) {
+    return;
+  }
+  const tile = videoEntry.tile;
+  const frameWrap = tile.querySelector('.frame-wrap');
+  const queueBar = document.createElement('div');
+  queueBar.className = 'tile-queue-bar';
+
+  const qPrevBtn = document.createElement('button');
+  qPrevBtn.className = 'tile-action-btn queue-prev-btn';
+  qPrevBtn.textContent = '\u25C0';
+  qPrevBtn.title = '\u524D\u306E\u52D5\u753B';
+  qPrevBtn.disabled = videoEntry.queueIndex <= 0;
+  qPrevBtn.addEventListener('click', () => queuePrev(videoEntry));
+
+  const qIndicator = document.createElement('span');
+  qIndicator.className = 'queue-indicator';
+  qIndicator.textContent = `${videoEntry.queueIndex + 1} / ${videoEntry.queue.length}`;
+
+  const qNextBtn = document.createElement('button');
+  qNextBtn.className = 'tile-action-btn queue-next-btn';
+  qNextBtn.textContent = '\u25B6';
+  qNextBtn.title = '\u6B21\u306E\u52D5\u753B';
+  qNextBtn.disabled = videoEntry.queueIndex >= videoEntry.queue.length - 1;
+  qNextBtn.addEventListener('click', () => advanceQueue(videoEntry));
+
+  queueBar.appendChild(qPrevBtn);
+  queueBar.appendChild(qIndicator);
+  queueBar.appendChild(qNextBtn);
+  tile.insertBefore(queueBar, frameWrap);
+  updateQueueUI(videoEntry);
+}
+
+export function appendToQueue(videoEntry, videoId) {
+  if (!videoEntry || !/^[\w-]{11}$/.test(videoId)) {
+    return false;
+  }
+  if (!videoEntry.queue) {
+    videoEntry.queue = [videoEntry.id];
+    videoEntry.queueIndex = 0;
+  }
+  videoEntry.queue.push(videoId);
+  ensureQueueControls(videoEntry);
+  updateQueueUI(videoEntry);
+  persistVideos();
+  return true;
+}
+
 export function advanceQueue(videoEntry) {
   if (!videoEntry.queue || videoEntry.queueIndex >= videoEntry.queue.length - 1) {
     return false;
@@ -786,6 +843,7 @@ export function createTile(videoId, options = {}) {
     zoomShape: options.zoomShape ?? null,
     zoomRadius: options.zoomRadius ?? null,
     pendingSeekTime: options.currentTime ?? null,
+    autoPlay: options.autoPlay === true,
     iframeLoaded: false,
     queue: options.queue || null,
     queueIndex: options.queueIndex ?? 0,
@@ -804,34 +862,7 @@ export function createTile(videoId, options = {}) {
 
   _deps.syncTileOrderDom();
 
-  // Queue navigation bar (only for queue-enabled tiles)
-  if (videoEntry.queue && videoEntry.queue.length > 1) {
-    const queueBar = document.createElement('div');
-    queueBar.className = 'tile-queue-bar';
-
-    const qPrevBtn = document.createElement('button');
-    qPrevBtn.className = 'tile-action-btn queue-prev-btn';
-    qPrevBtn.textContent = '\u25C0';
-    qPrevBtn.title = '\u524D\u306E\u52D5\u753B';
-    qPrevBtn.disabled = videoEntry.queueIndex <= 0;
-    qPrevBtn.addEventListener('click', () => queuePrev(videoEntry));
-
-    const qIndicator = document.createElement('span');
-    qIndicator.className = 'queue-indicator';
-    qIndicator.textContent = `${videoEntry.queueIndex + 1} / ${videoEntry.queue.length}`;
-
-    const qNextBtn = document.createElement('button');
-    qNextBtn.className = 'tile-action-btn queue-next-btn';
-    qNextBtn.textContent = '\u25B6';
-    qNextBtn.title = '\u6B21\u306E\u52D5\u753B';
-    qNextBtn.disabled = videoEntry.queueIndex >= videoEntry.queue.length - 1;
-    qNextBtn.addEventListener('click', () => advanceQueue(videoEntry));
-
-    queueBar.appendChild(qPrevBtn);
-    queueBar.appendChild(qIndicator);
-    queueBar.appendChild(qNextBtn);
-    tile.insertBefore(queueBar, frameWrap);
-  }
+  ensureQueueControls(videoEntry);
 
   // Only apply persisted tile size in free/cell mode.
   if (state.cellModeEnabled && videoEntry.tileWidth && videoEntry.tileHeight) {

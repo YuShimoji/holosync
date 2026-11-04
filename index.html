@@ -491,28 +491,81 @@
         </div>
       </div>
       <div id="grid" class="grid" aria-live="polite"></div>
-      <aside id="feedTray" class="feed-tray" aria-label="フィード" hidden>
+      <section id="feedTray" class="feed-tray" aria-label="フィード" hidden>
         <header class="feed-header">
           <h2>フィード</h2>
+          <label
+            >プロファイル
+            <select id="feedProfile" aria-label="プロファイル"></select
+          ></label>
+          <button id="feedNewProfile" type="button">新規</button>
+          <button
+            id="feedEditToggle"
+            type="button"
+            aria-controls="feedSettings"
+            aria-expanded="false"
+          >
+            条件を編集
+          </button>
+          <label
+            >列数
+            <select id="feedColumns" aria-label="フィードの列数">
+              <option value="auto">自動</option>
+              <option value="1">1列</option>
+              <option value="2">2列</option>
+              <option value="3">3列</option>
+              <option value="4">4列</option>
+              <option value="5">5列</option>
+              <option value="6">6列</option>
+            </select></label
+          >
           <button id="feedClose" type="button" aria-label="フィードを閉じる">閉じる</button>
         </header>
-        <form id="feedForm">
-          <label for="feedInput">チャンネルまたは再生リスト</label>
-          <p class="feed-hint">チャンネル ID・@ハンドル・YouTube URL、または再生リスト ID</p>
-          <div class="feed-input-row">
-            <input id="feedInput" type="text" autocomplete="off" required /><button
-              class="primary"
-              type="submit"
-            >
-              取得
-            </button>
+        <form id="feedSettings" class="feed-settings" hidden>
+          <label>名前 <input id="profileName" maxlength="80" required /></label>
+          <label
+            >登録元（1行に1つ。チャンネルID、@ハンドル、再生リストID、URL）<textarea
+              id="profileSources"
+              rows="3"
+            ></textarea>
+          </label>
+          <label>関心キーワード（カンマ区切り）<input id="profileInclude" /></label>
+          <label>除外キーワード（カンマ区切り）<input id="profileExclude" /></label>
+          <label>除外チャンネルID（カンマ区切り）<input id="profileExcludeChannels" /></label>
+          <label
+            >登録チャンネル優先度（IDと重みを1行ずつ、例: UC...=1.5）<textarea
+              id="profileWeights"
+              rows="2"
+            ></textarea>
+          </label>
+          <label
+            >新着重視 <input id="profileFreshness" type="range" min="0" max="100" step="10"
+          /></label>
+          <p class="feed-transfer-help">
+            外部ブラウザのYouTube動画を送るには、ブックマークレットをコピーし、ブックマークのURLに登録して使います。
+          </p>
+          <button id="copyTransferBookmark" type="button">転送用ブックマークレットをコピー</button>
+          <div class="feed-setting-actions">
+            <button type="submit" class="primary">保存</button
+            ><button id="feedDeleteProfile" type="button">プロファイル削除</button>
           </div>
+        </form>
+        <form id="feedForm" class="feed-form">
+          <label for="feedInput">チャンネル・再生リスト</label>
+          <input
+            id="feedInput"
+            type="text"
+            autocomplete="off"
+            placeholder="ID・@ハンドル・YouTube URL"
+          />
+          <button class="primary" type="submit">登録して更新</button
+          ><button id="feedRefresh" type="button">更新</button>
         </form>
         <p id="feedStatus" class="feed-status" role="status" aria-live="polite">
           チャンネルや再生リストを入力してください。
         </p>
         <div id="feedResults" class="feed-results"></div>
-      </aside>
+      </section>
       <div id="dragOverlay" class="drag-overlay" hidden></div>
     </main>
 

@@ -2894,3 +2894,138 @@ body.frameless-mode .feed-tray {
 body.feed-open .content {
   padding-right: min(340px, 100%);
 }
+
+/* SP-024 Phase 2: full-surface feed; closing returns to the live stage. */
+body.feed-open .content {
+  padding-right: 0;
+}
+body.feed-open .sidebar {
+  visibility: hidden;
+}
+.feed-tray {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  z-index: 500;
+  padding: 0 24px 28px;
+  background: var(--color-surface);
+  border: 0;
+  box-shadow: none;
+}
+.feed-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.feed-header h2 {
+  margin: 0 auto 0 0;
+  font-size: 20px;
+}
+.feed-header label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.feed-header select,
+.feed-settings input,
+.feed-settings textarea,
+.feed-form input {
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 8px;
+  font: inherit;
+}
+.feed-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+}
+.feed-form input {
+  min-width: 0;
+  flex: 1;
+}
+.feed-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-bg);
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.feed-settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.feed-setting-actions {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.feed-status {
+  margin: 14px 0;
+}
+.feed-results {
+  display: grid;
+  grid-template-columns: var(--feed-columns, repeat(auto-fill, minmax(min(260px, 100%), 1fr)));
+  align-items: start;
+  gap: 28px 18px;
+}
+.feed-card {
+  display: block;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.feed-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+.feed-card-details {
+  padding: 10px 2px 0;
+}
+.feed-card strong {
+  display: block;
+  line-height: 1.4;
+  font-size: 15px;
+}
+.feed-card p {
+  margin: 4px 0;
+}
+.feed-card .feed-reason {
+  color: var(--color-primary);
+}
+@media (max-width: 700px) {
+  .feed-tray {
+    padding: 0 12px 20px;
+  }
+  .feed-form {
+    flex-wrap: wrap;
+  }
+  .feed-form label {
+    width: 100%;
+  }
+  .feed-settings {
+    grid-template-columns: 1fr;
+  }
+  .feed-header h2 {
+    width: 100%;
+  }
+}

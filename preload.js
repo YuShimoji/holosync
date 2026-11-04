@@ -42,3 +42,12 @@ contextBridge.exposeInMainWorld('electronRss', {
     return ipcRenderer.invoke('rss:fetch', input);
   },
 });
+
+contextBridge.exposeInMainWorld('electronTransfer', {
+  ready() {
+    return ipcRenderer.invoke('transfer:ready');
+  },
+  onIncoming(callback) {
+    ipcRenderer.on('transfer:incoming', (_event, transfer) => callback(transfer));
+  },
+});

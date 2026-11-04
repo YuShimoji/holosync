@@ -192,7 +192,7 @@
     "id": "SP-024",
     "title": "Personalized RSS Feed and Advanced Playback",
     "status": "in-progress",
-    "pct": 10,
+    "pct": 50,
     "cat": "ui",
     "file": "docs/specs/personalized-rss-and-advanced-playback.md",
     "summary": "No-API-Key architecture using public YouTube RSS feeds, client-side profile scoring/filtering, right-side feed tray, multi-window popouts, URL transfer, and live reservation."

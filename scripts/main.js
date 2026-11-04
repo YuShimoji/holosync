@@ -27,6 +27,7 @@ import {
   sanitizeEmbedSettings,
   buildEmbedUrl,
   advanceQueue,
+  appendToQueue,
 } from './player.js';
 import {
   normalizePlayerInfoMessage,
@@ -140,6 +141,11 @@ function trackPlayerState(win, info) {
   if (!video) {
     return;
   }
+  document.dispatchEvent(
+    new CustomEvent('holosync:playback', {
+      detail: { videoId: video.id, tileId: video.tileId, state: record.state },
+    })
+  );
   recordProbeEvent('player-state', {
     tileId: video.id,
     previousState,
@@ -538,7 +544,36 @@ initDebugPanel();
 initLiveProbe();
 initElectron();
 initTileObserver();
-initializeApp();
+initializeApp()
+  .then(async () => {
+    if (!window.electronTransfer) {
+      return;
+    }
+    const receive = (transfer) => {
+      if (transfer.action === 'queue') {
+        const target = transfer.targetTileId
+          ? videos.find((video) => video.tileId === transfer.targetTileId)
+          : videos.find((video) => video.tileId === state.audioFocusTileId) || videos[0];
+        if (!target) {
+          window.alert('キュー追加先の動画がありません。');
+          return;
+        }
+        if (!appendToQueue(target, transfer.videoId)) {
+          window.alert('キューに追加できませんでした。');
+        }
+      } else {
+        createTile(transfer.videoId, {
+          currentTime: transfer.startSeconds || null,
+          autoPlay: true,
+        });
+      }
+    };
+    window.electronTransfer.onIncoming(receive);
+    for (const transfer of await window.electronTransfer.ready()) {
+      receive(transfer);
+    }
+  })
+  .catch((error) => console.warn('Transfer initialization failed:', error));
 initializeApiKey(refreshDescriptionsForAllTiles);
 loadPresets();
 loadWatchHistory();

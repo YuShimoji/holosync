@@ -4,13 +4,13 @@ Last reviewed: 2026-11-04 (JST, SP-024 Phase 1 feed foundation)
 
 ## Current Position
 
-- 2026-11-04 Planner007: SP-024 Phase 1 feed foundation implemented: Electron RSS fetch, Atom parser, right tray and add-to-grid. Real @YouTube feed and add were exercised in an isolated profile; full mocked Playwright 40/40. Phase 2 and other SP-024 features remain unimplemented; see the spec for boundaries.
+- 2026-11-04 Planner007: SP-024 Phase 2 implemented: profile-specific feed sources, exclusions, ranking and local playback history; full-screen feed with selectable columns; guarded local HTTP and holosync URL transfer. Packaged app: real @YouTube feed, initial and running-instance URI, queue transfer and rejected foreign origin checked. Phase 3 and remaining integration are in the SP-024 spec.
 
 - project: HoloSync; canonical repository: `https://github.com/YuShimoji/holosync.git`; default branch: `main`.
 - active delivery branch: `codex/workflow-handoff`, tracking the canonical GitHub remote named `github` on this workstation. Resolve remotes by URL on other machines. Local `origin` is the legacy GitLab mirror and is not the parity source.
 - verified delivery code: `3cdd3a7` (queue/header pointer repair); prior playback/search delivery is `148b541`. The code repair was pushed to the canonical tracking branch before this documentation closeout. Draft PR #23 remains the delivery PR; no main merge was performed.
 - active artifact: Web App (`index.html`, `scripts/`, `styles/`) and the rebuilt local Windows package.
-- active slice / phase: SP-024 Phase 1 feed foundation delivered; remaining scope and limits are in the SP-024 spec.
+- active slice / phase: SP-024 Phase 2 and full-screen feed delivered; remaining scope and limits are in the SP-024 spec.
 - Recordinator integration: Task `6e95c9d1-a5b9-57d2-8843-8cd525d78e6a` and Proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61` (content revision `01M6DQW5W7Z2RYMAFNR3MHKZ9H`) registered on canonical storage (`S:\マイドライブ\Recordinator-canonical\records`), accessible across Planner007 and Thank machines.
 - current authorization (verbatim): 「ここまでの更新と分析および策定についてまとめて、Thank端末で開発継続できるようPushしてください。Recordinatorタスクも共有したいです。」「分析提案も全て共有してください。」
 
@@ -64,10 +64,10 @@ The user's continuation instruction was: 「上記分析から推奨対応で進
 
 ## Remaining Work and Boundaries
 
-- next work: review Recordinator proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61`; SP-024 Phase 2 remains a later slice. The earlier Phase 1 owner was Thank; the user requested continuation on Planner007.
+- next work: review Recordinator proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61`; SP-024 Phase 3 remains a later slice. The earlier Phase 1 owner was Thank; the user requested continuation on Planner007.
 - SP-024 implementation slices:
   - Phase 1: feed foundation delivered on Planner007; Electron IPC `rss:fetch`, Atom parsing and the right-side feed tray. See SP-024 for remaining integration boundaries.
-  - Phase 2: Client-side Smart Profile scoring engine, exclusion rules, and URL quick transfer (`holosync://` and local HTTP API).
+  - Phase 2: profile-specific local scoring, exclusions, feed grid and URL transfer implemented. See SP-024 for boundaries.
   - Phase 3: Satellite BrowserWindow popout management, master-satellite sync bridge, and live stream reservation with autoplay policy mitigation.
 - cross-port persistence and F-04 visual theme (Calm Utility / Operator Desk / Session Builder) remain open product choices; SP-024 proceeds on the recommended right-side tray structure without blocking on theme skin selection.
 - SP-007 channel search remains legacy-optional; SP-024 No-API-Key RSS feed replaces the mandatory API key requirement for regular usage.
@@ -79,7 +79,7 @@ The user's continuation instruction was: 「上記分析から推奨対応で進
 1. Read `docs/AI_RULES.md`, this file, `docs/specs/personalized-rss-and-advanced-playback.md` (SP-024), and `docs/specs/ux-refinement-phase1.md` (F-04). Use Node >=22.12.0.
 2. Fetch the canonical GitHub remote (`https://github.com/YuShimoji/holosync.git`). Use active delivery branch `codex/workflow-handoff` with ff-only synchronization.
 3. On Thank terminal, review Recordinator task `6e95c9d1-a5b9-57d2-8843-8cd525d78e6a` and proposal `16db43ae-c73d-5cb0-adae-f1c7ba8c5a61`.
-4. Phase 1 foundation is implemented; use SP-024 to select and authorize the next slice, including Phase 2 and remaining tray integration.
+4. Phase 2 is implemented; use SP-024 to select and authorize the next slice, including Phase 3 and remaining integration.
 5. Run focused tests (`npm test` / Playwright) and format checks before push.
 
 Earlier committed mocked review evidence remains under `docs/verification/2026-07-07/` (SP-023) and `docs/verification/2026-07-06/` (SP-022). It does not establish real-live acceptance. Feature behavior belongs in the indexed specs.

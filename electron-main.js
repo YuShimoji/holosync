@@ -3,11 +3,88 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { fetchFeed } = require('./rss-fetch.js');
+const { parseTransfer } = require('./transfer-request.js');
 
 let mainWindow = null;
 let server = null;
 let currentPort = null;
 let saveStateTimer = null;
+let transferReady = false;
+const pendingTransfers = [];
+function queueTransfer(input) {
+  let transfer;
+  try {
+    transfer = parseTransfer(input);
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+  if (mainWindow && !mainWindow.isDestroyed() && transferReady)
+    mainWindow.webContents.send('transfer:incoming', transfer);
+  else pendingTransfers.push(transfer);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+  return { ok: true };
+}
+function handleTransferHttp(req, res) {
+  const origin = req.headers.origin;
+  const allowed =
+    !origin || origin === 'https://www.youtube.com' || origin === 'https://youtube.com';
+  const host = (req.headers.host || '').toLowerCase();
+  if (!allowed || !/^(?:127\.0\.0\.1|localhost):\d+$/.test(host)) {
+    res.writeHead(403);
+    res.end();
+    return;
+  }
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  if (
+    req.method !== 'POST' ||
+    !(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')
+  ) {
+    res.writeHead(405);
+    res.end();
+    return;
+  }
+  let body = '';
+  let tooLarge = false;
+  req.setEncoding('utf8');
+  req.on('data', (chunk) => {
+    if (!tooLarge) {
+      body += chunk;
+      if (body.length > 8192) {
+        tooLarge = true;
+        body = '';
+      }
+    }
+  });
+  req.on('end', () => {
+    let result;
+    if (tooLarge) result = { ok: false, error: '転送データが大きすぎます。' };
+    else {
+      try {
+        result = queueTransfer(JSON.parse(body));
+      } catch {
+        result = { ok: false, error: 'JSONが正しくありません。' };
+      }
+    }
+    res.writeHead(result.ok ? 202 : 400, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
+    res.end(JSON.stringify(result));
+  });
+}
 
 const logPath = path.join(app.getPath('userData'), 'holosync.log');
 const windowPrefsPath = path.join(app.getPath('userData'), 'window-preferences.json');
@@ -132,6 +209,7 @@ function createWindow(port) {
 
   const windowRef = new BrowserWindow(options);
   mainWindow = windowRef;
+  transferReady = false;
   windowRef.setMenuBarVisibility(false);
   windowRef.removeMenu();
   windowRef.loadURL(`http://localhost:${port}`);
@@ -195,6 +273,10 @@ function startServer() {
   server = http.createServer((req, res) => {
     try {
       const requestPath = (req.url || '/').split('?')[0];
+      if (requestPath === '/api/add') {
+        handleTransferHttp(req, res);
+        return;
+      }
       const safePath = path.normalize(requestPath).replace(/^(\.\.[/\\])+/, '');
       const resolvedPath = path.join(
         appPath,
@@ -264,6 +346,12 @@ ipcMain.on('dialog:confirm', (event, message) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.focus();
   }
+});
+
+ipcMain.handle('transfer:ready', (event) => {
+  if (!mainWindow || event.senderFrame !== mainWindow.webContents.mainFrame) return [];
+  transferReady = true;
+  return pendingTransfers.splice(0);
 });
 
 ipcMain.handle('rss:fetch', async (event, input) => {
@@ -337,7 +425,24 @@ ipcMain.on('window:set-content-aspect', (_, payload) => {
   mainWindow.setContentSize(curW, targetH);
 });
 
-app.whenReady().then(startServer);
+const hasLock = app.requestSingleInstanceLock();
+if (!hasLock) app.quit();
+else {
+  app.on('second-instance', (_event, argv) => {
+    const uri = argv.find((arg) => /^holosync:\/\//i.test(arg));
+    if (uri) queueTransfer(uri);
+  });
+  app.on('open-url', (event, uri) => {
+    event.preventDefault();
+    queueTransfer(uri);
+  });
+  const initialUri = process.argv.find((arg) => /^holosync:\/\//i.test(arg));
+  if (initialUri) queueTransfer(initialUri);
+  app.whenReady().then(() => {
+    if (app.isPackaged) app.setAsDefaultProtocolClient('holosync');
+    startServer();
+  });
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
